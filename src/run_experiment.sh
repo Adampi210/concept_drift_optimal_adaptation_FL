@@ -6,15 +6,7 @@ experiment_filename='test_loss_behavior_under_drift.py'
 # Array of configurations
 configs=(
     "slow_rotation"
-    "medium_rotation"
-    "fast_rotation"
-    "slow_scaling"
-    "medium_scaling"
-    "fast_scaling"
-    "mild_noise"
-    "medium_noise"
-    "strong_noise"
-    "composite"
+
 )
 
 # Array of seeds
