@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# run_experiment.sh
+# train_models.sh
 experiment_filename='test_loss_behavior_under_drift.py'
 
 # List of available domains

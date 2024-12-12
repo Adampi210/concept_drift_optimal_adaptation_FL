@@ -160,13 +160,136 @@ def train_model(model_path, seed, source_domains, epochs, batch_size, learning_r
             
     print(f"Training completed. Best Accuracy: {best_accuracy:.4f}%")
 
-# Evaluate model under drift
-def evaluate_under_drift(**kwargs):
-    pass
 
 # Apply retraining according to policy
-def retrain_with_policy_under_drift():
-    pass
+def retrain_with_policy_under_drift(
+    source_domains,
+    target_domains,
+    model_path,
+    seed,
+    drift_rate,
+    n_rounds,
+    learning_rate=0.01,
+    policy_id=0,
+    setting_id=0,
+    batch_size=128,
+    alpha=1.0,
+    beta=1.0
+):
+    set_seed(seed)
+    
+    # Initialize data handler
+    data_handler = PACSDataHandler()
+    data_handler.load_data()
+    train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
+    
+    # Set up domain drift for training and testing
+    train_drift = PACSDomainDrift(
+        source_domains=source_domains,
+        target_domains=target_domains,
+        drift_rate=drift_rate
+    )
+    
+    test_drift = PACSDomainDrift(
+        source_domains=source_domains,
+        target_domains=target_domains,
+        drift_rate=drift_rate
+    )
+    
+    # Initialize client
+    client = FederatedDriftClient(
+        client_id=0,
+        model_architecture=PACSCNN,
+        train_domain_drift=train_drift,
+        test_domain_drift=test_drift
+    )
+    
+    # Set up data loaders
+    train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
+    test_loader = DataLoader(test_data, batch_size=batch_size)
+    client.set_data(train_loader, test_loader)
+    
+    # Load pre-trained model
+    model = client.get_model()
+    model.load_state_dict(torch.load(model_path))
+    
+    # Initialize optimizer and criterion
+    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    criterion = nn.CrossEntropyLoss()
+    
+    # Initialize results list
+    results = []
+    
+    # Training loop with policy decisions
+    for t in range(n_rounds):
+        # Apply drift
+        client.apply_test_drift()
+        client.apply_train_drift()
+        
+        # Evaluate current performance
+        current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
+        current_loss = client.evaluate(metric_fn=criterion, verbose=True)
+        
+        # Get policy decision
+        decision = policy_decision(decision_id=policy_id)
+        
+        # Calculate cost
+        cost = cost_function(decision, current_loss, alpha=alpha, beta=beta)
+        
+        # Retrain if policy decides to
+        if decision == 1:
+            client.train(
+                epochs=1,
+                optimizer=optimizer,
+                loss_fn=criterion,
+                verbose=False
+            )
+        
+        # Save results
+        results.append({
+            't': t,
+            'accuracy': current_accuracy,
+            'loss': current_loss,
+            'decision': decision,
+            'cost': cost
+        })
+        
+        # Optional progress printing
+        print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}, Cost = {cost:.4f}")
+    
+    # Save results to CSV with hyperparameters
+    src_domains_str = "_".join(source_domains)
+    tgt_domains_str = "_".join(target_domains) 
+    results_filename = f"../data/results/policy_{policy_id}_setting_{setting_id}_src_domains_{src_domains_str}_tgt_domains_{tgt_domains_str}_seed_{seed}.csv"
+    
+    with open(results_filename, 'w', newline='') as f:
+        writer = csv.writer(f)
+        
+        # First write all hyperparameters
+        writer.writerow(['Parameter', 'Value'])
+        writer.writerow(['source_domains', ','.join(source_domains)])
+        writer.writerow(['target_domains', ','.join(target_domains)])
+        writer.writerow(['model_path', model_path])
+        writer.writerow(['seed', seed])
+        writer.writerow(['drift_rate', drift_rate])
+        writer.writerow(['n_rounds', n_rounds])
+        writer.writerow(['learning_rate', learning_rate])
+        writer.writerow(['policy_id', policy_id])
+        writer.writerow(['setting_id', setting_id])
+        writer.writerow(['batch_size', batch_size])
+        writer.writerow(['alpha', alpha])
+        writer.writerow(['beta', beta])
+        
+        # Add a blank row for separation
+        writer.writerow([])
+        
+        # Write the experimental results
+        writer.writerow(['t', 'accuracy', 'loss', 'decision', 'cost'])
+        for result in results:
+            writer.writerow([result['t'], result['accuracy'], result['loss'], 
+                           result['decision'], result['cost']])
+    
+    return results
 
 # Main Function
 def main():
@@ -187,14 +310,17 @@ def main():
     # Evaluation subparser
     eval_parser = subparsers.add_parser('evaluate', help='Evaluate the PACSCNN model with drift')
     eval_parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
-    eval_parser.add_argument('--src_domains', type=str, nargs='+', default=['photo'], 
-                            help='List of source domains to train on (choose from photo, cartoon, sketch, art_painting)')
-    eval_parser.add_argument('--tgt_domains', type=str, nargs='+', default=['sketch'], 
-                             help='List of target domains to evaluate on (choose from photo, cartoon, sketch, art_painting)')
-    eval_parser.add_argument('--drift_rate', type=float, default=0.1, help='Drift rate to apply (e.g., 0.1)')
-    eval_parser.add_argument('--model_path', type=str, default='../data/models/model_domains_photo.pth', help='Path to the trained model')
-    eval_parser.add_argument('--n_rounds', type=int, default=200, help='Number of drift evaluation rounds')
-    eval_parser.add_argument('--results_dir', type=str, default='../data/results', help='Directory to save evaluation results')
+    eval_parser.add_argument('--src_domains', type=str, nargs='+', default=['photo'],
+                            help='List of source domains (1-3 domains)')
+    eval_parser.add_argument('--tgt_domains', type=str, nargs='+', default=['art_painting'],
+                            help='List of target domains for evaluation')
+    eval_parser.add_argument('--drift_rate', type=float, default=0.1, help='Drift rate')
+    eval_parser.add_argument('--n_rounds', type=int, default=300, help='Number of evaluation rounds')
+    eval_parser.add_argument('--lr', type=float, default=0.001, help='Learning rate for SGD')
+    eval_parser.add_argument('--policy_id', type=int, default=0, help='Policy ID for retraining decisions')
+    eval_parser.add_argument('--setting_id', type=int, default=0, help='Setting ID for hyperparameter configuration')
+    eval_parser.add_argument('--alpha', type=float, default=1.0, help='Cost function alpha parameter')
+    eval_parser.add_argument('--beta', type=float, default=1.0, help='Cost function beta parameter')
     
     args = parser.parse_args()
     
@@ -213,7 +339,7 @@ def main():
         
         # Define model save path with domains in filename
         domains_str = "_".join(source_domains)
-        model_filename = f"model_domains_{domains_str}.pth"
+        model_filename = f"../../../models/concept_drift_models/model_domains_{domains_str}.pth"
         model_path = os.path.join(model_save_dir, model_filename)
         
         # Train the model
@@ -227,34 +353,25 @@ def main():
             optimizer_choice=optimizer_choice,
         )
         
-    elif args.mode == 'evaluate':
-        # Extract evaluation arguments
-        seed = args.seed
-        target_domains = args.target_domains
-        drift_rate = args.drift_rate
-        model_path = args.model_path
-        n_rounds = args.n_rounds
-        results_dir = args.results_dir
+    if args.mode == 'evaluate':
+        # Construct model path based on source domains
+        domains_str = "_".join(args.src_domains)
+        model_path = f"../../../models/concept_drift_models/model_domains_{domains_str}.pth"
         
-        # Validate target domains
-        available_domains = ['photo', 'cartoon', 'sketch', 'art_painting']
-        for domain in target_domains:
-            if domain not in available_domains:
-                raise ValueError(f"Invalid target domain: {domain}. Available domains: {available_domains}")
-        
-        # Create results directory if it doesn't exist
-        os.makedirs(results_dir, exist_ok=True)
-        
-        # Evaluate the model with drift
-        evaluate_under_drift(
+        # Run evaluation with drift
+        results = retrain_with_policy_under_drift(
+            source_domains=args.src_domains,
+            target_domains=args.tgt_domains,
             model_path=model_path,
-            seed=seed,
-            target_domains=target_domains,
-            drift_rate=drift_rate,
-            n_rounds=n_rounds,
-            results_dir=results_dir
+            seed=args.seed,
+            drift_rate=args.drift_rate,
+            n_rounds=args.n_rounds,
+            learning_rate=args.lr,
+            policy_id=args.policy_id,
+            setting_id=args.setting_id,
+            alpha=args.alpha,
+            beta=args.beta
         )
-        
     else:
         print("Invalid mode selected. Choose 'train' or 'evaluate'.")
 
