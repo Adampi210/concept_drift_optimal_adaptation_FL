@@ -15,7 +15,7 @@ setting_id=0
 alpha=1.0
 beta=1.0
 drift_rate=0.1  # Adjust as needed
-n_rounds=300    # Adjust as needed
+n_rounds=100    # Adjust as needed
 learning_rate=0.001  # Adjust as needed
 
 # Directories for logs and models
