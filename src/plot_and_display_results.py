@@ -1,184 +1,274 @@
-import matplotlib.pyplot as plt
 import os
 import glob
 import re
+import pandas as pd
 import numpy as np
+import matplotlib.pyplot as plt
 from collections import defaultdict
 
-def plot_metrics(data_path):
-    # Initialize lists to store data
-    epochs = []
-    accuracies = []
-    costs = []
-   
-    # Read the file and parse data
-    with open(data_path, 'r') as f:
-        # Skip parameter lines
-        for _ in range(15):
-            next(f)
-           
-        # Read the actual data
-        for i, line in enumerate(f):
-            t, acc, _, _, cost = map(float, line.strip().split(','))
-            epochs.append(t)
-            accuracies.append(acc * 100)  # Convert to percentage
-            costs.append(cost)
-            if i > 20:
-                break
-
-    # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
-   
-    # Plot accuracy
-    ax1.plot(epochs, accuracies, 'b-', linewidth=2)
-    ax1.set_xlabel('Epochs')
-    ax1.set_ylabel('Accuracy (%)')
-    ax1.set_title('Model Accuracy over Time')
-    ax1.grid(True)
-   
-    # Plot cost
-    ax2.plot(epochs, costs, 'r-', linewidth=2)
-    ax2.set_xlabel('Epochs')
-    ax2.set_ylabel('Cost')
-    ax2.set_title('Model Cost over Time')
-    ax2.grid(True)
-   
-    # Adjust layout to prevent overlap
-    plt.tight_layout()
-   
-    # Save the figure with .png extension instead of .csv
-    output_path = os.path.splitext(data_path)[0] + '.png'
-    output_dir = os.path.join(os.path.dirname(os.path.dirname(data_path)), 'plots')
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, os.path.basename(output_path))
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-   
-    return fig
-
-def plot_averaged_metrics(base_filename):
+def read_main_data(main_path):
     """
-    Plot averaged metrics for all files matching the base filename pattern with different seeds.
-    
+    Reads the main PACSCNN CSV file.
+
     Args:
-        base_filename (str): Base filename pattern like 'policy_0_setting_0_src_domains_cartoon_tgt_domains_art_painting'
-                           (without the '_seed_X.csv' part)
-    """
-    # Extract directory and create full pattern for glob
-    data_dir = os.path.dirname(base_filename)
-    if not data_dir:
-        data_dir = '.'
-    
-    # Create the pattern to match files with any seed
-    base_pattern = os.path.basename(base_filename)
-    pattern = os.path.join(data_dir, f"{base_pattern}_seed_*.csv")
-    
-    files = glob.glob(pattern)
-    if not files:
-        raise ValueError(f"No files found matching pattern: {pattern}")
-    
-    print(f"Found {len(files)} files to average")
-    
-    # Dictionary to store data for averaging
-    all_data = defaultdict(lambda: {'accuracies': [], 'costs': []})
-    epochs = None
-    
-    # Read all matching files
-    for file_path in files:
-        current_epochs = []
-        current_accuracies = []
-        current_costs = []
-        
-        with open(file_path, 'r') as f:
-            # Skip parameter lines
-            for _ in range(15):
-                next(f)
-            
-            # Read the actual data
-            for i, line in enumerate(f):
-                t, acc, _, _, cost = map(float, line.strip().split(','))
-                current_epochs.append(t)
-                current_accuracies.append(acc * 100)  # Convert to percentage
-                current_costs.append(cost)
-                if i > 20:
-                    break
-        
-        # Store the first epochs array as reference
-        if epochs is None:
-            epochs = current_epochs
-        
-        # Store data for averaging
-        for i, epoch in enumerate(current_epochs):
-            all_data[epoch]['accuracies'].append(current_accuracies[i])
-            all_data[epoch]['costs'].append(current_costs[i])
-    
-    # Calculate averages and standard deviations
-    avg_accuracies = [np.mean(all_data[epoch]['accuracies']) for epoch in epochs]
-    avg_costs = [np.mean(all_data[epoch]['costs']) for epoch in epochs]
-    std_accuracies = [np.std(all_data[epoch]['accuracies']) for epoch in epochs]
-    std_costs = [np.std(all_data[epoch]['costs']) for epoch in epochs]
-    
-    # Create figure with two subplots
-    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
-    
-    # Plot average accuracy with standard deviation
-    ax1.plot(epochs, avg_accuracies, 'b-', linewidth=2, label='Average')
-    ax1.fill_between(epochs, 
-                    [a - s for a, s in zip(avg_accuracies, std_accuracies)],
-                    [a + s for a, s in zip(avg_accuracies, std_accuracies)],
-                    color='b', alpha=0.2, label='±1 std')
-    ax1.set_xlabel('Epochs')
-    ax1.set_ylabel('Average Accuracy (%)')
-    ax1.set_title('Average Model Accuracy over Time')
-    ax1.grid(True)
-    ax1.legend()
-    
-    # Plot average cost with standard deviation
-    ax2.plot(epochs, avg_costs, 'r-', linewidth=2, label='Average')
-    ax2.fill_between(epochs,
-                    [c - s for c, s in zip(avg_costs, std_costs)],
-                    [c + s for c, s in zip(avg_costs, std_costs)],
-                    color='r', alpha=0.2, label='±1 std')
-    ax2.set_xlabel('Epochs')
-    ax2.set_ylabel('Average Cost')
-    ax2.set_title('Average Model Cost over Time')
-    ax2.grid(True)
-    ax2.legend()
-    
-    # Adjust layout to prevent overlap
-    plt.tight_layout()
-    
-    # Save the averaged plot
-    output_filename = f"averaged_{os.path.basename(base_filename)}.png"
-    output_dir = os.path.join(os.path.dirname(data_dir), 'plots')
-    os.makedirs(output_dir, exist_ok=True)
-    output_path = os.path.join(output_dir, output_filename)
-    plt.savefig(output_path, dpi=300, bbox_inches='tight')
-    
-    return fig
+        main_path (str): Path to the main PACSCNN CSV file.
 
-def get_unique_base_patterns(directory):
-    # Get all csv files in the directory
-    all_files = glob.glob(os.path.join(directory, "*.csv"))
-    
-    # Use set for unique patterns
-    unique_patterns = set()
-    
-    # Regular expression to match everything before '_seed_'
-    pattern = re.compile(r'(.*?)_seed_\d+\.csv$')
-    
-    for file_path in all_files:
-        match = pattern.search(file_path)
-        if match:
-            base_pattern = match.group(1)
-            unique_patterns.add(base_pattern)
-    
-    # Convert to sorted list for consistent ordering
-    return sorted(list(unique_patterns))
+    Returns:
+        tuple: (epochs, accuracies, losses)
+    """
+    try:
+        df = pd.read_csv(main_path)
+        epochs = df['epoch'].tolist()
+        accuracies = df['accuracy'].tolist()
+        losses = df['loss'].tolist()
+        return epochs, accuracies, losses
+    except Exception as e:
+        print(f"Error reading main file {main_path}: {e}")
+        return [], [], []
+
+def read_drift_data(drift_path):
+    """
+    Reads the drift policy CSV file.
+
+    Args:
+        drift_path (str): Path to the drift policy CSV file.
+
+    Returns:
+        tuple: (t_epochs, accuracies, losses)
+    """
+    t_epochs = []
+    accuracies = []
+    losses = []
+    try:
+        with open(drift_path, 'r') as f:
+            lines = f.readlines()
+        
+        # Find the index where data starts
+        data_start_idx = None
+        for idx, line in enumerate(lines):
+            if line.strip() == 't,accuracy,loss,decision,cost':
+                data_start_idx = idx + 1
+                break
+        
+        if data_start_idx is None:
+            print(f"No data header found in drift file {drift_path}.")
+            return t_epochs, accuracies, losses
+        
+        # Read data starting from data_start_idx
+        for line in lines[data_start_idx:]:
+            parts = line.strip().split(',')
+            if len(parts) < 5:
+                continue  # Skip malformed lines
+            t, acc, loss, _, _ = parts[:5]
+            try:
+                t_epochs.append(int(t))
+                accuracies.append(float(acc) * 100)  # Convert to percentage
+                losses.append(float(loss))
+            except ValueError:
+                continue  # Skip lines with invalid data
+        return t_epochs, accuracies, losses
+    except Exception as e:
+        print(f"Error reading drift file {drift_path}: {e}")
+        return t_epochs, accuracies, losses
+
+def map_drift_to_main(policy_files, main_files):
+    """
+    Maps each drift file to its corresponding main file based on source domain and seed.
+
+    Args:
+        policy_files (list): List of drift policy file paths.
+        main_files (list): List of main PACSCNN file paths.
+
+    Returns:
+        dict: Mapping of (source, target) to list of (main_path, drift_path).
+    """
+    mapping = defaultdict(list)
+    # Compile regex patterns
+    policy_pattern = re.compile(r'policy_\d+_setting_\d+_src_domains_(.*?)_tgt_domains_(.*?)_seed_(\d+)\.csv$')
+    main_pattern = re.compile(r'PACSCNN_(.*?)_seed_(\d+)_results\.csv$')
+
+    # Create a dictionary for main files for quick lookup
+    main_dict = {}
+    for main in main_files:
+        main_match = main_pattern.search(os.path.basename(main))
+        if main_match:
+            source = main_match.group(1)
+            seed = main_match.group(2)
+            main_dict[(source, seed)] = main
+
+    # Iterate over policy files and find corresponding main files
+    for policy in policy_files:
+        policy_match = policy_pattern.search(os.path.basename(policy))
+        if policy_match:
+            source = policy_match.group(1)
+            target = policy_match.group(2)
+            seed = policy_match.group(3)
+            main_key = (source, seed)
+            if main_key in main_dict:
+                main_path = main_dict[main_key]
+                mapping[(source, target)].append((main_path, policy))
+            else:
+                print(f"No corresponding main file for policy file {policy}. Expected main PACSCNN_{source}_seed_{seed}_results.csv")
+        else:
+            print(f"Policy file {policy} does not match the expected pattern.")
+    return mapping
+
+def average_metrics(combined_data):
+    """
+    Averages the metrics across seeds for each epoch.
+
+    Args:
+        combined_data (dict): Mapping of epoch to list of accuracies and losses.
+
+    Returns:
+        tuple: (sorted_epochs, avg_accuracies, avg_losses, std_accuracies, std_losses)
+    """
+    epochs = sorted(combined_data.keys())
+    avg_accuracies = []
+    avg_losses = []
+    std_accuracies = []
+    std_losses = []
+    for epoch in epochs:
+        accs = combined_data[epoch]['accuracies']
+        losses = combined_data[epoch]['losses']
+        avg_accuracies.append(np.mean(accs))
+        avg_losses.append(np.mean(losses))
+        std_accuracies.append(np.std(accs))
+        std_losses.append(np.std(losses))
+    return epochs, avg_accuracies, avg_losses, std_accuracies, std_losses
+
+def plot_metrics(source, target, epochs, accuracies, losses, std_acc, std_loss, drift_epoch, output_path):
+    """
+    Plots the averaged accuracy and loss with drift indication.
+
+    Args:
+        source (str): Source domain.
+        target (str): Target domain.
+        epochs (list): List of epoch numbers.
+        accuracies (list): Averaged accuracies.
+        losses (list): Averaged losses.
+        std_acc (list): Standard deviation of accuracies.
+        std_loss (list): Standard deviation of losses.
+        drift_epoch (int): Epoch where drift begins.
+        output_path (str): Path to save the plot.
+    """
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
+
+    # Plot Accuracy
+    ax1.plot(epochs, accuracies, color='blue', label='Average Accuracy')
+    ax1.fill_between(epochs, np.array(accuracies) - np.array(std_acc), np.array(accuracies) + np.array(std_acc), 
+                     color='blue', alpha=0.2, label='±1 Std Dev')
+    ax1.axvline(x=drift_epoch, color='red', linestyle='--', linewidth=2, label='Drift Point')
+    ax1.set_ylabel('Accuracy (%)', fontsize=12)
+    ax1.set_title(f'Average Accuracy Over Time\n(Source: {source}, Target: {target})', fontsize=14)
+    ax1.legend(loc='lower right', fontsize=10)
+    ax1.grid(True, linestyle='--', linewidth=0.5)
+
+    # Plot Loss
+    ax2.plot(epochs, losses, color='green', label='Average Loss')
+    ax2.fill_between(epochs, np.array(losses) - np.array(std_loss), np.array(losses) + np.array(std_loss), 
+                     color='green', alpha=0.2, label='±1 Std Dev')
+    ax2.axvline(x=drift_epoch, color='red', linestyle='--', linewidth=2, label='Drift Point')
+    ax2.set_xlabel('Epochs', fontsize=12)
+    ax2.set_ylabel('Loss', fontsize=12)
+    ax2.set_title('Average Loss Over Time', fontsize=14)
+    ax2.legend(loc='upper right', fontsize=10)
+    ax2.grid(True, linestyle='--', linewidth=0.5)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    print(f"Saved plot to {output_path}")
+
+def process_and_plot(mapping, output_dir, policy_id=0, main_max_epoch=100):
+    """
+    Processes the mapping and generates plots for each source-target pair.
+
+    Args:
+        mapping (dict): Mapping of (source, target) to list of (main_path, drift_path).
+        output_dir (str): Directory to save the plots.
+        main_max_epoch (int): Maximum epoch in the main training phase.
+    """
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    for (source, target), file_pairs in mapping.items():
+        combined_acc = defaultdict(lambda: {'accuracies': [], 'losses': []})
+        combined_loss = defaultdict(lambda: {'accuracies': [], 'losses': []})
+        
+        for main_path, drift_path in file_pairs:
+            main_epochs, main_accuracies, main_losses = read_main_data(main_path)
+            drift_epochs, drift_accuracies, drift_losses = read_drift_data(drift_path)
+            
+            if not main_epochs or not drift_epochs:
+                print(f"Skipping pair Main: {main_path}, Drift: {drift_path} due to incomplete data.")
+                continue
+            
+            # Determine drift starting epoch
+            last_main_epoch = main_epochs[-1]
+            drift_start_epoch = last_main_epoch + 1
+            
+            # Shift drift epochs
+            shifted_drift_epochs = [epoch + drift_start_epoch for epoch in drift_epochs]
+            
+            # Combine epochs, accuracies, and losses
+            combined_epochs = main_epochs + shifted_drift_epochs
+            combined_accuracies = main_accuracies + drift_accuracies
+            combined_losses = main_losses + drift_losses
+            
+            for epoch, acc, loss in zip(combined_epochs, combined_accuracies, combined_losses):
+                combined_acc[epoch]['accuracies'].append(acc)
+                combined_acc[epoch]['losses'].append(loss)
+        
+        if not combined_acc:
+            print(f"No valid data for Source: {source}, Target: {target}. Skipping plot.")
+            continue
+        
+        # Average metrics
+        sorted_epochs = sorted(combined_acc.keys())
+        avg_accuracies = []
+        avg_losses = []
+        std_acc = []
+        std_loss = []
+        for epoch in sorted_epochs:
+            accs = combined_acc[epoch]['accuracies']
+            losses = combined_acc[epoch]['losses']
+            avg_accuracies.append(np.mean(accs))
+            avg_losses.append(np.mean(losses))
+            std_acc.append(np.std(accs))
+            std_loss.append(np.std(losses))
+        
+        # Drift epoch is where drift starts
+        drift_epoch = main_max_epoch + 1  # Assuming main_max_epoch corresponds to last main epoch
+        
+        # Plot
+        output_filename = f"accuracy_loss_{source}_to_{target}_policy_{policy_id}.png"
+        output_path = os.path.join(output_dir, output_filename)
+        plot_metrics(source, target, sorted_epochs, avg_accuracies, avg_losses, std_acc, std_loss, drift_epoch, output_path)
+
+def plot_policy_results(policy_id):
+    # Define the directory containing all CSV files
+    results_dir = '../data/results/'  # Update this path as per your directory structure
+
+    # Get all CSV files in the directory
+    all_csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+
+    # Separate main files and drift files
+    main_files = [f for f in all_csv_files if os.path.basename(f).startswith('PACSCNN_') and f.endswith('_results.csv')]
+    policy_files = [f for f in all_csv_files if os.path.basename(f).startswith(f'policy_{policy_id}_') and f.endswith('.csv')]
+
+    print(f"Found {len(main_files)} main PACSCNN files.")
+    print(f"Found {len(policy_files)} drift policy_{policy_id} files.")
+
+    # Map drift files to main files
+    mapping = map_drift_to_main(policy_files, main_files)
+
+    print(f"Mapping drift files to main files completed. Found {len(mapping)} unique source-target pairs.")
+
+    # Process mapping and generate plots
+    process_and_plot(mapping, '../data/plots', policy_id)
+
+    print("All plots have been generated.")
 
 if __name__ == "__main__":
-    results_dir = '../data/results/'
-    result_unique_filenames = get_unique_base_patterns(results_dir)
-
-    for result_filename in result_unique_filenames:
-        plot_averaged_metrics(result_filename)
-        
+    plot_policy_results(0)
