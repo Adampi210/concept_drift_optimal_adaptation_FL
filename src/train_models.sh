@@ -1,13 +1,13 @@
 #!/bin/bash
 
 # train_models.sh
-experiment_filename='test_loss_behavior_under_drift.py'
+experiment_filename='pretrain_models.py'
 
 # List of available domains
 domains=("photo" "cartoon" "sketch" "art_painting")
 
 # Seed for all experiments
-seed=42
+seed=2
 
 # Create log directory
 log_dir="../logs"
@@ -60,13 +60,9 @@ for combo in "${combinations[@]}"; do
     echo "Running training for domains: $combo with seed: $seed"
     
     # Run training and log output
-    python3 "$experiment_filename" train \
+    python3 "$experiment_filename" \
         --seed "$seed" \
-        --src_domains $combo \
-        --epochs 100 \
-        --batch_size 128 \
-        --lr 0.001 \
-        --optimizer adam > "$log_file" 2>&1
+        --domains $combo  > "$log_file" 2>&1
     
     echo "Training for domains: $combo completed. Logs saved to $log_file"
 done
