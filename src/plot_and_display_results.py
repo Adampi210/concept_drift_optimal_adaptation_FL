@@ -169,7 +169,7 @@ def plot_metrics(source, target, epochs, accuracies, losses, std_acc, std_loss, 
     ax2.fill_between(epochs, np.array(losses) - np.array(std_loss), np.array(losses) + np.array(std_loss), 
                      color='green', alpha=0.2, label='±1 Std Dev')
     ax2.axvline(x=drift_epoch, color='red', linestyle='--', linewidth=2, label='Drift Point')
-    ax2.set_xlabel('Epochs', fontsize=12)
+    ax2.set_xlabel('Time', fontsize=12)
     ax2.set_ylabel('Loss', fontsize=12)
     ax2.set_title('Average Loss Over Time', fontsize=14)
     ax2.legend(loc='upper right', fontsize=10)
@@ -271,4 +271,4 @@ def plot_policy_results(policy_id):
     print("All plots have been generated.")
 
 if __name__ == "__main__":
-    plot_policy_results(0)
+    plot_policy_results(2)

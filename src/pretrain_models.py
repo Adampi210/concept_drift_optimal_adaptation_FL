@@ -120,7 +120,7 @@ def filter_dataset_by_domain(dataset, domain):
 # Training and Evaluation
 # =========================
 
-def train_model(model_architecture, model_path, seed, domain, epochs, batch_size, learning_rate, optimizer_choice, results_save_path):
+def train_model(model_architecture, model_path, seed, domains, epochs, batch_size, learning_rate, optimizer_choice, results_save_path):
     set_seed(seed)
 
     # Get train and test data
@@ -129,19 +129,20 @@ def train_model(model_architecture, model_path, seed, domain, epochs, batch_size
     train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
 
     available_domains = ['photo', 'cartoon', 'sketch', 'art_painting']
-    if domain not in available_domains:
-        raise ValueError(f"Invalid domain: {domain}. Available domains: {available_domains}")
+    for domain in domains:
+        if domain not in available_domains:
+            raise ValueError(f"Invalid domain: {domain}. Available domains: {available_domains}")
 
     # Only have the specific domain available for training and testing
     train_drift = PACSDomainDrift(
-        source_domains=[domain],
-        target_domains=[domain],
+        source_domains=domains,
+        target_domains=domains,
         drift_rate=1,
     )
 
     test_drift = PACSDomainDrift(
-        source_domains=[domain],
-        target_domains=[domain],
+        source_domains=domains,
+        target_domains=domains,
         drift_rate=1,
     )
 
@@ -261,34 +262,33 @@ def main():
         except KeyError:
             print(f"Model {model_name} is not defined. Skipping.")
             continue
+        domain_str = '_'.join(args.domains)
+        print(f"\n========== Training {model_name} on Domain: {domain_str} ==========")
 
-        for domain in args.domains:
-            print(f"\n========== Training {model_name} on Domain: {domain} ==========")
+        # Define model save path
+        model_filename = f"{model_name}_{domain_str}_seed_{args.seed}.pth"
+        model_save_path = os.path.join(args.model_save_dir, model_filename)
 
-            # Define model save path
-            model_filename = f"{model_name}_{domain}_seed_{args.seed}.pth"
-            model_save_path = os.path.join(args.model_save_dir, model_filename)
+        # Define results save path
+        results_filename = f"{model_name}_{domain_str}_seed_{args.seed}_results.csv"
+        results_save_path = os.path.join(args.results_save_dir, results_filename)
 
-            # Define results save path
-            results_filename = f"{model_name}_{domain}_seed_{args.seed}_results.csv"
-            results_save_path = os.path.join(args.results_save_dir, results_filename)
-
-            # Train the model
-            try:
-                train_model(
-                    model_architecture=model_class,
-                    model_path=model_save_path,
-                    seed=args.seed,
-                    domain=domain,
-                    epochs=args.epochs,
-                    batch_size=args.batch_size,
-                    learning_rate=args.learning_rate,
-                    optimizer_choice=args.optimizer,
-                    results_save_path=results_save_path
-                )
-            except Exception as e:
-                print(f"An error occurred while training {model_name} on {domain}: {e}")
-                continue
+        # Train the model
+        try:
+            train_model(
+                model_architecture=model_class,
+                model_path=model_save_path,
+                seed=args.seed,
+                domains=args.domains,
+                epochs=args.epochs,
+                batch_size=args.batch_size,
+                learning_rate=args.learning_rate,
+                optimizer_choice=args.optimizer,
+                results_save_path=results_save_path
+            )
+        except Exception as e:
+            print(f"An error occurred while training {model_name} on {domain}: {e}")
+            continue
 
     print("\n========== All Trainings Completed ==========")
 
