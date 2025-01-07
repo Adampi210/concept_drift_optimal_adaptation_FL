@@ -6,7 +6,7 @@ experiment_filename='pretrain_models.py'
 domains=("photo" "cartoon" "sketch" "art_painting")
 
 # Seed for all experiments
-seed=3
+seed=4
 
 # Create log directory
 log_dir="../logs"

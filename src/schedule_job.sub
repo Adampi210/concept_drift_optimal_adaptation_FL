@@ -1,10 +1,10 @@
 #!/bin/bash
-#SBATCH -A standby
+#SBATCH -A cgb2-n
 #SBATCH --nodes=1
 #SBATCH --ntasks=18
 #SBATCH --cpus-per-task=1
 #SBATCH --gpus-per-node=1
-#SBATCH --time=4:00:00
+#SBATCH --time=96:00:00
 
 # Some useful commands
 # run the job:          sbatch run_experiments.sub
@@ -23,5 +23,5 @@ module load anaconda
 conda activate $conda_env_used
 
 # Run the experiment code
-python3 pretrain_models.py --seed 1 --domains cartoon sketch art_painting
-# ./train_models.sh
+# python3 pretrain_models.py --seed 2 --domains cartoon sketch art_painting
+./train_models.sh
