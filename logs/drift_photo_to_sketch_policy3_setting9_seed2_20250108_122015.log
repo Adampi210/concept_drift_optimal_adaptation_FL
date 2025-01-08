@@ -1,0 +1,30 @@
+/home/apiasecz/.conda/envs/cent7/2024.02-py311/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with a cudnnException: CUDNN_BACKEND_EXECUTION_PLAN_DESCRIPTOR: cudnnFinalize Descriptor Failed cudnn_status: CUDNN_STATUS_NOT_SUPPORTED (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:919.)
+  return F.conv2d(input, weight, bias, self.stride,
+seed: 2
+policy_id: 3
+setting_id: 9
+pi_bar: 0.3
+drift_rate: 0.01
+V: 5
+0.027593630281361664 0.04
+Round 0: Accuracy = 0.7992, Decision = 0
+0.019669292325323273 0.04
+Round 1: Accuracy = 0.7941, Decision = 0
+0.029487733813849365 0.04
+Round 2: Accuracy = 0.7918, Decision = 0
+0.005612149862854771 0.04
+Round 3: Accuracy = 0.7924, Decision = 0
+0.0534943581248323 0.04
+Traceback (most recent call last):
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 309, in <module>
+    main()
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 292, in main
+    results = retrain_with_policy_under_drift(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 192, in retrain_with_policy_under_drift
+    decision = policy.policy_decision(decision_id=policy_id, pi_bar=pi_bar, V=V, current_time=t, loss_diff=loss_array[-1] - loss_array[-2]) 
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 91, in policy_decision
+    self.update_history.append(current_time)
+                               ^^^^^^^^^^^^
+NameError: name 'current_time' is not defined. Did you mean: 'current_tme'?

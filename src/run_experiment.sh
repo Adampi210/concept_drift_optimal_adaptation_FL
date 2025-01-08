@@ -1,33 +1,72 @@
 #!/bin/bash
 
 # run_experiment.sh
+# This script runs the test_loss_behavior_under_drift.py experiment for multiple seeds with fixed configurations.
+
+# Path to the Python experiment script
 experiment_filename='test_loss_behavior_under_drift.py'
 
-# Array of configurations
-configs=(
-    "slow_rotation"
+# ===========================
+# === CONFIGURATION SETUP ===
+# ===========================
 
-)
+# Define fixed configurations
+# Modify these variables as needed for your experiment
+SRC_DOMAINS=("photo")             # Source domains (space-separated if multiple)
+TGT_DOMAINS=("sketch")            # Target domains (space-separated if multiple)
+POLICY_ID=2                       # Policy ID for retraining decisions
+SETTING_ID=0                      # Setting ID for hyperparameter configuration
 
-# Array of seeds
-seeds=(0 1 2)
+# Array of seeds for reproducibility
+seeds=(0 1 2 3 4)                   # Add or remove seeds as needed
 
-# Create log directory
+# Directory to store log files
 log_dir="../logs"
-mkdir -p $log_dir
+mkdir -p "$log_dir"                # Create log directory if it doesn't exist
 
-# Get current timestamp for log files
+# Get current timestamp to append to log filenames for uniqueness
 timestamp=$(date +%Y%m%d_%H%M%S)
 
-# Loop through all combinations
-for config in "${configs[@]}"; do
-    for seed in "${seeds[@]}"; do
-        # Create log filename
-        log_file="$log_dir/drift_${config}_seed_${seed}_${timestamp}.log"
-        
-        echo "Running configuration: $config with seed: $seed"
-        # Run experiment and log output
-        python3 $experiment_filename --seed $seed --config $config > "$log_file" 2>&1 &
-        wait
-    done
+# =============================
+# === EXPERIMENT EXECUTION ===
+# =============================
+
+# Loop through each seed and run the experiment
+for seed in "${seeds[@]}"; do
+    # Construct a unique log filename based on configuration and seed
+    # Replace spaces with underscores for readability
+    src_domains_str=$(IFS=, ; echo "${SRC_DOMAINS[*]}")
+    tgt_domains_str=$(IFS=, ; echo "${TGT_DOMAINS[*]}")
+    log_file="$log_dir/drift_${src_domains_str}_to_${tgt_domains_str}_policy${POLICY_ID}_setting${SETTING_ID}_seed${seed}_${timestamp}.log"
+
+    # Display the current experiment configuration
+    echo "=========================================="
+    echo "Running experiment with the following configuration:"
+    echo "  Source Domains : ${SRC_DOMAINS[*]}"
+    echo "  Target Domains : ${TGT_DOMAINS[*]}"
+    echo "  Policy ID      : ${POLICY_ID}"
+    echo "  Setting ID     : ${SETTING_ID}"
+    echo "  Seed           : ${seed}"
+    echo "  Logging to     : ${log_file}"
+    echo "=========================================="
+
+    # Execute the Python experiment script with the specified arguments
+    python3 "$experiment_filename" \
+        --seed "$seed" \
+        --src_domains "${SRC_DOMAINS[@]}" \
+        --tgt_domains "${TGT_DOMAINS[@]}" \
+        --policy_id "$POLICY_ID" \
+        --setting_id "$SETTING_ID" \
+        > "$log_file" 2>&1
+
+    # Check if the Python script executed successfully
+    if [ $? -eq 0 ]; then
+        echo "Experiment with seed ${seed} completed successfully."
+    else
+        echo "Experiment with seed ${seed} failed. Check the log file for details."
+    fi
+
+    echo ""  # Add an empty line for readability
 done
+
+echo "All experiments have been executed. Check the '$log_dir' directory for log files."

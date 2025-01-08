@@ -1,5 +1,5 @@
 #!/bin/bash
-#SBATCH -A cgb2-n
+#SBATCH -A cgb-n
 #SBATCH --nodes=1
 #SBATCH --ntasks=18
 #SBATCH --cpus-per-task=1
@@ -23,5 +23,4 @@ module load anaconda
 conda activate $conda_env_used
 
 # Run the experiment code
-# python3 pretrain_models.py --seed 2 --domains cartoon sketch art_painting
-./train_models.sh
+./run_experiment.sh

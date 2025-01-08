@@ -55,28 +55,13 @@ class PACSCNN(BaseModelArchitecture):
 class Policy:
     def __init__(self):
         self.virtual_queue = 0
-        self.update_history = []
-        self.previous_loss = None
-        
-    def estimate_ci(self, current_loss):
-        if not self.update_history or self.previous_loss is None:
-            return 1.0  # Default value for initialization
-            
-        loss_diff = abs(current_loss - self.previous_loss)
-        time_diff = self.update_history[-1][0] - (len(self.update_history) > 1 and self.update_history[-2][0] or 0)
-        
-        if time_diff == 0:
-            return 1.0
-            
-        return loss_diff / time_diff
-        
+        self.update_history = []        
+
     def policy_decision(self, decision_id: int, **kwargs):
         pi_bar = kwargs.get('pi_bar', 0.1)
+        loss_diff = kwargs.get('loss_diff', 0)
         current_time = kwargs.get('current_time', 0)
-        current_loss = kwargs.get('current_loss', None)
         V = kwargs.get('V', 1.0)
-        delta = kwargs.get('delta', 0.1)
-        lambda_cost = kwargs.get('lambda_cost', 1.0)
         
         if decision_id == 0:
             return 0
@@ -92,23 +77,18 @@ class Policy:
             
         elif decision_id == 3:
             # Lyapunov optimization based policy
-            if current_loss is None:
-                return 0
-                
-            # Estimate c_i
-            ci = self.estimate_ci(current_loss)
-            
-            # Update virtual queue
-            threshold = (self.virtual_queue + 0.5 - pi_bar/lambda_cost) / (V * delta)
-            
+            # Calculate the threshold
+            threshold = (self.virtual_queue + 0.5 - pi_bar) / V
+            print(loss_diff, threshold)
             # Make decision
-            should_update = ci > threshold
+            should_update = loss_diff > threshold
             
             # Update queue
+            self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
+
+
             if should_update:
-                self.virtual_queue = max(0, self.virtual_queue + 1 - pi_bar/lambda_cost)
-                self.update_history.append((current_time, current_loss))
-                self.previous_loss = current_loss
+                self.update_history.append(current_time)
                 
             return int(should_update)
             
@@ -119,7 +99,6 @@ class Policy:
         """Reset internal state"""
         self.virtual_queue = 0
         self.update_history = []
-        self.previous_loss = None
 
 # Set seed for reproducibility
 def set_seed(seed):
@@ -130,17 +109,13 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-# Calculate cost of update/no update
-def cost_function(decision, current_loss, alpha=1.0, beta=1.0):
-    return alpha * decision + beta * current_loss
-
 # Save results to CSV
 def save_results(results, filepath):
     with open(filepath, 'w', newline='') as f:
         writer = csv.writer(f)
-        writer.writerow(['t', 'loss', 'decision', 'cost'])  # Header
+        writer.writerow(['t', 'loss', 'decision'])  # Header
         for result in results:
-            writer.writerow([result['t'], result['loss'], result['decision'], result['cost']])
+            writer.writerow([result['t'], result['loss'], result['decision']])
 
 # Apply retraining according to policy
 def retrain_with_policy_under_drift(
@@ -153,9 +128,7 @@ def retrain_with_policy_under_drift(
     learning_rate=0.01,
     policy_id=0,
     setting_id=0,
-    batch_size=128,
-    alpha=1.0,
-    beta=1.0, 
+    batch_size=128, 
     pi_bar=0.1,
     V=1
 ):
@@ -198,9 +171,10 @@ def retrain_with_policy_under_drift(
     model.load_state_dict(torch.load(model_path))
     
     # Initialize optimizer and criterion
-    optimizer = optim.SGD(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
-    
+    loss_array = []
+    loss_array.append(client.get_train_metric(metric_fn=criterion, verbose=False))
     # Initialize results list
     results = []
     
@@ -212,23 +186,21 @@ def retrain_with_policy_under_drift(
         
         # Evaluate current performance
         current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
-        current_loss = client.evaluate(metric_fn=criterion, verbose=True)
-        
+        current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
+        loss_array.append(current_loss)
         # Get policy decision
-        decision = policy.policy_decision(decision_id=policy_id, pi_bar=pi_bar, V=V, current_time=t)
-        if decision:
-            print('Retraining')
-        # Calculate cost
-        cost = cost_function(decision, current_loss, alpha=alpha, beta=beta)
-        
+        decision = policy.policy_decision(decision_id=policy_id, pi_bar=pi_bar, V=V, current_time=t, loss_diff=loss_array[-1] - loss_array[-2]) 
+
         # Retrain if policy decides to
-        if decision == 1:
-            client.train(
-                epochs=1,
+        if decision:
+            current_loss = client.train(
+                epochs=10,
                 optimizer=optimizer,
                 loss_fn=criterion,
-                verbose=False
+                verbose=True
             )
+        else:
+            current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
         
         # Save results
         results.append({
@@ -236,11 +208,10 @@ def retrain_with_policy_under_drift(
             'accuracy': current_accuracy,
             'loss': current_loss,
             'decision': decision,
-            'cost': cost
         })
         
         # Optional progress printing
-        print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}, Cost = {cost:.4f}")
+        print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}")
     
     # Save results to CSV with hyperparameters
     src_domains_str = "_".join(source_domains)
@@ -256,23 +227,21 @@ def retrain_with_policy_under_drift(
         writer.writerow(['target_domains', ','.join(target_domains)])
         writer.writerow(['model_path', model_path])
         writer.writerow(['seed', seed])
-        writer.writerow(['drift_rate', drift_rate])
         writer.writerow(['n_rounds', n_rounds])
         writer.writerow(['learning_rate', learning_rate])
+        writer.writerow(['batch_size', batch_size])
+        writer.writerow(['drift_rate', drift_rate])
         writer.writerow(['policy_id', policy_id])
         writer.writerow(['setting_id', setting_id])
-        writer.writerow(['batch_size', batch_size])
-        writer.writerow(['alpha', alpha])
-        writer.writerow(['beta', beta])
         
         # Add a blank row for separation
         writer.writerow([])
         
         # Write the experimental results
-        writer.writerow(['t', 'accuracy', 'loss', 'decision', 'cost'])
+        writer.writerow(['t', 'accuracy', 'loss', 'decision'])
         for result in results:
             writer.writerow([result['t'], result['accuracy'], result['loss'], 
-                           result['decision'], result['cost']])
+                           result['decision']])
     
     return results
 
@@ -286,14 +255,11 @@ def main():
                         help='List of source domains (1-3 domains)')
     parser.add_argument('--tgt_domains', type=str, nargs='+', default=['sketch'],
                         help='List of target domains for evaluation')
-    parser.add_argument('--drift_rate', type=float, default=0.01, help='Drift rate')
-    parser.add_argument('--n_rounds', type=int, default=300, help='Number of evaluation rounds')
-    parser.add_argument('--lr', type=float, default=0.01, help='Learning rate for SGD')
-    parser.add_argument('--policy_id', type=int, default=2, help='Policy ID for retraining decisions')
-    parser.add_argument('--setting_id', type=int, default=1, help='Setting ID for hyperparameter configuration')
-    parser.add_argument('--alpha', type=float, default=1.0, help='Cost function alpha parameter')
-    parser.add_argument('--beta', type=float, default=1.0, help='Cost function beta parameter')
-    
+    parser.add_argument('--n_rounds', type=int, default=200, help='Number of evaluation rounds')
+    parser.add_argument('--lr', type=float, default=0.005, help='Learning rate for SGD')
+    parser.add_argument('--policy_id', type=int, default=0, help='Policy ID for retraining decisions')
+    parser.add_argument('--setting_id', type=int, default=0, help='Setting ID for hyperparameter configuration')
+
     args = parser.parse_args()
 
     # Construct model path based on source domains
@@ -301,45 +267,45 @@ def main():
     model_path = f"../../../models/concept_drift_models/PACSCNN_{domains_str}_seed_{args.seed}.pth"
     
     # SETTINGS
-    # setting_id = 0: pi_bar = 0.1, drift_rate = 0.01, V = 1
-    # setting_id = 1: pi_bar = 0.3, drift_rate = 0.01, V = 1
-    # setting_id = 2: pi_bar = 0.5, drift_rate = 0.01, V = 1
-    # setting_id = 3: pi_bar = 0.7, drift_rate = 0.01, V = 1
-    # setting_id = 4: pi_bar = 0.1, drift_rate = 0.01, V = 0.01
-    # setting_id = 5: pi_bar = 0.3, drift_rate = 0.01, V = 0.01
-    # setting_id = 6: pi_bar = 0.5, drift_rate = 0.01, V = 0.01
-    # setting_id = 7: pi_bar = 0.7, drift_rate = 0.01, V = 0.01
-    # setting_id = 8: pi_bar = 0.1, drift_rate = 0.01, V = 100
-    # setting_id = 9: pi_bar = 0.3, drift_rate = 0.01, V = 100
-    # setting_id = 10: pi_bar = 0.5, drift_rate = 0.01, V = 100
-    # setting_id = 11: pi_bar = 0.7, drift_rate = 0.01, V = 100
-    # Hyperparams
-    # Decrease the drift rate 
-    pi_bar = 0.3
-    V = 1
+    settings = {
+        0: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 2},
+        1: {'pi_bar': 0.3, 'drift_rate': 0.01, 'V': 2},
+        2: {'pi_bar': 0.5, 'drift_rate': 0.01, 'V': 2},
+        3: {'pi_bar': 0.7, 'drift_rate': 0.01, 'V': 2},
+        4: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 1},
+        5: {'pi_bar': 0.3, 'drift_rate': 0.01, 'V': 1},
+        6: {'pi_bar': 0.5, 'drift_rate': 0.01, 'V': 1},
+        7: {'pi_bar': 0.7, 'drift_rate': 0.01, 'V': 1},
+        8: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 5},
+        9: {'pi_bar': 0.3, 'drift_rate': 0.01, 'V': 5},
+        10: {'pi_bar': 0.5, 'drift_rate': 0.01, 'V': 5},
+        11: {'pi_bar': 0.7, 'drift_rate': 0.01, 'V': 5},
+    }
+    
+    print(f'seed: {args.seed}')
     print(f'policy_id: {args.policy_id}')
     print(f'setting_id: {args.setting_id}')
-    print(f'drift_rate: {args.drift_rate}')
-    print(f'pi_bar: {pi_bar}')
-    print(f'V: {V}')
+    print(f'pi_bar: {settings[args.setting_id]['pi_bar']}')
+    print(f'drift_rate: {settings[args.setting_id]['drift_rate']}')
+    print(f'V: {settings[args.setting_id]['V']}')
     # Run evaluation with drift
     results = retrain_with_policy_under_drift(
         source_domains=args.src_domains,
         target_domains=args.tgt_domains,
         model_path=model_path,
         seed=args.seed,
-        drift_rate=args.drift_rate,
+        drift_rate=settings[args.setting_id]['drift_rate'],
         n_rounds=args.n_rounds,
         learning_rate=args.lr,
         policy_id=args.policy_id,
         setting_id=args.setting_id,
-        alpha=args.alpha,
-        beta=args.beta, 
-        pi_bar=pi_bar,
-        V=V
+        pi_bar=settings[args.setting_id]['pi_bar'],
+        V=settings[args.setting_id]['V']
     )
 
 
 # Ensure the script runs only when executed directly
 if __name__ == "__main__":
     main()
+    
+# Change the rate of data drifit bouded by some \rate_max for one setting
