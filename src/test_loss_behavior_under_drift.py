@@ -194,7 +194,7 @@ def retrain_with_policy_under_drift(
         # Retrain if policy decides to
         if decision:
             current_loss = client.train(
-                epochs=10,
+                epochs=5,
                 optimizer=optimizer,
                 loss_fn=criterion,
                 verbose=True
@@ -264,22 +264,70 @@ def main():
 
     # Construct model path based on source domains
     domains_str = "_".join(args.src_domains)
-    model_path = f"../../../models/concept_drift_models/PACSCNN_{domains_str}_seed_{args.seed}.pth"
+    model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/PACSCNN_{domains_str}_seed_{args.seed}.pth"
     
     # SETTINGS
     settings = {
         0: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 2},
-        1: {'pi_bar': 0.3, 'drift_rate': 0.01, 'V': 2},
-        2: {'pi_bar': 0.5, 'drift_rate': 0.01, 'V': 2},
-        3: {'pi_bar': 0.7, 'drift_rate': 0.01, 'V': 2},
-        4: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 1},
-        5: {'pi_bar': 0.3, 'drift_rate': 0.01, 'V': 1},
-        6: {'pi_bar': 0.5, 'drift_rate': 0.01, 'V': 1},
-        7: {'pi_bar': 0.7, 'drift_rate': 0.01, 'V': 1},
-        8: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 5},
-        9: {'pi_bar': 0.3, 'drift_rate': 0.01, 'V': 5},
-        10: {'pi_bar': 0.5, 'drift_rate': 0.01, 'V': 5},
-        11: {'pi_bar': 0.7, 'drift_rate': 0.01, 'V': 5},
+        1: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 2.5},
+        2: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 3},
+        3: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 3.5},
+        4: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 4},
+        5: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 4.5},
+        6: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 5},
+        7: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 5.5},
+        8: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 6},
+        9: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 6.5},
+        10: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 2},
+        11: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 2.5},
+        12: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 3},
+        13: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 3.5},
+        14: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 4},
+        15: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 4.5},
+        16: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 5},
+        17: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 5.5},
+        18: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 6},
+        19: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 6.5},
+        20: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 7},
+        21: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 7.5},
+        22: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 8},
+        23: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 8.5},
+        24: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 9},
+        25: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 9.5},
+        26: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 10},
+        27: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 10.5},
+        28: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 11},
+        29: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 11.5},
+        30: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 12},
+        31: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 12.5},
+        32: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 13},
+        33: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 13.5},
+        34: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 14},
+        35: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 14.5},
+        36: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 15},
+        37: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 15.5},
+        38: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 16},
+        39: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 16.5},
+        40: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 20},
+        41: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 25},
+        42: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 30},
+        43: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 35},
+        44: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 40},
+        45: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 45},
+        46: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 50},
+        47: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 55},
+        48: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 60},
+        49: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 65},
+        50: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 70},
+        51: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 75},
+        52: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 80},
+        53: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 85},
+        54: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 90},
+        55: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 95},
+        56: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 100},
+        57: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 105},
+        58: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 110},
+        59: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 115}
     }
     
     print(f'seed: {args.seed}')
@@ -309,3 +357,6 @@ if __name__ == "__main__":
     main()
     
 # Change the rate of data drifit bouded by some \rate_max for one setting
+# 8 1to1, 8 2to2, 2 3to3
+# Another image dataset - look into experiments on that. See if there are other like PACS that already have different domains 
+# Text dataset - what we could run there. (Optional, do last) 

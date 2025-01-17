@@ -362,8 +362,12 @@ if __name__ == "__main__":
     target_domains = ['sketch',]
 
     # Specify the policy_id and setting_id you want to plot
-    policy_id = 1
-    setting_id = 0
+    policy_id = 3
+    # setting_id = 16
 
     # Call the main plotting function with the specified parameters
-    plot_policy_results(policy_id, setting_id, source_domains, target_domains)
+    for setting_id in range(20, 55):
+        plot_policy_results(policy_id, setting_id, source_domains, target_domains)
+        
+    # 
+
