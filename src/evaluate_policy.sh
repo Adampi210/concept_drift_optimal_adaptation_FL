@@ -7,7 +7,7 @@ experiment_filename='test_loss_behavior_under_drift.py'
 domains=("photo" "cartoon" "sketch" "art_painting")
 
 # List of seeds for reproducibility
-seeds=(0)
+seeds=(0 1 2 3 4)
 
 # Policy and hyperparameters (fixed for now)
 policy_id=0

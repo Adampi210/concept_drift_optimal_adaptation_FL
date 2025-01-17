@@ -12,12 +12,12 @@ experiment_filename='test_loss_behavior_under_drift.py'
 
 # Define fixed configurations
 # Modify these variables as needed for your experiment
-SRC_DOMAINS=("photo")             # Source domains (space-separated if multiple)
-TGT_DOMAINS=("sketch")            # Target domains (space-separated if multiple)
+SRC_DOMAINS=("cartoon")             # Source domains (space-separated if multiple)
+TGT_DOMAINS=("photo")            # Target domains (space-separated if multiple)
 POLICY_ID=3                       # Fixed Policy ID for retraining decisions
 
 # Array of Setting IDs to iterate over
-SETTING_IDS=(55 56 57 58 59)                 # Add or remove Setting IDs as needed
+SETTING_IDS=(50 51 52 53 54 55 56 57 58 59)                 # Add or remove Setting IDs as needed
 
 # Array of seeds for reproducibility
 seeds=(0 1 2 4 5)                   # Add or remove seeds as needed
