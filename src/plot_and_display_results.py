@@ -355,6 +355,102 @@ def plot_policy_results(policy_id, setting_id, source_domains, target_domains):
 
     print("\nAll specified plots have been generated.")
 
+def calculate_pi_bar_for_policy_setting(policy_id, setting_id, results_dir="../data/results/"):
+    """
+    Calculates the averaged pi_bar (across all seeds) for a given policy and setting.
+    pi_bar is defined as:
+      (number of 'decision' == 1) / (total number of rows in the data section),
+    summed over all files that match the policy/setting.
+    
+    Args:
+        policy_id (int or str): The policy ID to filter.
+        setting_id (int or str): The setting ID to filter.
+        results_dir (str): Path to the directory containing all CSV files.
+    """
+    # Convert to string for consistent pattern matching
+    policy_str = str(policy_id)
+    setting_str = str(setting_id)
+
+    # Example pattern for policy CSV files:
+    # policy_3_setting_49_src_domains_photo_tgt_domains_art_painting_seed_4.csv
+    pattern = re.compile(
+        rf'^policy_{policy_str}_setting_{setting_str}_src_domains_.*_tgt_domains_.*_seed_\d+\.csv$'
+    )
+
+    # Collect all CSV files
+    all_csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+
+    # Filter files matching our policy/setting pattern
+    policy_files = [f for f in all_csv_files if pattern.match(os.path.basename(f))]
+
+    if not policy_files:
+        print(f"No policy files found for Policy ID: {policy_str}, Setting ID: {setting_str}.")
+        return
+
+    total_updates_across_seeds = 0
+    total_rounds_across_seeds = 0
+
+    for policy_file in policy_files:
+        try:
+            with open(policy_file, 'r') as f:
+                lines = f.readlines()
+            
+            # Find where data starts
+            data_start_idx = None
+            for idx, line in enumerate(lines):
+                # The data portion starts at "t,accuracy,loss,decision"
+                if line.strip().startswith('t,accuracy,loss,decision'):
+                    data_start_idx = idx + 1
+                    break
+            
+            if data_start_idx is None:
+                print(f"No valid data section found in {policy_file}. Skipping.")
+                continue
+
+            # Count how many times decision == 1
+            update_count = 0
+            total_count = 0
+
+            # From data_start_idx to the end of file
+            for line in lines[data_start_idx:]:
+                parts = line.strip().split(',')
+                if len(parts) < 4:
+                    continue  # Skip malformed lines
+
+                # decision is the last element
+                decision = parts[3].strip()
+                # Try to parse it as integer
+                try:
+                    decision_int = int(decision)
+                except ValueError:
+                    continue
+
+                total_count += 1
+                if decision_int == 1:
+                    update_count += 1
+
+            if total_count == 0:
+                print(f"No data rows found after header in {policy_file}. Skipping.")
+                continue
+
+            # Accumulate for overall average
+            total_updates_across_seeds += update_count
+            total_rounds_across_seeds += total_count
+
+        except Exception as e:
+            print(f"Error processing file {policy_file}: {e}")
+
+    # Compute final pi_bar if we had valid files
+    if total_rounds_across_seeds == 0:
+        print("No valid data rows found at all. Can't compute pi_bar.")
+        return
+    
+    pi_bar_overall = total_updates_across_seeds / total_rounds_across_seeds
+
+    print(f"Policy ID: {policy_id}, Setting ID: {setting_id}")
+    print(f"Average pi_bar across all seeds = {pi_bar_overall:.4f} "
+          f"(updates={total_updates_across_seeds}, total={total_rounds_across_seeds})")
+
 if __name__ == "__main__":
     # Example usage:
     # Define the list of source and target domains you want to plot
@@ -366,8 +462,8 @@ if __name__ == "__main__":
     # setting_id = 16
 
     # Call the main plotting function with the specified parameters
-    for setting_id in range(20, 55):
+    for setting_id in range(50, 60):
         plot_policy_results(policy_id, setting_id, source_domains, target_domains)
         
-    # 
+    calculate_pi_bar_for_policy_setting(3, 59)
 
