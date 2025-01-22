@@ -355,6 +355,122 @@ def plot_policy_results(policy_id, setting_id, source_domains, target_domains):
 
     print("\nAll specified plots have been generated.")
 
+def plot_multi_policy_results(policy_setting_pairs, source_domain, target_domain):
+    """
+    Plots results for multiple policies on the same plot.
+
+    Args:
+        policy_setting_pairs (list): List of (policy_id, setting_id) tuples
+        source_domain (str): Source domain name
+        target_domain (str): Target domain name
+    """
+    results_dir = '../data/results/'
+    output_dir = '../data/plots'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    all_csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+    combined_data = {}
+
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(policy_setting_pairs)))
+
+    fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(14, 10), sharex=True)
+    drift_epoch = None
+
+    for (policy_id, setting_id), color in zip(policy_setting_pairs, colors):
+        policy_id_str = str(policy_id)
+        setting_id_str = str(setting_id)
+
+        policy_pattern = re.compile(
+            rf'^policy_{policy_id_str}_setting_{setting_id_str}_src_domains_{source_domain}_tgt_domains_{target_domain}_seed_\d+\.csv$'
+        )
+        main_pattern = re.compile(
+            rf'^PACSCNN_{source_domain}_seed_\d+_results\.csv$'
+        )
+
+        policy_files = [f for f in all_csv_files if policy_pattern.match(os.path.basename(f))]
+        main_files = [f for f in all_csv_files if main_pattern.match(os.path.basename(f))]
+
+        mapping = map_drift_to_main(policy_files, main_files)
+        combined_acc = defaultdict(lambda: {'accuracies': [], 'losses': []})
+
+        for (src, tgt, pid, sid), file_pairs in mapping.items():
+            for main_path, drift_path in file_pairs:
+                main_epochs, main_accuracies, main_losses = read_main_data(main_path)
+                drift_epochs, drift_accuracies, drift_losses = read_drift_data(drift_path)
+
+                if not main_epochs or not drift_epochs:
+                    continue
+
+                last_main_epoch = main_epochs[-1]
+                if drift_epoch is None:
+                    drift_epoch = last_main_epoch + 1
+
+                shifted_drift_epochs = [epoch + drift_epoch for epoch in drift_epochs]
+                combined_epochs = main_epochs + shifted_drift_epochs
+                combined_accuracies = main_accuracies + drift_accuracies
+                combined_losses = main_losses + drift_losses
+
+                for epoch, acc, loss in zip(combined_epochs, combined_accuracies, combined_losses):
+                    combined_acc[epoch]['accuracies'].append(acc)
+                    combined_acc[epoch]['losses'].append(loss)
+
+        if combined_acc:
+            epochs = sorted(combined_acc.keys())
+            avg_accuracies = []
+            avg_losses = []
+            std_accuracies = []
+            std_losses = []
+            
+            for epoch in epochs:
+                accs = combined_acc[epoch]['accuracies']
+                losses = combined_acc[epoch]['losses']
+                avg_accuracies.append(np.mean(accs))
+                avg_losses.append(np.mean(losses))
+                std_accuracies.append(np.std(accs))
+                std_losses.append(np.std(losses))
+
+            label = f'Policy {policy_id}, Setting {setting_id}'
+            
+            ax1.plot(epochs, avg_accuracies, color=color, label=label)
+            ax1.fill_between(
+                epochs,
+                np.array(avg_accuracies) - np.array(std_accuracies),
+                np.array(avg_accuracies) + np.array(std_accuracies),
+                color=color,
+                alpha=0.2
+            )
+
+            ax2.plot(epochs, avg_losses, color=color, label=label)
+            ax2.fill_between(
+                epochs,
+                np.array(avg_losses) - np.array(std_losses),
+                np.array(avg_losses) + np.array(std_losses),
+                color=color,
+                alpha=0.2
+            )
+
+    if drift_epoch:
+        ax1.axvline(x=drift_epoch, color='red', linestyle='--', linewidth=2, label='Drift Point')
+        ax2.axvline(x=drift_epoch, color='red', linestyle='--', linewidth=2, label='Drift Point')
+
+    ax1.set_ylabel('Accuracy (%)', fontsize=12)
+    ax1.set_title(f'Average Accuracy Over Time\n(Source: {source_domain}, Target: {target_domain})', fontsize=14)
+    ax1.legend(loc='lower right', fontsize=10)
+    ax1.grid(True, linestyle='--', linewidth=0.5)
+
+    ax2.set_xlabel('Time', fontsize=12)
+    ax2.set_ylabel('Loss', fontsize=12)
+    ax2.set_title('Average Loss Over Time', fontsize=14)
+    ax2.legend(loc='upper right', fontsize=10)
+    ax2.grid(True, linestyle='--', linewidth=0.5)
+
+    plt.tight_layout()
+    output_path = os.path.join(output_dir, f'multi_policy_comparison_{source_domain}_to_{target_domain}.png')
+    plt.savefig(output_path, dpi=300)
+    plt.close()
+    print(f"Saved plot to {output_path}")
+    
 def calculate_pi_bar_for_policy_setting(policy_id, setting_id, results_dir="../data/results/"):
     """
     Calculates the averaged pi_bar (across all seeds) for a given policy and setting.
@@ -460,10 +576,12 @@ if __name__ == "__main__":
     # Specify the policy_id and setting_id you want to plot
     policy_id = 3
     # setting_id = 16
+    plot_multi_policy_results([(3, 59), (0, 0), (1, 0)], 'photo', 'cartoon')
 
     # Call the main plotting function with the specified parameters
-    for setting_id in range(50, 60):
-        plot_policy_results(policy_id, setting_id, source_domains, target_domains)
+    #for setting_id in range(50, 60):
+    #   plot_policy_results(policy_id, setting_id, source_domains, target_domains)
         
     calculate_pi_bar_for_policy_setting(3, 59)
+    
 
