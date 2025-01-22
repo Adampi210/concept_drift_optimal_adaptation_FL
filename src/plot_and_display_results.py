@@ -574,9 +574,7 @@ if __name__ == "__main__":
     target_domains = ['sketch',]
 
     # Specify the policy_id and setting_id you want to plot
-    policy_id = 3
-    # setting_id = 16
-    plot_multi_policy_results([(3, 59), (0, 0), (1, 0)], 'photo', 'cartoon')
+    plot_multi_policy_results([(3, 59), (0, 59), (1, 59), (2, 59)], 'photo', 'cartoon')
 
     # Call the main plotting function with the specified parameters
     #for setting_id in range(50, 60):
