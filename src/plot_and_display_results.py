@@ -566,6 +566,100 @@ def calculate_pi_bar_for_policy_setting(policy_id, setting_id, results_dir="../d
     print(f"Policy ID: {policy_id}, Setting ID: {setting_id}")
     print(f"Average pi_bar across all seeds = {pi_bar_overall:.4f} "
           f"(updates={total_updates_across_seeds}, total={total_rounds_across_seeds})")
+        
+
+def plot_moving_window_updates(policy_id, setting_id, window_size=10, results_dir="../data/results/"):
+            """
+            Plots a moving window average of updates for a given policy and setting.
+            
+            Args:
+                policy_id (int or str): The policy ID to filter.
+                setting_id (int or str): The setting ID to filter.
+                window_size (int): Size of the moving window.
+                results_dir (str): Path to the directory containing all CSV files.
+            """
+            policy_str = str(policy_id)
+            setting_str = str(setting_id)
+
+            pattern = re.compile(
+                rf'^policy_{policy_str}_setting_{setting_str}_src_domains_.*_tgt_domains_.*_seed_\d+\.csv$'
+            )
+            
+            all_csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+            policy_files = [f for f in all_csv_files if pattern.match(os.path.basename(f))]
+
+            if not policy_files:
+                print(f"No policy files found for Policy ID: {policy_str}, Setting ID: {setting_str}.")
+                return
+
+            decisions_by_timestep = defaultdict(list)
+
+            for policy_file in policy_files:
+                try:
+                    with open(policy_file, 'r') as f:
+                        lines = f.readlines()
+                    
+                    data_start_idx = None
+                    for idx, line in enumerate(lines):
+                        if line.strip().startswith('t,accuracy,loss,decision'):
+                            data_start_idx = idx + 1
+                            break
+                    
+                    if data_start_idx is None:
+                        continue
+
+                    for line in lines[data_start_idx:]:
+                        parts = line.strip().split(',')
+                        if len(parts) < 4:
+                            continue
+                        
+                        try:
+                            timestep = int(parts[0])
+                            # Handle both boolean and integer decision values
+                            decision_str = parts[3].lower()
+                            if decision_str in ['true', '1']:
+                                decision = 1
+                            elif decision_str in ['false', '0']:
+                                decision = 0
+                            else:
+                                decision = int(decision_str)
+                            decisions_by_timestep[timestep].append(decision)
+                        except ValueError:
+                            continue
+
+                except Exception as e:
+                    print(f"Error processing file {policy_file}: {e}")
+
+            if not decisions_by_timestep:
+                print("No valid data found.")
+                return
+
+            # Calculate average decisions at each timestep
+            timesteps = sorted(decisions_by_timestep.keys())
+            avg_decisions = [np.mean(decisions_by_timestep[t]) for t in timesteps]
+
+            # Calculate moving average
+            moving_avg = []
+            for i in range(len(avg_decisions) - window_size + 1):
+                window_avg = np.mean(avg_decisions[i:i + window_size])
+                moving_avg.append(window_avg)
+
+            # Plot
+            plt.figure(figsize=(12, 6))
+            plt.plot(timesteps[window_size-1:], moving_avg, label=f'Moving average (window={window_size})')
+            plt.xlabel('Timestep')
+            plt.ylabel('Average Update Rate')
+            plt.title(f'Moving Window Average of Updates\nPolicy {policy_id}, Setting {setting_id}')
+            plt.grid(True)
+            plt.legend()
+            
+            output_dir = '../data/plots'
+            if not os.path.exists(output_dir):
+                os.makedirs(output_dir)
+            output_path = os.path.join(output_dir, f'moving_window_updates_policy_{policy_id}_setting_{setting_id}.png')
+            plt.savefig(output_path, dpi=300)
+            plt.close()
+            print(f"Saved plot to {output_path}")
 
 if __name__ == "__main__":
     # Example usage:
@@ -574,12 +668,14 @@ if __name__ == "__main__":
     target_domains = ['sketch',]
 
     # Specify the policy_id and setting_id you want to plot
-    plot_multi_policy_results([(3, 59), (0, 59), (1, 59), (2, 59)], 'photo', 'cartoon')
+    setting_all = 0
+    setting_p3 = 57
+    plot_multi_policy_results([(3, setting_p3), (0, setting_all), (1, setting_all), (2, setting_all)], 'photo', 'sketch')
 
     # Call the main plotting function with the specified parameters
     #for setting_id in range(50, 60):
     #   plot_policy_results(policy_id, setting_id, source_domains, target_domains)
         
-    calculate_pi_bar_for_policy_setting(3, 59)
-    
-
+    calculate_pi_bar_for_policy_setting(3, setting_p3)
+    plot_moving_window_updates(3, setting_p3)
+# Add plotting vs resource usage

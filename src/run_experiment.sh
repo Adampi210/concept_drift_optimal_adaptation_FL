@@ -16,10 +16,6 @@ ALL_SRC_DOMAINS=(
     "photo"
     "photo"
     "cartoon"
-    "art_painting"
-    "sketch"
-    "cartoon"
-    "sketch"
 )
 
 # List of target domain sets.
@@ -29,17 +25,13 @@ ALL_TGT_DOMAINS=(
     "art_painting"
     "cartoon"
     "photo"
-    "photo"
-    "photo"
-    "sketch"
-    "cartoon"
 )
 
 # Policies to iterate over
-POLICIES=(0 1 2 3)
+POLICIES=(3)
 
 # Setting IDs to iterate over
-SETTING_IDS=(49 54 59)
+SETTING_IDS=(26 27 28)
 
 # Array of seeds for reproducibility
 seeds=(0 1 2 4 5)
