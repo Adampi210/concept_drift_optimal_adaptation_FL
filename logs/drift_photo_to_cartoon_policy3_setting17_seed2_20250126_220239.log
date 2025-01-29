@@ -1,9 +1,772 @@
-Traceback (most recent call last):
-  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 11, in <module>
-    from fl_toolkit import *  # Ensure fl_toolkit is correctly installed and accessible
-    ^^^^^^^^^^^^^^^^^^^^^^^^
-  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/__init__.py", line 4, in <module>
-    from .data_operations import (
-  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/data_operations/__init__.py", line 6, in <module>
-    from .drift_handler import PACSDomainDrift
-ImportError: cannot import name 'PACSDomainDrift' from 'fl_toolkit.data_operations.drift_handler' (/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/data_operations/drift_handler.py). Did you mean: 'CIFAR10DomainDrift'?
+/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py:170: FutureWarning: You are using `torch.load` with `weights_only=False` (the current default value), which uses the default pickle module implicitly. It is possible to construct malicious pickle data which will execute arbitrary code during unpickling (See https://github.com/pytorch/pytorch/blob/main/SECURITY.md#untrusted-models for more details). In a future release, the default value for `weights_only` will be flipped to `True`. This limits the functions that could be executed during unpickling. Arbitrary objects will no longer be allowed to be loaded via this mode unless they are explicitly allowlisted by the user via `torch.serialization.add_safe_globals`. We recommend you start setting `weights_only=True` for any use case where you don't have full control of the loaded file. Please open an issue on GitHub for any issues related to this experimental feature.
+  model.load_state_dict(torch.load(model_path))
+seed: 2
+policy_id: 3
+setting_id: 17
+pi_bar: 0.2
+drift_rate: 0.01
+V: 115
+0.08071227371692657 0.002608695652173913
+Epoch 1/5, Loss: 0.7333
+Epoch 2/5, Loss: 0.5582
+Epoch 3/5, Loss: 0.5063
+Epoch 4/5, Loss: 0.4255
+Epoch 5/5, Loss: 0.4033
+Round 0: Accuracy = 0.7992, Decision = 1
+0.2556300569664348 0.00956521739130435
+Epoch 1/5, Loss: 0.4144
+Epoch 2/5, Loss: 0.3696
+Epoch 3/5, Loss: 0.3714
+Epoch 4/5, Loss: 0.3767
+Epoch 5/5, Loss: 0.3970
+Round 1: Accuracy = 0.7674, Decision = 1
+1.2360272163694555 0.016521739130434785
+Epoch 1/5, Loss: 0.3894
+Epoch 2/5, Loss: 0.3665
+Epoch 3/5, Loss: 0.3034
+Epoch 4/5, Loss: 0.3312
+Epoch 5/5, Loss: 0.3140
+Round 2: Accuracy = 0.5726, Decision = 1
+-0.8188340036254941 0.023478260869565216
+Round 3: Accuracy = 0.7057, Decision = 0
+0.04433160523573565 0.021739130434782605
+Epoch 1/5, Loss: 0.4542
+Epoch 2/5, Loss: 0.5247
+Epoch 3/5, Loss: 0.4689
+Epoch 4/5, Loss: 0.4579
+Epoch 5/5, Loss: 0.4180
+Round 4: Accuracy = 0.6992, Decision = 1
+-0.14668746292591095 0.02869565217391304
+Round 5: Accuracy = 0.6547, Decision = 0
+0.01398669183254242 0.026956521739130428
+Round 6: Accuracy = 0.6523, Decision = 0
+0.0320796867211659 0.025217391304347817
+Epoch 1/5, Loss: 0.4725
+Epoch 2/5, Loss: 0.4019
+Epoch 3/5, Loss: 0.3391
+Epoch 4/5, Loss: 0.3169
+Epoch 5/5, Loss: 0.3156
+Round 7: Accuracy = 0.6493, Decision = 1
+-0.5717919530967871 0.032173913043478254
+Round 8: Accuracy = 0.7674, Decision = 0
+0.020003570864597975 0.03043478260869564
+Round 9: Accuracy = 0.7659, Decision = 0
+0.020670219014088276 0.028695652173913032
+Round 10: Accuracy = 0.7686, Decision = 0
+0.005158849060535431 0.02695652173913042
+Round 11: Accuracy = 0.7645, Decision = 0
+0.01336792961527139 0.02521739130434781
+Round 12: Accuracy = 0.7605, Decision = 0
+0.017613755968900857 0.0234782608695652
+Round 13: Accuracy = 0.7593, Decision = 0
+0.026735126972198486 0.02173913043478259
+Epoch 1/5, Loss: 0.4228
+Epoch 2/5, Loss: 0.3852
+Epoch 3/5, Loss: 0.3867
+Epoch 4/5, Loss: 0.3932
+Epoch 5/5, Loss: 0.4210
+Round 14: Accuracy = 0.7535, Decision = 1
+-0.0047140052685371026 0.02869565217391302
+Round 15: Accuracy = 0.7595, Decision = 0
+0.016145550287686883 0.026956521739130414
+Round 16: Accuracy = 0.7548, Decision = 0
+0.003320366144180298 0.025217391304347803
+Round 17: Accuracy = 0.7510, Decision = 0
+0.007353269136869012 0.02347826086956519
+Round 18: Accuracy = 0.7467, Decision = 0
+0.007137067042864265 0.02173913043478258
+Round 19: Accuracy = 0.7432, Decision = 0
+0.0031513036279887663 0.019999999999999976
+Round 20: Accuracy = 0.7396, Decision = 0
+0.006827382104737434 0.018260869565217365
+Round 21: Accuracy = 0.7358, Decision = 0
+0.02149166166782379 0.016521739130434757
+Epoch 1/5, Loss: 0.4776
+Epoch 2/5, Loss: 0.4330
+Epoch 3/5, Loss: 0.3666
+Epoch 4/5, Loss: 0.3780
+Epoch 5/5, Loss: 0.4080
+Round 22: Accuracy = 0.7322, Decision = 1
+0.05834051115172251 0.023478260869565188
+Epoch 1/5, Loss: 0.3957
+Epoch 2/5, Loss: 0.3649
+Epoch 3/5, Loss: 0.3231
+Epoch 4/5, Loss: 0.3266
+Epoch 5/5, Loss: 0.3108
+Round 23: Accuracy = 0.6965, Decision = 1
+-0.10937403461762835 0.030434782608695622
+Round 24: Accuracy = 0.7182, Decision = 0
+0.019768317895276166 0.02869565217391301
+Round 25: Accuracy = 0.7148, Decision = 0
+0.021840257304055366 0.0269565217391304
+Round 26: Accuracy = 0.7832, Decision = 0
+0.014151370951107578 0.025217391304347792
+Round 27: Accuracy = 0.7793, Decision = 0
+-0.0012498482352211182 0.02347826086956518
+Round 28: Accuracy = 0.7118, Decision = 0
+0.025791587432225538 0.02173913043478257
+Epoch 1/5, Loss: 0.3966
+Epoch 2/5, Loss: 0.3768
+Epoch 3/5, Loss: 0.3780
+Epoch 4/5, Loss: 0.3535
+Epoch 5/5, Loss: 0.4205
+Round 29: Accuracy = 0.7102, Decision = 1
+0.2384609381357829 0.028695652173913004
+Epoch 1/5, Loss: 0.3615
+Epoch 2/5, Loss: 0.3333
+Epoch 3/5, Loss: 0.3434
+Epoch 4/5, Loss: 0.2759
+Epoch 5/5, Loss: 0.2552
+Round 30: Accuracy = 0.7082, Decision = 1
+-0.31971233288447065 0.035652173913043435
+Round 31: Accuracy = 0.7676, Decision = 0
+0.008067407210667898 0.033913043478260824
+Round 32: Accuracy = 0.7687, Decision = 0
+0.011209599177042673 0.03217391304347822
+Round 33: Accuracy = 0.7565, Decision = 0
+0.00390840768814088 0.030434782608695605
+Round 34: Accuracy = 0.7386, Decision = 0
+0.015145114933450998 0.028695652173912997
+Round 35: Accuracy = 0.7246, Decision = 0
+-0.0030652284622192383 0.026956521739130386
+Round 36: Accuracy = 0.7188, Decision = 0
+0.0038310978561639786 0.025217391304347775
+Round 37: Accuracy = 0.7207, Decision = 0
+-0.0009698625653982162 0.023478260869565164
+Round 38: Accuracy = 0.7227, Decision = 0
+0.007636964321136475 0.021739130434782556
+Round 39: Accuracy = 0.7259, Decision = 0
+0.013257838785648346 0.019999999999999945
+Round 40: Accuracy = 0.7178, Decision = 0
+-0.003971418804105564 0.018260869565217337
+Round 41: Accuracy = 0.7148, Decision = 0
+0.021487612058134598 0.016521739130434733
+Epoch 1/5, Loss: 0.3817
+Epoch 2/5, Loss: 0.4514
+Epoch 3/5, Loss: 0.4126
+Epoch 4/5, Loss: 0.3823
+Epoch 5/5, Loss: 0.3443
+Round 42: Accuracy = 0.7109, Decision = 1
+0.006412714719772339 0.023478260869565164
+Round 43: Accuracy = 0.7207, Decision = 0
+0.016011132913477277 0.021739130434782556
+Round 44: Accuracy = 0.7224, Decision = 0
+0.005552493474062781 0.019999999999999945
+Round 45: Accuracy = 0.7203, Decision = 0
+0.00422907752149243 0.018260869565217337
+Round 46: Accuracy = 0.7234, Decision = 0
+0.007215880295809551 0.016521739130434733
+Round 47: Accuracy = 0.7242, Decision = 0
+0.008990857920615491 0.014782608695652124
+Round 48: Accuracy = 0.7217, Decision = 0
+-0.001644247108035568 0.013043478260869514
+Round 49: Accuracy = 0.7216, Decision = 0
+0.00584837794303894 0.011304347826086907
+Round 50: Accuracy = 0.7203, Decision = 0
+0.006645525495211246 0.009565217391304299
+Round 51: Accuracy = 0.7181, Decision = 0
+-0.0004632986254161642 0.00782608695652169
+Round 52: Accuracy = 0.7184, Decision = 0
+0.0048502286275227124 0.006086956521739082
+Round 53: Accuracy = 0.7153, Decision = 0
+-0.00877713651684986 0.004347826086956472
+Round 54: Accuracy = 0.7172, Decision = 0
+0.022410497853630473 0.002608695652173913
+Epoch 1/5, Loss: 0.4631
+Epoch 2/5, Loss: 0.4102
+Epoch 3/5, Loss: 0.3628
+Epoch 4/5, Loss: 0.3147
+Epoch 5/5, Loss: 0.2831
+Round 55: Accuracy = 0.7151, Decision = 1
+-0.27973563380931554 0.00956521739130435
+Round 56: Accuracy = 0.7697, Decision = 0
+0.019407663298280642 0.00782608695652174
+Epoch 1/5, Loss: 0.3329
+Epoch 2/5, Loss: 0.3064
+Epoch 3/5, Loss: 0.2726
+Epoch 4/5, Loss: 0.2497
+Epoch 5/5, Loss: 0.2643
+Round 57: Accuracy = 0.7680, Decision = 1
+0.03199629642461477 0.014782608695652176
+Epoch 1/5, Loss: 0.2661
+Epoch 2/5, Loss: 0.2570
+Epoch 3/5, Loss: 0.2580
+Epoch 4/5, Loss: 0.2532
+Epoch 5/5, Loss: 0.2413
+Round 58: Accuracy = 0.7312, Decision = 1
+-0.09760262272075604 0.021739130434782608
+Round 59: Accuracy = 0.8031, Decision = 0
+0.022277395054697974 0.019999999999999997
+Epoch 1/5, Loss: 0.2388
+Epoch 2/5, Loss: 0.3063
+Epoch 3/5, Loss: 0.2787
+Epoch 4/5, Loss: 0.2827
+Epoch 5/5, Loss: 0.2860
+Round 60: Accuracy = 0.7078, Decision = 1
+0.10327651835978033 0.02695652173913043
+Epoch 1/5, Loss: 0.2526
+Epoch 2/5, Loss: 0.2165
+Epoch 3/5, Loss: 0.2043
+Epoch 4/5, Loss: 0.1907
+Epoch 5/5, Loss: 0.1861
+Round 61: Accuracy = 0.6905, Decision = 1
+-0.22707839906215668 0.033913043478260865
+Round 62: Accuracy = 0.7790, Decision = 0
+0.004323393106460571 0.032173913043478254
+Round 63: Accuracy = 0.7800, Decision = 0
+0.006934223146665669 0.030434782608695643
+Round 64: Accuracy = 0.7862, Decision = 0
+0.005218134926898127 0.028695652173913035
+Round 65: Accuracy = 0.7781, Decision = 0
+0.0021398965091932454 0.026956521739130424
+Round 66: Accuracy = 0.7718, Decision = 0
+0.004530021122523709 0.025217391304347813
+Round 67: Accuracy = 0.7723, Decision = 0
+0.012278045926775255 0.023478260869565202
+Round 68: Accuracy = 0.7714, Decision = 0
+0.016700023172415174 0.021739130434782594
+Round 69: Accuracy = 0.7746, Decision = 0
+0.002993993630463432 0.019999999999999983
+Round 70: Accuracy = 0.7761, Decision = 0
+0.008189060132611892 0.018260869565217375
+Round 71: Accuracy = 0.7757, Decision = 0
+0.014787043021483842 0.01652173913043477
+Round 72: Accuracy = 0.7783, Decision = 0
+0.0035814741118387894 0.014782608695652162
+Round 73: Accuracy = 0.7808, Decision = 0
+0.030776518621581345 0.013043478260869554
+Epoch 1/5, Loss: 0.3043
+Epoch 2/5, Loss: 0.2738
+Epoch 3/5, Loss: 0.3303
+Epoch 4/5, Loss: 0.4957
+Epoch 5/5, Loss: 0.4607
+Round 74: Accuracy = 0.7815, Decision = 1
+0.26235857541146484 0.019999999999999983
+Epoch 1/5, Loss: 0.4081
+Epoch 2/5, Loss: 0.3088
+Epoch 3/5, Loss: 0.2523
+Epoch 4/5, Loss: 0.2024
+Epoch 5/5, Loss: 0.1884
+Round 75: Accuracy = 0.7345, Decision = 1
+-0.2714102469060732 0.026956521739130417
+Round 76: Accuracy = 0.7351, Decision = 0
+0.0010877614435942373 0.025217391304347806
+Round 77: Accuracy = 0.7381, Decision = 0
+0.006482943892478943 0.023478260869565195
+Round 78: Accuracy = 0.7395, Decision = 0
+0.015668051263344474 0.021739130434782584
+Round 79: Accuracy = 0.7375, Decision = 0
+-0.0069598040233055936 0.019999999999999976
+Round 80: Accuracy = 0.7350, Decision = 0
+0.005570072059830039 0.01826086956521737
+Round 81: Accuracy = 0.7358, Decision = 0
+0.012428414697448431 0.016521739130434764
+Round 82: Accuracy = 0.7377, Decision = 0
+0.005156415005524939 0.014782608695652155
+Round 83: Accuracy = 0.7799, Decision = 0
+0.020156017243862123 0.013043478260869545
+Epoch 1/5, Loss: 0.2674
+Epoch 2/5, Loss: 0.2517
+Epoch 3/5, Loss: 0.2413
+Epoch 4/5, Loss: 0.2140
+Epoch 5/5, Loss: 0.2014
+Round 84: Accuracy = 0.7591, Decision = 1
+-0.13548297405242918 0.019999999999999976
+Round 85: Accuracy = 0.7807, Decision = 0
+0.005902768075466164 0.01826086956521737
+Round 86: Accuracy = 0.7901, Decision = 0
+0.007989221570583488 0.016521739130434764
+Round 87: Accuracy = 0.7908, Decision = 0
+-0.005159562310347199 0.014782608695652155
+Round 88: Accuracy = 0.7943, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.008642069422281712 0.013043478260869545
+Round 89: Accuracy = 0.7945, Decision = 0
+No available target samples left. Reusing existing target indices.
+-0.007486711041285454 0.011304347826086938
+Round 90: Accuracy = 0.7924, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.004787028408967553 0.00956521739130433
+Round 91: Accuracy = 0.7884, Decision = 0
+No available target samples left. Reusing existing target indices.
+-0.002733100778781472 0.00782608695652172
+Round 92: Accuracy = 0.7896, Decision = 0
+No available target samples left. Reusing existing target indices.
+-0.004371455584007949 0.006086956521739113
+Round 93: Accuracy = 0.7882, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.004770970903337002 0.004347826086956503
+Epoch 1/5, Loss: 0.2300
+Epoch 2/5, Loss: 0.2271
+Epoch 3/5, Loss: 0.2231
+Epoch 4/5, Loss: 0.1886
+Epoch 5/5, Loss: 0.2064
+Round 94: Accuracy = 0.7898, Decision = 1
+No available target samples left. Reusing existing target indices.
+0.06967300463181275 0.01130434782608694
+Epoch 1/5, Loss: 0.2594
+Epoch 2/5, Loss: 0.2265
+Epoch 3/5, Loss: 0.2281
+Epoch 4/5, Loss: 0.1698
+Epoch 5/5, Loss: 0.1745
+Round 95: Accuracy = 0.7797, Decision = 1
+No available target samples left. Reusing existing target indices.
+-0.09303250536322594 0.018260869565217372
+Round 96: Accuracy = 0.7804, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.0014012104903276257 0.016521739130434764
+Round 97: Accuracy = 0.7777, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.00034251794792139467 0.014782608695652158
+Round 98: Accuracy = 0.7764, Decision = 0
+No available target samples left. Reusing existing target indices.
+-0.002728192278972058 0.01304347826086955
+Round 99: Accuracy = 0.7765, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.001868183796222389 0.011304347826086941
+Round 100: Accuracy = 0.7767, Decision = 0
+No available target samples left. Reusing existing target indices.
+-0.0024236916349484328 0.009565217391304334
+Round 101: Accuracy = 0.7772, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.007887315291624813 0.007826086956521724
+Epoch 1/5, Loss: 0.1345
+Epoch 2/5, Loss: 0.1347
+Epoch 3/5, Loss: 0.1985
+Epoch 4/5, Loss: 0.1535
+Epoch 5/5, Loss: 0.1683
+Round 102: Accuracy = 0.7792, Decision = 1
+No available target samples left. Reusing existing target indices.
+0.08561396054350412 0.01478260869565216
+Epoch 1/5, Loss: 0.1659
+Epoch 2/5, Loss: 0.2134
+Epoch 3/5, Loss: 0.2243
+Epoch 4/5, Loss: 0.1554
+Epoch 5/5, Loss: 0.1192
+Round 103: Accuracy = 0.8203, Decision = 1
+No available target samples left. Reusing existing target indices.
+-0.09805662156297609 0.021739130434782594
+Round 104: Accuracy = 0.8092, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.00040994641872552084 0.019999999999999983
+Round 105: Accuracy = 0.8023, Decision = 0
+No available target samples left. Reusing existing target indices.
+0.0004063540926346476 0.018260869565217375
+Round 106: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0034375660694562493 0.01652173913043477
+Round 107: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.00436181059250465 0.014782608695652162
+Round 108: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0032009840584718285 0.013043478260869554
+Round 109: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.007922794240025371 0.011304347826086945
+Round 110: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0036657081487087018 0.009565217391304337
+Round 111: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.003957787528634071 0.00782608695652173
+Round 112: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.003810760063620716 0.006086956521739121
+Round 113: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0007023395827183421 0.0043478260869565105
+Round 114: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.001669776267730294 0.002608695652173913
+Round 115: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0031070858240127563 0.002608695652173913
+Round 116: Accuracy = 0.7988, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.006754438464458196 0.002608695652173913
+Epoch 1/5, Loss: 0.1334
+Epoch 2/5, Loss: 0.1347
+Epoch 3/5, Loss: 0.1813
+Epoch 4/5, Loss: 0.1100
+Epoch 5/5, Loss: 0.1113
+Round 117: Accuracy = 0.7988, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0828682787429828 0.00956521739130435
+Round 118: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0008781323066124544 0.00782608695652174
+Round 119: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.000703546505134843 0.006086956521739132
+Round 120: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.001241821150940202 0.004347826086956522
+Round 121: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0011286532792907505 0.002608695652173913
+Round 122: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0018647071690513564 0.002608695652173913
+Round 123: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.001409523332348242 0.002608695652173913
+Round 124: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0007227500184224245 0.002608695652173913
+Round 125: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00012566120578692136 0.002608695652173913
+Round 126: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+1.9889396543681936e-05 0.002608695652173913
+Round 127: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-1.8075645829618292e-05 0.002608695652173913
+Round 128: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00017442966166597573 0.002608695652173913
+Round 129: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0008342190144153758 0.002608695652173913
+Round 130: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.001401060439932808 0.002608695652173913
+Round 131: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0023052985063539144 0.002608695652173913
+Round 132: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0016971355877243577 0.002608695652173913
+Round 133: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0010375768805925695 0.002608695652173913
+Round 134: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0009654916536349506 0.002608695652173913
+Round 135: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.00195327028632164 0.002608695652173913
+Round 136: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00035113583390529446 0.002608695652173913
+Round 137: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0016910171566101237 0.002608695652173913
+Round 138: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.002055858548444048 0.002608695652173913
+Round 139: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.002072463958309241 0.002608695652173913
+Round 140: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+5.095144017384229e-05 0.002608695652173913
+Round 141: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0007101103233603315 0.002608695652173913
+Round 142: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0005466859930982962 0.002608695652173913
+Round 143: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0010965576108831615 0.002608695652173913
+Round 144: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0005340503815274983 0.002608695652173913
+Round 145: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0011014330845612735 0.002608695652173913
+Round 146: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00412741106433364 0.002608695652173913
+Round 147: Accuracy = 0.8256, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0030577534164946824 0.002608695652173913
+Epoch 1/5, Loss: 0.1427
+Epoch 2/5, Loss: 0.1457
+Epoch 3/5, Loss: 0.1448
+Epoch 4/5, Loss: 0.1103
+Epoch 5/5, Loss: 0.1203
+Round 148: Accuracy = 0.8256, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0508175168472987 0.00956521739130435
+Epoch 1/5, Loss: 0.0982
+Epoch 2/5, Loss: 0.0826
+Epoch 3/5, Loss: 0.1100
+Epoch 4/5, Loss: 0.1271
+Epoch 5/5, Loss: 0.1178
+Round 149: Accuracy = 0.7930, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.02770017502972713 0.016521739130434785
+Round 150: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0051387952497372325 0.014782608695652176
+Round 151: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.002269335664235636 0.013043478260869568
+Round 152: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0026848923701506405 0.011304347826086959
+Round 153: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.001369822770357132 0.009565217391304351
+Round 154: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.001813179884965599 0.007826086956521741
+Round 155: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0004786788844145379 0.006086956521739134
+Round 156: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.002167239498633594 0.0043478260869565235
+Round 157: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.004197356756776571 0.002608695652173915
+Round 158: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0019669717249388985 0.002608695652173913
+Round 159: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0002550661850434094 0.002608695652173913
+Round 160: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.000515610409470707 0.002608695652173913
+Round 161: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0015647412779239422 0.002608695652173913
+Round 162: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0023809575762313157 0.002608695652173913
+Round 163: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00027078071322578223 0.002608695652173913
+Round 164: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00010928798180359633 0.002608695652173913
+Round 165: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0020231964209904973 0.002608695652173913
+Round 166: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.002252098746024639 0.002608695652173913
+Round 167: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0071399164601014115 0.002608695652173913
+Epoch 1/5, Loss: 0.0911
+Epoch 2/5, Loss: 0.0840
+Epoch 3/5, Loss: 0.1130
+Epoch 4/5, Loss: 0.0902
+Epoch 5/5, Loss: 0.0861
+Round 168: Accuracy = 0.7997, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.03019484436999146 0.00956521739130435
+Round 169: Accuracy = 0.8099, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0007434474089397791 0.00782608695652174
+Round 170: Accuracy = 0.8099, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00171741284430027 0.006086956521739132
+Round 171: Accuracy = 0.8099, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0026681044927010164 0.004347826086956522
+Round 172: Accuracy = 0.8099, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.00454855989664793 0.002608695652173913
+Epoch 1/5, Loss: 0.0760
+Epoch 2/5, Loss: 0.1214
+Epoch 3/5, Loss: 0.1163
+Epoch 4/5, Loss: 0.0854
+Epoch 5/5, Loss: 0.0754
+Round 173: Accuracy = 0.8099, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.05508944564140761 0.00956521739130435
+Epoch 1/5, Loss: 0.0615
+Epoch 2/5, Loss: 0.1219
+Epoch 3/5, Loss: 0.1135
+Epoch 4/5, Loss: 0.1619
+Epoch 5/5, Loss: 0.1010
+Round 174: Accuracy = 0.7874, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.06270911071736078 0.016521739130434785
+Epoch 1/5, Loss: 0.0746
+Epoch 2/5, Loss: 0.0672
+Epoch 3/5, Loss: 0.1048
+Epoch 4/5, Loss: 0.0963
+Epoch 5/5, Loss: 0.0757
+Round 175: Accuracy = 0.8065, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.07159326863116942 0.023478260869565216
+Round 176: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.000193623897547901 0.021739130434782605
+Round 177: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0041569780844908505 0.019999999999999997
+Round 178: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00541315537590821 0.01826086956521739
+Round 179: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.001986956599956527 0.01652173913043478
+Round 180: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.010039614943357617 0.014782608695652174
+Round 181: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.007784670648666531 0.013043478260869565
+Round 182: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.004726882092654705 0.011304347826086957
+Round 183: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.001377630477341324 0.00956521739130435
+Round 184: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.005604225998887644 0.00782608695652174
+Round 185: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.004725024175758541 0.006086956521739132
+Round 186: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0029265988761415923 0.004347826086956522
+Round 187: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0035611268562766307 0.002608695652173913
+Round 188: Accuracy = 0.7965, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.007340056176942125 0.002608695652173913
+Epoch 1/5, Loss: 0.0865
+Epoch 2/5, Loss: 0.0472
+Epoch 3/5, Loss: 0.0398
+Epoch 4/5, Loss: 0.0498
+Epoch 5/5, Loss: 0.0532
+Round 189: Accuracy = 0.7965, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.04632715379389432 0.00956521739130435
+Round 190: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.00400663894386246 0.00782608695652174
+Round 191: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0016372155827971621 0.006086956521739132
+Round 192: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0006405378763492259 0.004347826086956522
+Round 193: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.0018427686121028214 0.002608695652173913
+Round 194: Accuracy = 0.7997, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.009134017360898167 0.002608695652173913
+Epoch 1/5, Loss: 0.0620
+Epoch 2/5, Loss: 0.0531
+Epoch 3/5, Loss: 0.0570
+Epoch 4/5, Loss: 0.0382
+Epoch 5/5, Loss: 0.0388
+Round 195: Accuracy = 0.7997, Decision = 1
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.05750741639461082 0.00956521739130435
+Round 196: Accuracy = 0.8311, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0007983496717105677 0.00782608695652174
+Round 197: Accuracy = 0.8311, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+-0.000366231578832062 0.006086956521739132
+Round 198: Accuracy = 0.8311, Decision = 0
+No available target samples left. Reusing existing target indices.
+No available target samples left. Reusing existing target indices.
+0.0012388170446054302 0.004347826086956522
+Round 199: Accuracy = 0.8311, Decision = 0
