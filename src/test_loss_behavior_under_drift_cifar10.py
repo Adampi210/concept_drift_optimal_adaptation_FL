@@ -134,20 +134,21 @@ def retrain_with_policy_under_drift(
         'color': CIFAR10DriftTypes.color_shift(),
         'intensity': CIFAR10DriftTypes.intensity_drift()
     }
+    print(drift_transforms[drift_type])
     
     train_drift = CIFAR10DomainDrift(
         drift_rate=drift_rate,
-        desired_size=20000,
+        desired_size=50000,
         transform=drift_transforms[drift_type]
     )
     test_drift = CIFAR10DomainDrift(
         drift_rate=drift_rate,
-        desired_size=5000,
+        desired_size=10000,
         transform=drift_transforms[drift_type]
     )
     
     # Set up client
-    client = FederatedDriftClient(
+    client = FederatedDriftClientCIFAR10(
         client_id=0,
         model_architecture=CIFAR10CNN,
         train_domain_drift=train_drift,
@@ -242,10 +243,10 @@ def main():
     parser.add_argument('--model_path', type=str, default=None)
     
     args = parser.parse_args()
-    
+    model_path = f"../../../models/concept_drift_models/CIFAR10CNN_seed_{args.seed}.pth"
     # Settings dictionary (can be expanded based on your needs)
     settings = {
-        0: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 65},
+        0: {'pi_bar': 0.1, 'drift_rate': 0.1, 'V': 65},
         1: {'pi_bar': 0.15, 'drift_rate': 0.01, 'V': 65},
         2: {'pi_bar': 0.20, 'drift_rate': 0.01, 'V': 65},
         3: {'pi_bar': 0.05, 'drift_rate': 0.01, 'V': 65},
@@ -278,7 +279,7 @@ def main():
     }
     
     results = retrain_with_policy_under_drift(
-        model_path=args.model_path,
+        model_path=model_path,
         seed=args.seed,
         drift_type=args.drift_type,
         drift_rate=settings[args.setting_id]['drift_rate'],

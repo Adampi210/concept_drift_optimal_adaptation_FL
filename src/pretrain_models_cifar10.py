@@ -119,6 +119,8 @@ def train_model(model_architecture, model_path, seed, epochs, batch_size, learni
 
     # Initialize model, loss, optimizer
     model = client.get_model().to(device)
+    if model_path:
+        model.load_state_dict(torch.load(model_path))
     criterion = nn.CrossEntropyLoss()
 
     if optimizer_choice.lower() == 'adam':
@@ -164,7 +166,7 @@ def train_model(model_architecture, model_path, seed, epochs, batch_size, learni
         scheduler.step(accuracy)
 
         # Check if accuracy threshold met
-        if best_accuracy >= 85.0:
+        if best_accuracy >= 90.0:
             print(f"Desired accuracy reached: {best_accuracy:.2f}% at epoch {epoch}. Stopping training.")
             break
 
@@ -187,8 +189,8 @@ def main():
     parser.add_argument('--models', type=str, nargs='+', default=['CIFAR10CNN',],
                         help='List of model architectures to train')
     parser.add_argument('--epochs', type=int, default=200, help='Number of training epochs')
-    parser.add_argument('--batch_size', type=int, default=512, help='Batch size for training')
-    parser.add_argument('--learning_rate', type=float, default=0.005, help='Initial learning rate')
+    parser.add_argument('--batch_size', type=int, default=1024, help='Batch size for training')
+    parser.add_argument('--learning_rate', type=float, default=0.01, help='Initial learning rate')
     parser.add_argument('--optimizer', type=str, default='adam', choices=['adam', 'sgd'], help='Optimizer choice')
     parser.add_argument('--model_save_dir', type=str, default='../../../models/concept_drift_models/', help='Directory to save trained models')
     parser.add_argument('--results_save_dir', type=str, default='../data/results/', help='Directory to save training results')
