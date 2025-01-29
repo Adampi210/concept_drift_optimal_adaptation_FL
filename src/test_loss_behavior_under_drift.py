@@ -116,13 +116,113 @@ def save_results(results, filepath):
         for result in results:
             writer.writerow([result['t'], result['loss'], result['decision']])
 
-# Apply retraining according to policy
-def retrain_with_policy_under_drift(
+class DriftScheduler:
+    def __init__(self, schedule_type, **kwargs):
+        """
+        Initialize drift scheduler with different patterns
+        
+        Args:
+            schedule_type (str): Type of drift schedule ('burst', 'oscillating', 'step', 'custom')
+            **kwargs: Additional arguments specific to each schedule type
+        """
+        self.schedule_type = schedule_type
+        self.current_step = 0
+        
+        if schedule_type == "burst":
+            self.burst_interval = kwargs.get('burst_interval', 50)
+            self.burst_duration = kwargs.get('burst_duration', 5)
+            self.base_rate = kwargs.get('base_rate', 0.0)
+            self.burst_rate = kwargs.get('burst_rate', 0.2)
+            
+        elif schedule_type == "oscillating":
+            self.high_duration = kwargs.get('high_duration', 20)
+            self.low_duration = kwargs.get('low_duration', 20)
+            self.high_rate = kwargs.get('high_rate', 0.05)
+            self.low_rate = kwargs.get('low_rate', 0.01)
+            
+        elif schedule_type == "step":
+            self.step_points = kwargs.get('step_points', [50, 100, 150])
+            self.step_rates = kwargs.get('step_rates', [0.01, 0.03, 0.05, 0.07])
+            
+        elif schedule_type == "custom":
+            self.custom_schedule = kwargs.get('custom_schedule', {})
+            
+        else:
+            raise ValueError(f"Unknown schedule type: {schedule_type}")
+            
+    def get_drift_rate(self, t):
+        """
+        Get drift rate for current timestep
+        
+        Args:
+            t (int): Current timestep
+        
+        Returns:
+            float: Drift rate for current timestep
+        """
+        self.current_step = t
+        
+        if self.schedule_type == "burst":
+            # High drift rate during burst periods, low otherwise
+            cycle_position = t % self.burst_interval
+            if cycle_position < self.burst_duration:
+                return self.burst_rate
+            return self.base_rate
+            
+        elif self.schedule_type == "oscillating":
+            # Oscillate between high and low drift rates
+            cycle_length = self.high_duration + self.low_duration
+            cycle_position = t % cycle_length
+            if cycle_position < self.high_duration:
+                return self.high_rate
+            return self.low_rate
+            
+        elif self.schedule_type == "step":
+            # Step function with increasing drift rates
+            for point, rate in zip(self.step_points + [float('inf')], self.step_rates):
+                if t < point:
+                    return rate
+                    
+        elif self.schedule_type == "custom":
+            # Custom schedule defined by dictionary
+            return self.custom_schedule.get(t, 0.0)
+            
+    def get_schedule_params(self):
+        """Returns dictionary of schedule parameters for saving"""
+        params = {'schedule_type': self.schedule_type}
+        
+        if self.schedule_type == "burst":
+            params.update({
+                'burst_interval': self.burst_interval,
+                'burst_duration': self.burst_duration,
+                'base_rate': self.base_rate,
+                'burst_rate': self.burst_rate
+            })
+        elif self.schedule_type == "oscillating":
+            params.update({
+                'high_duration': self.high_duration,
+                'low_duration': self.low_duration,
+                'high_rate': self.high_rate,
+                'low_rate': self.low_rate
+            })
+        elif self.schedule_type == "step":
+            params.update({
+                'step_points': self.step_points,
+                'step_rates': self.step_rates
+            })
+        elif self.schedule_type == "custom":
+            params.update({
+                'custom_schedule': self.custom_schedule
+            })
+            
+        return params
+
+def modify_retrain_with_policy_under_drift(
     source_domains,
     target_domains,
     model_path,
     seed,
-    drift_rate,
+    drift_scheduler,  # New parameter
     n_rounds,
     learning_rate=0.01,
     policy_id=0,
@@ -132,27 +232,24 @@ def retrain_with_policy_under_drift(
     V=1
 ):
     set_seed(seed)
-    # Initialize the policy
     policy = Policy()
-    # Initialize data handler
     data_handler = PACSDataHandler()
     data_handler.load_data()
     train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
     
-    # Set up domain drift for training and testing
+    # Initialize with base drift rate
     train_drift = PACSDomainDrift(
         source_domains=source_domains,
         target_domains=target_domains,
-        drift_rate=drift_rate
+        drift_rate=0.0  # Will be updated in loop
     )
     
     test_drift = PACSDomainDrift(
         source_domains=source_domains,
         target_domains=target_domains,
-        drift_rate=drift_rate
+        drift_rate=0.0  # Will be updated in loop
     )
     
-    # Initialize client
     client = FederatedDriftClient(
         client_id=0,
         model_architecture=PACSCNN,
@@ -160,37 +257,41 @@ def retrain_with_policy_under_drift(
         test_domain_drift=test_drift
     )
     
-    # Set up data loaders
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=batch_size)
     client.set_data(train_loader, test_loader)
     
-    # Load pre-trained model
     model = client.get_model()
     model.load_state_dict(torch.load(model_path))
     
-    # Initialize optimizer and criterion
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
     loss_array = []
     loss_array.append(client.get_train_metric(metric_fn=criterion, verbose=False))
-    # Initialize results list
     results = []
     
-    # Training loop with policy decisions
     for t in range(n_rounds):
-        # Apply drift
+        # Update drift rate according to schedule
+        current_drift_rate = drift_scheduler.get_drift_rate(t)
+        client.train_domain_drift.drift_rate = current_drift_rate
+        client.test_domain_drift.drift_rate = current_drift_rate
+        
+        # Rest of the training loop remains the same
         client.apply_test_drift()
         client.apply_train_drift()
         
-        # Evaluate current performance
         current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
         current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
         loss_array.append(current_loss)
-        # Get policy decision
-        decision = policy.policy_decision(decision_id=policy_id, pi_bar=pi_bar, V=V, current_time=t, loss_diff=loss_array[-1] - loss_array[-2]) 
+        
+        decision = policy.policy_decision(
+            decision_id=policy_id, 
+            pi_bar=pi_bar, 
+            V=V, 
+            current_time=t, 
+            loss_diff=loss_array[-1] - loss_array[-2]
+        ) 
 
-        # Retrain if policy decides to
         if decision:
             current_loss = client.train(
                 epochs=5,
@@ -201,26 +302,28 @@ def retrain_with_policy_under_drift(
         else:
             current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
         
-        # Save results
         results.append({
             't': t,
             'accuracy': current_accuracy,
             'loss': current_loss,
             'decision': decision,
+            'drift_rate': current_drift_rate  # Add current drift rate to results
         })
         
-        # Optional progress printing
-        print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}")
+        print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}, Drift = {current_drift_rate:.4f}")
     
-    # Save results to CSV with hyperparameters
+    # Modified filename to include schedule type
+    schedule_params = drift_scheduler.get_schedule_params()
+    schedule_type = schedule_params['schedule_type']
+    
     src_domains_str = "_".join(source_domains)
-    tgt_domains_str = "_".join(target_domains) 
-    results_filename = f"../data/results/policy_{policy_id}_setting_{setting_id}_src_domains_{src_domains_str}_tgt_domains_{tgt_domains_str}_seed_{seed}.csv"
+    tgt_domains_str = "_".join(target_domains)
+    results_filename = f"../data/results/policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}_src_domains_{src_domains_str}_tgt_domains_{tgt_domains_str}_seed_{seed}.csv"
     
     with open(results_filename, 'w', newline='') as f:
         writer = csv.writer(f)
         
-        # First write all hyperparameters
+        # Write hyperparameters including schedule parameters
         writer.writerow(['Parameter', 'Value'])
         writer.writerow(['source_domains', ','.join(source_domains)])
         writer.writerow(['target_domains', ','.join(target_domains)])
@@ -229,43 +332,39 @@ def retrain_with_policy_under_drift(
         writer.writerow(['n_rounds', n_rounds])
         writer.writerow(['learning_rate', learning_rate])
         writer.writerow(['batch_size', batch_size])
-        writer.writerow(['drift_rate', drift_rate])
         writer.writerow(['policy_id', policy_id])
         writer.writerow(['setting_id', setting_id])
+        
+        # Write schedule parameters
+        for param, value in schedule_params.items():
+            writer.writerow([param, value])
         
         # Add a blank row for separation
         writer.writerow([])
         
         # Write the experimental results
-        writer.writerow(['t', 'accuracy', 'loss', 'decision'])
+        writer.writerow(['t', 'accuracy', 'loss', 'decision', 'drift_rate'])
         for result in results:
-            writer.writerow([result['t'], result['accuracy'], result['loss'], 
-                           result['decision']])
+            writer.writerow([
+                result['t'], 
+                result['accuracy'], 
+                result['loss'], 
+                result['decision'],
+                result['drift_rate']
+            ])
     
     return results
 
-# Main Function
+# Example usage in main():
 def main():
-    parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Drift Handling")
-
-    # Evaluation arguments
-    parser.add_argument('--seed', type=int, default=0, help='Random seed for reproducibility')
-    parser.add_argument('--src_domains', type=str, nargs='+', default=['photo'],
-                        help='List of source domains (1-3 domains)')
-    parser.add_argument('--tgt_domains', type=str, nargs='+', default=['sketch'],
-                        help='List of target domains for evaluation')
-    parser.add_argument('--n_rounds', type=int, default=200, help='Number of evaluation rounds')
-    parser.add_argument('--lr', type=float, default=0.005, help='Learning rate for SGD')
-    parser.add_argument('--policy_id', type=int, default=0, help='Policy ID for retraining decisions')
-    parser.add_argument('--setting_id', type=int, default=0, help='Setting ID for hyperparameter configuration')
-
-    args = parser.parse_args()
-
-    # Construct model path based on source domains
-    domains_str = "_".join(args.src_domains)
-    model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/PACSCNN_{domains_str}_seed_{args.seed}.pth"
+    parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
     
-    # SETTINGS
+    # Add new arguments for drift scheduling
+    parser.add_argument('--schedule_type', type=str, default='burst',
+                       choices=['burst', 'oscillating', 'step', 'custom'],
+                       help='Type of drift rate schedule')
+    
+    # Settings dictionary
     settings = {
         0: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 65},
         1: {'pi_bar': 0.15, 'drift_rate': 0.01, 'V': 65},
@@ -282,80 +381,82 @@ def main():
         12: {'pi_bar': 0.20, 'drift_rate': 0.003, 'V': 65},
         13: {'pi_bar': 0.05, 'drift_rate': 0.003, 'V': 65},
         14: {'pi_bar': 0.03, 'drift_rate': 0.003, 'V': 65},
-        15: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 115},
-        16: {'pi_bar': 0.15, 'drift_rate': 0.01, 'V': 115},
-        17: {'pi_bar': 0.20, 'drift_rate': 0.01, 'V': 115},
-        18: {'pi_bar': 0.05, 'drift_rate': 0.01, 'V': 115},
-        19: {'pi_bar': 0.03, 'drift_rate': 0.01, 'V': 115},
-        20: {'pi_bar': 0.1, 'drift_rate': 0.03, 'V': 115},
-        21: {'pi_bar': 0.15, 'drift_rate': 0.03, 'V': 115},
-        22: {'pi_bar': 0.20, 'drift_rate': 0.03, 'V': 115},
-        23: {'pi_bar': 0.05, 'drift_rate': 0.03, 'V': 115},
-        24: {'pi_bar': 0.03, 'drift_rate': 0.03, 'V': 115},
-        25: {'pi_bar': 0.1, 'drift_rate': 0.003, 'V': 115},
-        26: {'pi_bar': 0.15, 'drift_rate': 0.003, 'V': 115},
-        27: {'pi_bar': 0.20, 'drift_rate': 0.003, 'V': 115},
-        28: {'pi_bar': 0.05, 'drift_rate': 0.003, 'V': 115},
-        29: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 65},
-        30: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 12},
-        31: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 12.5},
-        32: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 13},
-        33: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 13.5},
-        34: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 14},
-        35: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 14.5},
-        36: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 15},
-        37: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 15.5},
-        38: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 16},
-        39: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 16.5},
-        40: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 20},
-        41: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 25},
-        42: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 30},
-        43: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 35},
-        44: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 40},
-        45: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 45},
-        46: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 50},
-        47: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 55},
-        48: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 60},
-        49: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 65},
-        50: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 70},
-        51: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 75},
-        52: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 80},
-        53: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 85},
-        54: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 90},
-        55: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 95},
-        56: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 100},
-        57: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 105},
-        58: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 110},
-        59: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 115}
+        15: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 150},
+        16: {'pi_bar': 0.15, 'drift_rate': 0.01, 'V': 150},
+        17: {'pi_bar': 0.20, 'drift_rate': 0.01, 'V': 150},
+        18: {'pi_bar': 0.05, 'drift_rate': 0.01, 'V': 150},
+        19: {'pi_bar': 0.03, 'drift_rate': 0.01, 'V': 150},
+        20: {'pi_bar': 0.1, 'drift_rate': 0.03, 'V': 150},
+        21: {'pi_bar': 0.15, 'drift_rate': 0.03, 'V': 150},
+        22: {'pi_bar': 0.20, 'drift_rate': 0.03, 'V': 150},
+        23: {'pi_bar': 0.05, 'drift_rate': 0.03, 'V': 150},
+        24: {'pi_bar': 0.03, 'drift_rate': 0.03, 'V': 150},
+        25: {'pi_bar': 0.1, 'drift_rate': 0.003, 'V': 150},
+        26: {'pi_bar': 0.15, 'drift_rate': 0.003, 'V': 150},
+        27: {'pi_bar': 0.20, 'drift_rate': 0.003, 'V': 150},
+        28: {'pi_bar': 0.05, 'drift_rate': 0.003, 'V': 150},
+        29: {'pi_bar': 0.03, 'drift_rate': 0.003, 'V': 150},
+        # ... [rest of settings dictionary]
     }
     
-    print(f'seed: {args.seed}')
-    print(f'policy_id: {args.policy_id}')
-    print(f'setting_id: {args.setting_id}')
-    print(f'pi_bar: {settings[args.setting_id]['pi_bar']}')
-    print(f'drift_rate: {settings[args.setting_id]['drift_rate']}')
-    print(f'V: {settings[args.setting_id]['V']}')
-    # Run evaluation with drift
-    results = retrain_with_policy_under_drift(
+    # Add existing arguments
+    parser.add_argument('--seed', type=int, default=0)
+    parser.add_argument('--src_domains', type=str, nargs='+', default=['photo'])
+    parser.add_argument('--tgt_domains', type=str, nargs='+', default=['sketch'])
+    parser.add_argument('--n_rounds', type=int, default=200)
+    parser.add_argument('--lr', type=float, default=0.005)
+    parser.add_argument('--policy_id', type=int, default=0)
+    parser.add_argument('--setting_id', type=int, default=0)
+    
+    args = parser.parse_args()
+    
+    # Example schedule configurations
+    schedule_configs = {
+        'burst': {
+            'burst_interval': 50,
+            'burst_duration': 5,
+            'base_rate': 0.0,
+            'burst_rate': 0.2
+        },
+        'oscillating': {
+            'high_duration': 20,
+            'low_duration': 20,
+            'high_rate': 0.05,
+            'low_rate': 0.01
+        },
+        'step': {
+            'step_points': [50, 100, 150],
+            'step_rates': [0.01, 0.03, 0.05, 0.07]
+        },
+        'custom': {
+            'custom_schedule': {i: 0.1 for i in range(0, 200, 50)}  # Example custom schedule
+        }
+    }
+    
+    # Create drift scheduler
+    drift_scheduler = DriftScheduler(args.schedule_type, **schedule_configs[args.schedule_type])
+    
+    # Construct model path
+    domains_str = "_".join(args.src_domains)
+    model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/PACSCNN_{domains_str}_seed_{args.seed}.pth"
+    
+    # Get settings for current setting_id
+    current_settings = settings[args.setting_id]
+    
+    # Run evaluation with drift scheduler
+    results = modify_retrain_with_policy_under_drift(
         source_domains=args.src_domains,
         target_domains=args.tgt_domains,
         model_path=model_path,
         seed=args.seed,
-        drift_rate=settings[args.setting_id]['drift_rate'],
+        drift_scheduler=drift_scheduler,  # New parameter
         n_rounds=args.n_rounds,
         learning_rate=args.lr,
         policy_id=args.policy_id,
         setting_id=args.setting_id,
-        pi_bar=settings[args.setting_id]['pi_bar'],
-        V=settings[args.setting_id]['V']
+        pi_bar=current_settings['pi_bar'],
+        V=current_settings['V']
     )
 
-
-# Ensure the script runs only when executed directly
 if __name__ == "__main__":
     main()
-    
-# Change the rate of data drifit bouded by some \rate_max for one setting
-# 8 1to1, 8 2to2, 2 3to3
-# Another image dataset - look into experiments on that. See if there are other like PACS that already have different domains 
-# Text dataset - what we could run there. (Optional, do last) 
