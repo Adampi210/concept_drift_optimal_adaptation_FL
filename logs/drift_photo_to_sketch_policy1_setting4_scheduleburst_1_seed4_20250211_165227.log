@@ -1,0 +1,17 @@
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with a cudnnException: CUDNN_BACKEND_EXECUTION_PLAN_DESCRIPTOR: cudnnFinalize Descriptor Failed cudnn_status: CUDNN_STATUS_NOT_SUPPORTED (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:919.)
+  return F.conv2d(input, weight, bias, self.stride,
+Traceback (most recent call last):
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 569, in <module>
+    main()
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 554, in main
+    results = modify_retrain_with_policy_under_drift(
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/test_loss_behavior_under_drift.py", line 346, in modify_retrain_with_policy_under_drift
+    client.apply_test_drift()
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/federated/client.py", line 87, in apply_test_drift
+    drifted_test = self.test_domain_drift.apply(self.original_test_loader.dataset)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/data_operations/drift_handler.py", line 51, in apply
+    drift_samples = int(current_size * self.drift_rate)
+                        ~~~~~~~~~~~~~^~~~~~~~~~~~~~~~~
+TypeError: unsupported operand type(s) for *: 'int' and 'NoneType'

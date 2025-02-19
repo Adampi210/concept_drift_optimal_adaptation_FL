@@ -19,9 +19,9 @@ from tqdm import tqdm
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-class ImprovedCIFAR10CNN(nn.Module):
+class CIFAR10CNN(nn.Module):
     def __init__(self, num_classes=10):
-        super(ImprovedCIFAR10CNN, self).__init__()
+        super(CIFAR10CNN, self).__init__()
         
         # Improved feature extraction layers
         self.features = nn.Sequential(
@@ -106,14 +106,14 @@ def get_data_loaders(batch_size, num_workers=4):
     
     # Load datasets
     train_dataset = torchvision.datasets.CIFAR10(
-        root='/scratch/gilbreth/apiasecz/data/',
+        root='/scratch/gautschi/apiasecz/data/',
         train=True,
         download=True,
         transform=train_transform
     )
     
     test_dataset = torchvision.datasets.CIFAR10(
-        root='/scratch/gilbreth/apiasecz/data/',
+        root='/scratch/gautschi/apiasecz/data/',
         train=False,
         download=True,
         transform=test_transform
@@ -209,7 +209,7 @@ def main():
     train_loader, test_loader = get_data_loaders(args.batch_size)
     
     # Initialize model
-    model = ImprovedCIFAR10CNN().to(device)
+    model = CIFAR10CNN().to(device)
     
     # Loss function
     criterion = nn.CrossEntropyLoss()

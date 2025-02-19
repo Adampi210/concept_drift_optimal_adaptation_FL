@@ -567,7 +567,6 @@ def calculate_pi_bar_for_policy_setting(policy_id, setting_id, results_dir="../d
     print(f"Average pi_bar across all seeds = {pi_bar_overall:.4f} "
           f"(updates={total_updates_across_seeds}, total={total_rounds_across_seeds})")
         
-
 def plot_moving_window_updates(policy_id, setting_id, window_size=10, results_dir="../data/results/"):
             """
             Plots a moving window average of updates for a given policy and setting.
@@ -661,21 +660,460 @@ def plot_moving_window_updates(policy_id, setting_id, window_size=10, results_di
             plt.close()
             print(f"Saved plot to {output_path}")
 
+def read_data_with_drift(drift_path):
+    """
+    Reads the drift policy CSV file including drift rate information.
+    Handles both boolean (True/False) and numeric (1/0) decision values.
+    
+    Args:
+        drift_path (str): Path to the drift policy CSV file.
+    
+    Returns:
+        tuple: (t_epochs, accuracies, losses, decisions, drift_rates)
+    """
+    t_epochs = []
+    accuracies = []
+    losses = []
+    decisions = []
+    drift_rates = []
+    
+    try:
+        with open(drift_path, 'r') as f:
+            lines = f.readlines()
+        
+        # Find where data starts
+        data_start_idx = None
+        for idx, line in enumerate(lines):
+            if 't,accuracy,loss,decision' in line.strip():
+                data_start_idx = idx + 1
+                break
+        
+        if data_start_idx is None:
+            print(f"No data header found in drift file {drift_path}.")
+            return t_epochs, accuracies, losses, decisions, drift_rates
+        
+        # Read data
+        for line in lines[data_start_idx:]:
+            parts = line.strip().split(',')
+            if len(parts) < 4:  # Need at least t, accuracy, loss, decision
+                continue
+            
+            try:
+                # Parse basic metrics
+                t = int(parts[0])
+                acc = float(parts[1]) * 100  # Convert to percentage
+                loss = float(parts[2])
+                
+                # Parse decision - handle both boolean and numeric formats
+                decision_str = parts[3].strip().lower()
+                if decision_str in ['true', '1']:
+                    decision = 1
+                elif decision_str in ['false', '0']:
+                    decision = 0
+                else:
+                    try:
+                        # Try to parse as float in case it's a number
+                        decision = int(float(decision_str))
+                    except ValueError:
+                        print(f"Unrecognized decision value in {drift_path}: {decision_str}")
+                        continue
+                
+                # Parse drift rate if available
+                drift_rate = float(parts[4]) if len(parts) > 4 else None
+                
+                # Append all values
+                t_epochs.append(t)
+                accuracies.append(acc)
+                losses.append(loss)
+                decisions.append(decision)
+                drift_rates.append(drift_rate)
+                
+            except (ValueError, IndexError) as e:
+                print(f"Error parsing line in {drift_path}: {line.strip()} - {str(e)}")
+                continue
+                
+        return t_epochs, accuracies, losses, decisions, drift_rates
+    except Exception as e:
+        print(f"Error reading drift file {drift_path}: {e}")
+        return t_epochs, accuracies, losses, decisions, drift_rates
+
+def plot_metrics_with_drift(source, target, policy_id, setting_id, schedule_type,
+                          epochs, accuracies, losses, decisions, drift_rates,
+                          std_acc, std_loss, std_drift, output_path):
+    """
+    Plots the metrics including drift rate visualization.
+    """
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(14, 12), height_ratios=[3, 3, 2])
+    
+    # Plot Accuracy
+    ax1.plot(epochs, accuracies, color='blue', label='Average Accuracy')
+    ax1.fill_between(
+        epochs,
+        np.array(accuracies) - np.array(std_acc),
+        np.array(accuracies) + np.array(std_acc),
+        color='blue',
+        alpha=0.2,
+        label='±1 Std Dev'
+    )
+    ax1.set_ylabel('Accuracy (%)', fontsize=12)
+    ax1.set_title(f'Metrics Over Time\n(Source: {source}, Target: {target}, Policy: {policy_id}, Setting: {setting_id}, Schedule: {schedule_type})', 
+                 fontsize=14)
+    ax1.legend(loc='lower right', fontsize=10)
+    ax1.grid(True, linestyle='--', linewidth=0.5)
+
+    # Plot Loss
+    ax2.plot(epochs, losses, color='green', label='Average Loss')
+    ax2.fill_between(
+        epochs,
+        np.array(losses) - np.array(std_loss),
+        np.array(losses) + np.array(std_loss),
+        color='green',
+        alpha=0.2,
+        label='±1 Std Dev'
+    )
+    ax2.set_ylabel('Loss', fontsize=12)
+    ax2.legend(loc='upper right', fontsize=10)
+    ax2.grid(True, linestyle='--', linewidth=0.5)
+
+    # Plot Drift Rate
+    ax3.plot(epochs, drift_rates, color='red', label='Drift Rate')
+    if std_drift is not None:
+        ax3.fill_between(
+            epochs,
+            np.array(drift_rates) - np.array(std_drift),
+            np.array(drift_rates) + np.array(std_drift),
+            color='red',
+            alpha=0.2,
+            label='±1 Std Dev'
+        )
+    
+    # Add decision markers
+    decision_epochs = [epoch for epoch, decision in zip(epochs, decisions) if decision == 1]
+    if decision_epochs:
+        ax3.scatter(decision_epochs, [drift_rates[epochs.index(e)] for e in decision_epochs],
+                   color='black', marker='x', label='Update Points', zorder=5)
+    
+    ax3.set_xlabel('Time', fontsize=12)
+    ax3.set_ylabel('Drift Rate', fontsize=12)
+    ax3.legend(loc='upper right', fontsize=10)
+    ax3.grid(True, linestyle='--', linewidth=0.5)
+
+    plt.tight_layout()
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved plot to {output_path}")
+
+def plot_multi_schedule_comparison(policy_id, setting_id, source_domain, target_domain,
+                                 schedule_types=['burst', 'oscillating', 'step'],
+                                 results_dir='../data/results/'):
+    """
+    Plots comparison of different drift schedules for the same policy and setting.
+    """
+    all_csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+    output_dir = '../data/plots'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(14, 12), height_ratios=[3, 3, 2])
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(schedule_types)))
+
+    for schedule_type, color in zip(schedule_types, colors):
+        pattern = re.compile(
+            rf'^policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}_src_domains_{source_domain}_tgt_domains_{target_domain}_seed_\d+\.csv$'
+        )
+        
+        matching_files = [f for f in all_csv_files if pattern.match(os.path.basename(f))]
+        
+        if not matching_files:
+            print(f"No files found for schedule type: {schedule_type}")
+            continue
+            
+        combined_data = defaultdict(lambda: {
+            'accuracies': [], 'losses': [], 'decisions': [], 'drift_rates': []
+        })
+        
+        for file_path in matching_files:
+            epochs, accs, losses, decisions, drift_rates = read_data_with_drift(file_path)
+            
+            for idx, epoch in enumerate(epochs):
+                combined_data[epoch]['accuracies'].append(accs[idx])
+                combined_data[epoch]['losses'].append(losses[idx])
+                combined_data[epoch]['decisions'].append(decisions[idx])
+                combined_data[epoch]['drift_rates'].append(drift_rates[idx])
+        
+        if not combined_data:
+            continue
+            
+        epochs = sorted(combined_data.keys())
+        avg_accuracies = [np.mean(combined_data[e]['accuracies']) for e in epochs]
+        avg_losses = [np.mean(combined_data[e]['losses']) for e in epochs]
+        avg_drift_rates = [np.mean(combined_data[e]['drift_rates']) for e in epochs]
+        decisions = [np.mean(combined_data[e]['decisions']) > 0.5 for e in epochs]
+        
+        # Plot on shared axes
+        ax1.plot(epochs, avg_accuracies, color=color, label=f'{schedule_type}')
+        ax2.plot(epochs, avg_losses, color=color, label=f'{schedule_type}')
+        ax3.plot(epochs, avg_drift_rates, color=color, label=f'{schedule_type}')
+        
+        # Add decision markers
+        decision_epochs = [epoch for epoch, decision in zip(epochs, decisions) if decision]
+        if decision_epochs:
+            ax3.scatter(decision_epochs, 
+                       [avg_drift_rates[epochs.index(e)] for e in decision_epochs],
+                       color=color, marker='x', alpha=0.5, s=50)
+
+    # Customize plots
+    ax1.set_title(f'Schedule Comparison\n(Source: {source_domain}, Target: {target_domain}, Policy: {policy_id}, Setting: {setting_id})')
+    ax1.set_ylabel('Accuracy (%)')
+    ax1.grid(True)
+    ax1.legend(loc='lower right')
+
+    ax2.set_ylabel('Loss')
+    ax2.grid(True)
+    ax2.legend(loc='upper right')
+
+    ax3.set_xlabel('Time')
+    ax3.set_ylabel('Drift Rate')
+    ax3.grid(True)
+    ax3.legend(loc='upper right')
+
+    plt.tight_layout()
+    output_path = os.path.join(output_dir, 
+        f'schedule_comparison_policy_{policy_id}_setting_{setting_id}_{source_domain}_to_{target_domain}.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved comparison plot to {output_path}")
+
+def analyze_schedule_performance(policy_id, setting_id, source_domain, target_domain,
+                               schedule_types=['burst', 'oscillating', 'step'],
+                               results_dir='../data/results/'):
+    """
+    Analyzes and prints performance metrics for different schedules.
+    """
+    all_csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+    
+    results = {}
+    for schedule_type in schedule_types:
+        pattern = re.compile(
+            rf'^policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}_src_domains_{source_domain}_tgt_domains_{target_domain}_seed_\d+\.csv$'
+        )
+        
+        matching_files = [f for f in all_csv_files if pattern.match(os.path.basename(f))]
+        
+        if not matching_files:
+            print(f"No files found for schedule type: {schedule_type}")
+            continue
+            
+        accuracies = []
+        update_rates = []
+        drift_rates = []
+        
+        for file_path in matching_files:
+            epochs, accs, _, decisions, drifts = read_data_with_drift(file_path)
+            
+            if epochs:  # Only process if we have data
+                accuracies.append(np.mean(accs))
+                update_rates.append(np.mean(decisions))
+                drift_rates.append(np.mean(drifts))
+        
+        if accuracies:  # Only store if we have processed data
+            results[schedule_type] = {
+                'mean_accuracy': np.mean(accuracies),
+                'std_accuracy': np.std(accuracies),
+                'mean_update_rate': np.mean(update_rates),
+                'mean_drift_rate': np.mean(drift_rates)
+            }
+    
+    # Print analysis
+    print(f"\nPerformance Analysis for Policy {policy_id}, Setting {setting_id}")
+    print(f"Source: {source_domain}, Target: {target_domain}\n")
+    print("Schedule Type  | Accuracy (%) ± Std | Update Rate | Avg Drift Rate")
+    print("-" * 65)
+    
+    for schedule_type in schedule_types:
+        if schedule_type in results:
+            r = results[schedule_type]
+            print(f"{schedule_type:12} | {r['mean_accuracy']:6.2f} ± {r['std_accuracy']:4.2f} | {r['mean_update_rate']:10.3f} | {r['mean_drift_rate']:13.3f}")
+
+def compare_policies(setting_id, schedule_type, source_domain='photo', target_domain='sketch', 
+                    policy_ids=[1, 2, 3, 4], results_dir='../data/results/', T=None):
+    """
+    Compares different policies for the same setting and schedule type.
+    
+    Args:
+        setting_id (int): Setting ID to analyze
+        schedule_type (str): Type of drift schedule (e.g., 'burst', 'oscillating', 'step')
+        source_domain (str): Source domain name
+        target_domain (str): Target domain name
+        policy_ids (list): List of policy IDs to compare
+        results_dir (str): Directory containing result files
+        T (int, optional): Upper limit of time steps to plot. If None, plots all time steps.
+    """
+    print(setting_id)
+    output_dir = '../data/plots'
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(14, 16), height_ratios=[3, 3, 2, 2])
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(policy_ids)))
+    all_csv_files = glob.glob(os.path.join(results_dir, "*.csv"))
+
+    for policy_id, color in zip(policy_ids, colors):
+        if policy_id == 3:
+            addition_factor = 15
+        else:
+            addition_factor = 0
+        pattern = re.compile(
+            rf'^policy_{policy_id}_setting_{setting_id + addition_factor}_schedule_{schedule_type}_src_domains_{source_domain}_tgt_domains_{target_domain}_seed_\d+\.csv$'
+        )
+        
+        matching_files = [f for f in all_csv_files if pattern.match(os.path.basename(f))]
+        
+        if not matching_files:
+            print(f"No files found for policy {policy_id} with schedule type {schedule_type}")
+            continue
+            
+        combined_data = defaultdict(lambda: {
+            'accuracies': [], 'losses': [], 'decisions': [], 'drift_rates': []
+        })
+        
+        for file_path in matching_files:
+            epochs, accs, losses, decisions, drift_rates = read_data_with_drift(file_path)
+            for idx, epoch in enumerate(epochs):
+                combined_data[epoch]['accuracies'].append(accs[idx])
+                combined_data[epoch]['losses'].append(losses[idx])
+                combined_data[epoch]['decisions'].append(decisions[idx])
+                combined_data[epoch]['drift_rates'].append(drift_rates[idx])
+        
+        if not combined_data:
+            continue
+            
+        epochs = sorted(combined_data.keys())
+        if T is not None:
+            # Filter data up to time T
+            epochs = [e for e in epochs if e <= T]
+            
+        avg_accuracies = [np.mean(combined_data[e]['accuracies']) for e in epochs]
+        avg_losses = [np.mean(combined_data[e]['losses']) for e in epochs]
+        avg_drift_rates = [np.mean(combined_data[e]['drift_rates']) for e in epochs]
+        avg_decisions = [np.mean(combined_data[e]['decisions']) for e in epochs]
+        # Calculate standard deviations
+        std_accuracies = [np.std(combined_data[e]['accuracies']) for e in epochs]
+        std_losses = [np.std(combined_data[e]['losses']) for e in epochs]
+        
+        # Calculate cumulative updates over time
+        cumulative_updates = np.cumsum(avg_decisions)
+        
+        # Plot with confidence intervals
+        ax1.plot(epochs, avg_accuracies, color=color, label=f'Policy {policy_id}')
+        ax1.fill_between(epochs, 
+                        np.array(avg_accuracies) - np.array(std_accuracies),
+                        np.array(avg_accuracies) + np.array(std_accuracies),
+                        color=color, alpha=0.2)
+
+        ax2.plot(epochs, avg_losses, color=color, label=f'Policy {policy_id}')
+        ax2.fill_between(epochs,
+                        np.array(avg_losses) - np.array(std_losses),
+                        np.array(avg_losses) + np.array(std_losses),
+                        color=color, alpha=0.2)
+
+        ax3.plot(epochs, avg_drift_rates, color=color, label=f'Policy {policy_id}')
+        
+        # Plot cumulative updates
+        ax4.plot(epochs, cumulative_updates, color=color, label=f'Policy {policy_id}')
+        
+        # Add decision markers
+        decision_epochs = [epoch for epoch, decision in zip(epochs, avg_decisions) if decision > 0.5]
+        if decision_epochs:
+            ax3.scatter(decision_epochs,
+                       [avg_drift_rates[epochs.index(e)] for e in decision_epochs],
+                       color=color, marker='x', alpha=0.7, s=50)
+
+    # Customize plots
+    ax1.set_title(f'Policy Comparison\n(Setting: {setting_id}, Schedule: {schedule_type}\nSource: {source_domain}, Target: {target_domain})')
+    ax1.set_ylabel('Accuracy (%)')
+    ax1.grid(True)
+    ax1.legend(loc='lower right')
+
+    ax2.set_ylabel('Loss')
+    ax2.grid(True)
+    ax2.legend(loc='upper right')
+
+    ax3.set_ylabel('Drift Rate')
+    ax3.grid(True)
+    ax3.legend(loc='upper right')
+    
+    ax4.set_xlabel('Time')
+    ax4.set_ylabel('Cumulative Updates')
+    ax4.grid(True)
+    ax4.legend(loc='upper left')
+
+    plt.tight_layout()
+    output_path = os.path.join(output_dir, 
+        f'policy_comparison_setting_{setting_id}_schedule_{schedule_type}_{source_domain}_to_{target_domain}.png')
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved policy comparison plot to {output_path}")
+
+    # Print summary statistics
+    print("\nSummary Statistics:")
+    print("-" * 50)
+    for policy_id in policy_ids:
+        pattern = re.compile(
+            rf'^policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}_src_domains_{source_domain}_tgt_domains_{target_domain}_seed_\d+\.csv$'
+        )
+        matching_files = [f for f in all_csv_files if pattern.match(os.path.basename(f))]
+        
+        if matching_files:
+            all_accuracies = []
+            all_updates = []
+            for file_path in matching_files:
+                _, accs, _, decisions, _ = read_data_with_drift(file_path)
+                if T is not None:
+                    # Truncate data up to time T
+                    accs = accs[:T]
+                    decisions = decisions[:T]
+                all_accuracies.extend(accs)
+                all_updates.extend(decisions)
+            
+            mean_acc = np.mean(all_accuracies)
+            std_acc = np.std(all_accuracies)
+            update_rate = np.sum(all_updates) / len(matching_files)
+            
+            print(f"Policy {policy_id}:")
+            print(f"  Mean Accuracy: {mean_acc:.2f}% ± {std_acc:.2f}%")
+            print(f"  Update Rate: {update_rate:.3f}")
+            print("-" * 50)        
+            
 if __name__ == "__main__":
+    source_domain = 'photo'
+    target_domain = 'sketch'
+    policy_id = 1
+    
+    # drift_types = ['RV_burst_0', 'RV_burst_1', 'RV_burst_2']
+    drift_types = ['domain_change_burst_0', 'domain_change_burst_1']
+    # Plot comparison of different schedules
+    # plot_multi_schedule_comparison(policy_id, setting_id, source_domain, target_domain)
+    for drift_type in drift_types:
+        for setting_id in range(0, 1):
+            compare_policies(setting_id, drift_type, source_domain, target_domain)
+    # Analyze performance metrics
+    # analyze_schedule_performance(policy_id, setting_id, source_domain, target_domain)
     # Example usage:
     # Define the list of source and target domains you want to plot
-    source_domains = ['photo',]
-    target_domains = ['sketch',]
+    # source_domains = ['photo',]
+    # target_domains = ['sketch',]
 
     # Specify the policy_id and setting_id you want to plot
-    setting_all = 0
-    setting_p3 = 57
-    plot_multi_policy_results([(3, setting_p3), (0, setting_all), (1, setting_all), (2, setting_all)], 'photo', 'sketch')
+    #setting_all = 0
+    #setting_p3 = 57
+    #plot_multi_policy_results([(3, setting_p3), (0, setting_all), (1, setting_all), (2, setting_all)], 'photo', 'sketch')
 
     # Call the main plotting function with the specified parameters
     #for setting_id in range(50, 60):
     #   plot_policy_results(policy_id, setting_id, source_domains, target_domains)
         
-    calculate_pi_bar_for_policy_setting(3, setting_p3)
-    plot_moving_window_updates(3, setting_p3)
+    # calculate_pi_bar_for_policy_setting(3, setting_p3)
+    # splot_moving_window_updates(3, setting_p3)
 # Add plotting vs resource usage
+# Age of incorrect information

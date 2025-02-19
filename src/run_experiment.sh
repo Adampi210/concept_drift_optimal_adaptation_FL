@@ -31,9 +31,11 @@ seeds=(0 1 2 4 5)
 
 # Drift schedules to iterate over
 SCHEDULES=(
-    "burst"
-    "oscillating"
-    "step"
+    "RV_burst_0"
+    "RV_burst_1"
+    "RV_burst_2"
+    "domain_change_burst_0"
+    "domain_change_burst_1"
 )
 
 # Directory to store log files

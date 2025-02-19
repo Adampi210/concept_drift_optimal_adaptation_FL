@@ -13,33 +13,58 @@ import torchvision.transforms as transforms
 from fl_toolkit import *
 
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+num_workers = 8 if torch.cuda.is_available() else 0
 
 class CIFAR10CNN(nn.Module):
     def __init__(self, num_classes=10):
         super(CIFAR10CNN, self).__init__()
+        
+        # Improved feature extraction layers
         self.features = nn.Sequential(
-            # First block
+            # First block - keeping spatial dimensions with more filters
             nn.Conv2d(3, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
             nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Second block
+            
+            # Second block - deeper features
             nn.Conv2d(64, 128, kernel_size=3, padding=1),
             nn.BatchNorm2d(128),
             nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Third block
+            
+            # Third block - even more features
             nn.Conv2d(128, 256, kernel_size=3, padding=1),
             nn.BatchNorm2d(256),
             nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
+            
+            # Fourth block - deep features
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.MaxPool2d(kernel_size=2, stride=2)
         )
-
+        
+        # Improved classifier
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),
             nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, 256),
+            nn.ReLU(inplace=True),
             nn.Dropout(p=0.5),
             nn.Linear(256, num_classes)
         )
@@ -121,57 +146,70 @@ def retrain_with_policy_under_drift(
         transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
     ])
     
-    train_dataset = torchvision.datasets.CIFAR10(
-        root='/scratch/gilbreth/apiasecz/data/', train=True, download=True, transform=transform)
-    test_dataset = torchvision.datasets.CIFAR10(
-        root='/scratch/gilbreth/apiasecz/data/', train=False, download=True, transform=transform)
+    train_dataset = torchvision.datasets.CIFAR10(root='/scratch/gautschi/apiasecz/data/', train=True, download=True, transform=transform)
+    test_dataset = torchvision.datasets.CIFAR10(root='/scratch/gautschi/apiasecz/data/', train=False, download=True, transform=transform)
     
     # Get appropriate drift transform
     drift_transforms = {
-        'gaussian': CIFAR10DriftTypes.gaussian_noise(),
-        'rotation': CIFAR10DriftTypes.rotation_drift(),
-        'blur': CIFAR10DriftTypes.blur_drift(),
-        'color': CIFAR10DriftTypes.color_shift(),
-        'intensity': CIFAR10DriftTypes.intensity_drift()
+        'color_balance': CIFAR10DriftTypes.color_balance_drift(factor=0.4),
+        'darkness': CIFAR10DriftTypes.bounded_darkness_drift(factor=0.2),
+        'soft_gamma': CIFAR10DriftTypes.soft_gamma_drift(gamma_factor=0.3),
+        'color_wash': CIFAR10DriftTypes.color_wash_drift(factor=0.3)
     }
-    print(drift_transforms[drift_type])
     
     train_drift = CIFAR10DomainDrift(
-        drift_rate=drift_rate,
-        desired_size=50000,
-        transform=drift_transforms[drift_type]
-    )
+        drift_rate=drift_rate, 
+        transform=drift_transforms[drift_type], 
+        seed=seed)
     test_drift = CIFAR10DomainDrift(
-        drift_rate=drift_rate,
-        desired_size=10000,
-        transform=drift_transforms[drift_type]
-    )
+        drift_rate=drift_rate, 
+        transform=drift_transforms[drift_type], 
+        seed=seed)
     
-    # Set up client
+    
+    # Setup client
     client = FederatedDriftClientCIFAR10(
         client_id=0,
         model_architecture=CIFAR10CNN,
         train_domain_drift=train_drift,
-        test_domain_drift=test_drift, 
+        test_domain_drift=test_drift,
         device=device
     )
     
     # Set up initial data loaders
-    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
-    test_loader = DataLoader(test_dataset, batch_size=batch_size)
+    train_loader = DataLoader(
+        train_dataset,
+        batch_size=batch_size,
+        shuffle=True,
+        num_workers=num_workers,
+        pin_memory=True
+    )
+    test_loader = DataLoader(
+        test_dataset,
+        batch_size=batch_size,
+        shuffle=False,
+        num_workers=num_workers,
+        pin_memory=True
+    )
     client.set_data(train_loader, test_loader)
 
-    model = client.get_model()
-    if model_path:
-        model.load_state_dict(torch.load(model_path))
+    if model_path and os.path.exists(model_path):
+        client.model.load_state_dict(torch.load(model_path))
     
     # Initialize optimizer and criterion
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(client.model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
-    loss_array = []
-    loss_array.append(client.get_train_metric(metric_fn=criterion, verbose=False))
+
+    # Initial evaluation
+    print("Initial model performance:")
+    train_accuracy = client.get_train_metric(metric_fn=accuracy_fn)
+    test_accuracy = client.evaluate(metric_fn=accuracy_fn)
+    print(f"Train accuracy: {train_accuracy:.4f}, Test accuracy: {test_accuracy:.4f}")
     
+    loss_array = []
     results = []
+
+    loss_array.append(client.get_train_metric(metric_fn=criterion, verbose=False))
     
     for t in range(n_rounds):
         # Apply drifts
@@ -222,7 +260,7 @@ def retrain_with_policy_under_drift(
 
 
 def save_results(results, drift_type, policy_id, setting_id, seed):
-    filename = f"results/cifar10_drift_{drift_type}_policy_{policy_id}_setting_{setting_id}_seed_{seed}.csv"
+    filename = f"../data/results/cifar10_drift_{drift_type}_policy_{policy_id}_setting_{setting_id}_seed_{seed}.csv"
     os.makedirs(os.path.dirname(filename), exist_ok=True)
     
     with open(filename, 'w', newline='') as f:
@@ -232,21 +270,23 @@ def save_results(results, drift_type, policy_id, setting_id, seed):
             writer.writerow([result['t'], result['accuracy'], result['loss'], result['decision']])
 
 def main():
-    parser = argparse.ArgumentParser(description="CIFAR10 CNN Evaluation with Drift Handling")
+    parser = argparse.ArgumentParser(description="CIFAR10 Policy-Based Drift Handling")
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--drift_type', type=str, default='gaussian',
-                      choices=['gaussian', 'rotation', 'blur', 'color', 'intensity'])
+    parser.add_argument('--drift_type', type=str, default='color_balance',
+                      choices=['color_balance', 'darkness', 'soft_gamma', 'color_wash'])
     parser.add_argument('--n_rounds', type=int, default=200)
     parser.add_argument('--lr', type=float, default=0.005)
-    parser.add_argument('--policy_id', type=int, default=0)
+    parser.add_argument('--policy_id', type=int, default=0, choices=[0, 1, 2, 3])
     parser.add_argument('--setting_id', type=int, default=0)
-    parser.add_argument('--model_path', type=str, default=None)
+    parser.add_argument('--model_path', type=str, default='models/cifar10_best_model.pth')
+    parser.add_argument('--batch_size', type=int, default=128)
     
     args = parser.parse_args()
+    
     model_path = f"../../../models/concept_drift_models/CIFAR10CNN_seed_{args.seed}.pth"
     # Settings dictionary (can be expanded based on your needs)
     settings = {
-        0: {'pi_bar': 0.1, 'drift_rate': 0.1, 'V': 65},
+        0: {'pi_bar': 0.1, 'drift_rate': 0.01, 'V': 65},
         1: {'pi_bar': 0.15, 'drift_rate': 0.01, 'V': 65},
         2: {'pi_bar': 0.20, 'drift_rate': 0.01, 'V': 65},
         3: {'pi_bar': 0.05, 'drift_rate': 0.01, 'V': 65},
@@ -275,6 +315,7 @@ def main():
         26: {'pi_bar': 0.15, 'drift_rate': 0.003, 'V': 115},
         27: {'pi_bar': 0.20, 'drift_rate': 0.003, 'V': 115},
         28: {'pi_bar': 0.05, 'drift_rate': 0.003, 'V': 115},
+        29: {'pi_bar': 0.03, 'drift_rate': 0.003, 'V': 115}
         # ... other settings as needed
     }
     
@@ -293,3 +334,6 @@ def main():
 
 if __name__ == "__main__":
     main()
+    
+# Test with smaller model sizes to see if our policy can overperform then
+# (fewer layers, )
