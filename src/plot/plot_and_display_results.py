@@ -947,7 +947,7 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
 
     for policy_id, color in zip(policy_ids, colors):
         # Adjust setting_id for Policy 3 as per your original logic
-        adjusted_setting_id = setting_id + 15 if policy_id == 3 else setting_id
+        adjusted_setting_id = setting_id
         
         # Updated regex pattern to include model_name and JSON extension
         pattern = re.compile(
@@ -1059,7 +1059,7 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
     print("\nSummary Statistics:")
     print("-" * 50)
     for policy_id in policy_ids:
-        adjusted_setting_id = setting_id + 15 if policy_id == 3 else setting_id
+        adjusted_setting_id = setting_id
         pattern = re.compile(
             rf'^policy_{policy_id}_setting_{adjusted_setting_id}_schedule_{schedule_type}'
             rf'_src_{source_domain}_tgt_{target_domain}_seed_\d+\.json$'
@@ -1091,10 +1091,10 @@ if __name__ == "__main__":
     source_domain = 'photo'
     target_domain = 'sketch'
     policy_ids = [1, 2, 3, 4]
-    schedule_type = 'burst_0'
+    schedule_type = 'domain_change_burst_2'
     model_name = 'PACSCNN'  # Default model name, can be changed
 
-    for setting_id in range(1, 2):  # Adjust range as needed
+    for setting_id in range(0, 5):  # Adjust range as needed
         compare_policies(
             setting_id=setting_id,
             schedule_type=schedule_type,
