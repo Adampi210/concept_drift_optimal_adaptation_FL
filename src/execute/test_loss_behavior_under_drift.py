@@ -558,11 +558,13 @@ def main():
 
     # Settings dictionary (unchanged)
     settings = {
-        0: {'pi_bar': 0.1, 'V': 65},
-        1: {'pi_bar': 0.1, 'V': 95},
-        2: {'pi_bar': 0.1, 'V': 125},
-        3: {'pi_bar': 0.1, 'V': 155},
-        4: {'pi_bar': 0.1, 'V': 185},
+        0: {'pi_bar': 0.03, 'V': 65},
+        1: {'pi_bar': 0.05, 'V': 65},
+        2: {'pi_bar': 0.1, 'V': 65},
+        3: {'pi_bar': 0.15, 'V': 65},
+        4: {'pi_bar': 0.2, 'V': 65},
+        5: {'pi_bar': 0.25, 'V': 65},
+        6: {'pi_bar': 0.3, 'V': 65},
     }
     
     # Existing arguments
