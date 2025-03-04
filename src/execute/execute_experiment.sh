@@ -20,7 +20,7 @@ experiment_filename='test_loss_behavior_under_drift.py'
 seeds=(0 1 2 4 5)
 
 # Directory to store log files
-log_dir="../logs"
+log_dir="../../logs"
 mkdir -p "$log_dir"  # Create log directory if it doesn't exist
 
 # Get current timestamp for log filenames
@@ -35,7 +35,7 @@ for seed in "${seeds[@]}"; do
     tgt_log_str=$(echo "$TGT_SET" | tr ' ' '_')
 
     # Construct a unique log filename
-    log_file="$log_dir/drift_${src_log_str}_to_${tgt_log_str}_policy${POLICY_ID}_setting${SETTING_ID}_schedule${SCHEDULE}_seed${seed}_${timestamp}.log"
+    log_file="$log_dir/drift_${src_log_str}_to_${tgt_log_str}_policy_${POLICY_ID}_setting${SETTING_ID}_schedule${SCHEDULE}_seed${seed}_${timestamp}.log"
 
     # Display the current experiment configuration
     echo "=========================================="

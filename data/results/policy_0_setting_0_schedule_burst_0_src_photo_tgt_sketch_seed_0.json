@@ -1,0 +1,64 @@
+{
+    "parameters": {
+        "source_domains": [
+            "photo"
+        ],
+        "target_domains": [
+            "sketch"
+        ],
+        "model_path": "/scratch/gilbreth/apiasecz/models/concept_drift_models/PACSCNN_photo_seed_0.pth",
+        "model_architecture": "PACSCNN",
+        "seed": 0,
+        "n_rounds": 5,
+        "learning_rate": 0.005,
+        "batch_size": 128,
+        "policy_id": 0,
+        "setting_id": 0,
+        "pi_bar": 0.03,
+        "V": 65
+    },
+    "schedule_params": {
+        "schedule_type": "burst_0",
+        "burst_interval": 50,
+        "burst_duration": 5,
+        "base_rate": 0.0,
+        "burst_rate": 0.2
+    },
+    "results": [
+        {
+            "t": 0,
+            "accuracy": 0.7171103358268738,
+            "loss": 0.7801003456115723,
+            "decision": 0,
+            "drift_rate": 0.2
+        },
+        {
+            "t": 1,
+            "accuracy": 0.6379206776618958,
+            "loss": 1.5148302912712097,
+            "decision": 0,
+            "drift_rate": 0.2
+        },
+        {
+            "t": 2,
+            "accuracy": 0.5440340936183929,
+            "loss": 2.092925416795831,
+            "decision": 0,
+            "drift_rate": 0.2
+        },
+        {
+            "t": 3,
+            "accuracy": 0.5098913013935089,
+            "loss": 2.688430298929629,
+            "decision": 0,
+            "drift_rate": 0.2
+        },
+        {
+            "t": 4,
+            "accuracy": 0.4590773830811183,
+            "loss": 3.0345428431475603,
+            "decision": 0,
+            "drift_rate": 0.2
+        }
+    ]
+}

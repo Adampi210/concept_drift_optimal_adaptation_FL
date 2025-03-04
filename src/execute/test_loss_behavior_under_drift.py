@@ -13,7 +13,11 @@ import argparse
 from fl_toolkit import *  # Ensure fl_toolkit is correctly installed and accessible
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
+torch.backends.cudnn.enabled = False
 
+# =========================
+# Models
+# =========================
 class PACSCNN(BaseModelArchitecture):
     def __init__(self, num_classes=7):
         super(PACSCNN, self).__init__()
@@ -55,8 +59,171 @@ class PACSCNN(BaseModelArchitecture):
         x = self.classifier(x)
         return x
 
+class ResidualBlock(nn.Module):
+    """A residual block with skip connections for PACSCNN_4."""
+    def __init__(self, in_channels, out_channels, stride=1):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
+                nn.BatchNorm2d(out_channels)
+            )
+        else:
+            self.shortcut = nn.Identity()
+
+    def forward(self, x):
+        identity = self.shortcut(x)
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out += identity
+        out = self.relu(out)
+        return out
+
+class PACSCNN_1(BaseModelArchitecture):
+    """A simple CNN with 2 blocks."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_1, self).__init__()
+        self.features = nn.Sequential(
+            # First block
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=1, stride=2),
+            # Second block
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=1, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(128, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+class PACSCNN_2(BaseModelArchitecture):
+    """A moderate CNN with 3 blocks."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_2, self).__init__()
+        self.features = nn.Sequential(
+            # First block
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=1, stride=2),
+            # Second block
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=1, stride=2),
+            # Third block
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=1, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(256, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+class PACSCNN_3(BaseModelArchitecture):
+    """A CNN with 4 blocks, similar to the original PACSCNN."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_3, self).__init__()
+        self.features = nn.Sequential(
+            # First block
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=1, stride=2),
+            # Second block
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=1, stride=2),
+            # Third block
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=1, stride=2),
+            # Fourth block
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=1, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+class PACSCNN_4(BaseModelArchitecture):
+    """A deeper CNN with residual blocks and skip connections."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_4, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            # 64 channels
+            ResidualBlock(64, 64, stride=1),
+            ResidualBlock(64, 64, stride=1),
+            # Downsample to 128 channels
+            ResidualBlock(64, 128, stride=2),
+            ResidualBlock(128, 128, stride=1),
+            # Downsample to 256 channels
+            ResidualBlock(128, 256, stride=2),
+            ResidualBlock(256, 256, stride=1),
+            # Downsample to 512 channels
+            ResidualBlock(256, 512, stride=2),
+            ResidualBlock(512, 512, stride=1),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+# =========================
+# Policies
+# =========================
 class Policy:
-    def __init__(self, alpha=0.01):
+    def __init__(self, alpha=0.01, L_i = 1):
         """
         Initialize the Policy class.
 
@@ -67,7 +234,7 @@ class Policy:
         self.update_history = []  # History of update times
         self.last_gradient_magnitude = None  # Store the last gradient magnitude
         self.alpha = alpha  # Learning rate
-        self.L_i = 1.0  # Lipschitz constant defined internally (default value)
+        self.L_i = L_i # Lipschitz constant defined internally (default value)
 
     def update_gradient(self, model, data_loader, criterion, device):
         """
@@ -148,6 +315,9 @@ class Policy:
         else:
             raise ValueError("Invalid decision_id")
 
+# =========================
+# Drift Scheduling
+# =========================
 class DriftScheduler:
     # Class-level configuration dictionary for all schedule types
     SCHEDULE_CONFIGS = {
@@ -377,6 +547,7 @@ def test_policy_under_drift(
     source_domains,
     target_domains,
     model_path,
+    model_architecture,
     seed,
     drift_scheduler,
     n_rounds,
@@ -385,7 +556,8 @@ def test_policy_under_drift(
     setting_id=0,
     batch_size=128,
     pi_bar=0.1,
-    V=1
+    V=1, 
+    L_i=1.0
     ):
     """
     Modify retraining with policy under drift using the new DriftScheduler.
@@ -411,7 +583,7 @@ def test_policy_under_drift(
     torch.manual_seed(seed)
 
     # Initialize policy and data handler
-    policy = Policy(alpha=learning_rate)
+    policy = Policy(alpha=learning_rate, L_i = L_i)
     data_handler = PACSDataHandler()
     data_handler.load_data()
     train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
@@ -431,7 +603,7 @@ def test_policy_under_drift(
     # Initialize client
     client = FederatedDriftClient(
         client_id=0,
-        model_architecture=PACSCNN,
+        model_architecture=model_architecture,
         train_domain_drift=train_drift,
         test_domain_drift=test_drift
     )
@@ -477,7 +649,7 @@ def test_policy_under_drift(
 
         # Make retraining decision
         decision = policy.policy_decision(
-            decision_id=4,  # Or 0, 1, 2, 3 as needed
+            decision_id=policy_id,  # Or 0, 1, 2, 3 as needed
             loss_curr=loss_array[-1],
             loss_prev=loss_array[-2],
             current_time=t,
@@ -530,6 +702,7 @@ def test_policy_under_drift(
             'source_domains': source_domains,
             'target_domains': target_domains,
             'model_path': model_path,
+            "model_architecture": model_architecture.__name__,
             'seed': seed,
             'n_rounds': n_rounds,
             'learning_rate': learning_rate,
@@ -558,13 +731,22 @@ def main():
 
     # Settings dictionary (unchanged)
     settings = {
-        0: {'pi_bar': 0.03, 'V': 65},
-        1: {'pi_bar': 0.05, 'V': 65},
-        2: {'pi_bar': 0.1, 'V': 65},
-        3: {'pi_bar': 0.15, 'V': 65},
-        4: {'pi_bar': 0.2, 'V': 65},
-        5: {'pi_bar': 0.25, 'V': 65},
-        6: {'pi_bar': 0.3, 'V': 65},
+        0: {'pi_bar': 0.03, 'V': 65, 'L_i': 1.0},
+        1: {'pi_bar': 0.05, 'V': 65, 'L_i': 1.0},
+        2: {'pi_bar': 0.1, 'V': 65, 'L_i': 1.0},
+        3: {'pi_bar': 0.15, 'V': 65, 'L_i': 1.0},
+        4: {'pi_bar': 0.2, 'V': 65, 'L_i': 1.0},
+        5: {'pi_bar': 0.25, 'V': 65, 'L_i': 1.0},
+        6: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
+        7: {'pi_bar': 0.1, 'V': 1, 'L_i': 1.0},
+        8: {'pi_bar': 0.1, 'V': 10, 'L_i': 1.0},
+        9: {'pi_bar': 0.1, 'V': 100, 'L_i': 1.0},
+        10: {'pi_bar': 0.1, 'V': 1, 'L_i': 10.0},
+        11: {'pi_bar': 0.1, 'V': 10, 'L_i': 10.0},
+        12: {'pi_bar': 0.1, 'V': 100, 'L_i': 10.0},
+        13: {'pi_bar': 0.1, 'V': 1, 'L_i': 100.0},
+        14: {'pi_bar': 0.1, 'V': 10, 'L_i': 100.0},
+        15: {'pi_bar': 0.1, 'V': 100, 'L_i': 100.0}
     }
     
     # Existing arguments
@@ -576,13 +758,23 @@ def main():
     parser.add_argument('--policy_id', type=int, default=0)
     parser.add_argument('--setting_id', type=int, default=0)
     
+    architecture_used = 'PACSCNN'
+    
+    model_architectures = {
+        'PACSCNN': PACSCNN,
+        'PACSCNN_1': PACSCNN_1,
+        'PACSCNN_2': PACSCNN_2,
+        'PACSCNN_3': PACSCNN_3,
+        'PACSCNN_4': PACSCNN_4
+    }
+    
     args = parser.parse_args()
     # Initialize DriftScheduler
     drift_scheduler = DriftScheduler(args.schedule_type)
 
     # Construct model path
     domains_str = "_".join(args.src_domains)
-    model_path = f"/scratch/gautschi/apiasecz/models/concept_drift_models/PACSCNN_{domains_str}_seed_{args.seed}.pth"
+    model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/{architecture_used}_{domains_str}_seed_{args.seed}.pth"
 
     # Get settings
     current_settings = settings[args.setting_id]
@@ -592,6 +784,7 @@ def main():
         source_domains=args.src_domains,
         target_domains=args.tgt_domains,
         model_path=model_path,
+        model_architecture=model_architectures[architecture_used],
         seed=args.seed,
         drift_scheduler=drift_scheduler,
         n_rounds=args.n_rounds,
@@ -599,7 +792,8 @@ def main():
         policy_id=args.policy_id,
         setting_id=args.setting_id,
         pi_bar=current_settings['pi_bar'],
-        V=current_settings['V']
+        V=current_settings['V'], 
+        L_i=current_settings['L_i']
     )
 
 if __name__ == "__main__":
