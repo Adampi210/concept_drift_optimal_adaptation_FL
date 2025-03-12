@@ -9,11 +9,20 @@ import numpy as np
 import random
 import csv
 import argparse
+import time
+
 
 from fl_toolkit import *  # Ensure fl_toolkit is correctly installed and accessible
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu') 
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+print(f"Device: {device}")
+print(f"CUDA Version: {torch.version.cuda}")
+print(f"cuDNN Version: {torch.backends.cudnn.version()}")
+print(f"PyTorch Version: {torch.__version__}")
 
+# =========================
+# Models
+# =========================
 class PACSCNN(BaseModelArchitecture):
     def __init__(self, num_classes=7):
         super(PACSCNN, self).__init__()
@@ -55,8 +64,171 @@ class PACSCNN(BaseModelArchitecture):
         x = self.classifier(x)
         return x
 
+class ResidualBlock(nn.Module):
+    """A residual block with skip connections for PACSCNN_4."""
+    def __init__(self, in_channels, out_channels, stride=1):
+        super(ResidualBlock, self).__init__()
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
+        self.bn1 = nn.BatchNorm2d(out_channels)
+        self.relu = nn.ReLU(inplace=True)
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
+        self.bn2 = nn.BatchNorm2d(out_channels)
+        if stride != 1 or in_channels != out_channels:
+            self.shortcut = nn.Sequential(
+                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
+                nn.BatchNorm2d(out_channels)
+            )
+        else:
+            self.shortcut = nn.Identity()
+
+    def forward(self, x):
+        identity = self.shortcut(x)
+        out = self.conv1(x)
+        out = self.bn1(out)
+        out = self.relu(out)
+        out = self.conv2(out)
+        out = self.bn2(out)
+        out += identity
+        out = self.relu(out)
+        return out
+
+class PACSCNN_1(BaseModelArchitecture):
+    """A simple CNN with 2 blocks."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_1, self).__init__()
+        self.features = nn.Sequential(
+            # First block
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=1, stride=2),
+            # Second block
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=1, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(128, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+class PACSCNN_2(BaseModelArchitecture):
+    """A moderate CNN with 3 blocks."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_2, self).__init__()
+        self.features = nn.Sequential(
+            # First block
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=1, stride=2),
+            # Second block
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=1, stride=2),
+            # Third block
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=1, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(256, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+class PACSCNN_3(BaseModelArchitecture):
+    """A CNN with 4 blocks, similar to the original PACSCNN."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_3, self).__init__()
+        self.features = nn.Sequential(
+            # First block
+            nn.Conv2d(3, 64, kernel_size=3, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(64, 64, kernel_size=1, stride=2),
+            # Second block
+            nn.Conv2d(64, 128, kernel_size=3, padding=1),
+            nn.BatchNorm2d(128),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(128, 128, kernel_size=1, stride=2),
+            # Third block
+            nn.Conv2d(128, 256, kernel_size=3, padding=1),
+            nn.BatchNorm2d(256),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(256, 256, kernel_size=1, stride=2),
+            # Fourth block
+            nn.Conv2d(256, 512, kernel_size=3, padding=1),
+            nn.BatchNorm2d(512),
+            nn.ReLU(inplace=True),
+            nn.Conv2d(512, 512, kernel_size=1, stride=2),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+class PACSCNN_4(BaseModelArchitecture):
+    """A deeper CNN with residual blocks and skip connections."""
+    def __init__(self, num_classes=7):
+        super(PACSCNN_4, self).__init__()
+        self.features = nn.Sequential(
+            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
+            nn.BatchNorm2d(64),
+            nn.ReLU(inplace=True),
+            # 64 channels
+            ResidualBlock(64, 64, stride=1),
+            ResidualBlock(64, 64, stride=1),
+            # Downsample to 128 channels
+            ResidualBlock(64, 128, stride=2),
+            ResidualBlock(128, 128, stride=1),
+            # Downsample to 256 channels
+            ResidualBlock(128, 256, stride=2),
+            ResidualBlock(256, 256, stride=1),
+            # Downsample to 512 channels
+            ResidualBlock(256, 512, stride=2),
+            ResidualBlock(512, 512, stride=1),
+        )
+        self.classifier = nn.Sequential(
+            nn.AdaptiveAvgPool2d((1, 1)),
+            nn.Flatten(),
+            nn.Dropout(p=0.5),
+            nn.Linear(512, num_classes)
+        )
+
+    def forward(self, x):
+        x = self.features(x)
+        x = self.classifier(x)
+        return x
+
+# =========================
+# Policies
+# =========================
 class Policy:
-    def __init__(self, alpha=0.01):
+    def __init__(self, alpha=0.01, L_i = 1):
         """
         Initialize the Policy class.
 
@@ -67,7 +239,7 @@ class Policy:
         self.update_history = []  # History of update times
         self.last_gradient_magnitude = None  # Store the last gradient magnitude
         self.alpha = alpha  # Learning rate
-        self.L_i = 1.0  # Lipschitz constant defined internally (default value)
+        self.L_i = L_i # Lipschitz constant defined internally (default value)
 
     def update_gradient(self, model, data_loader, criterion, device):
         """
@@ -148,15 +320,9 @@ class Policy:
         else:
             raise ValueError("Invalid decision_id")
 
-# Set seed for reproducibility
-def set_seed(seed):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
-
+# =========================
+# Drift Scheduling
+# =========================
 class DriftScheduler:
     # Class-level configuration dictionary for all schedule types
     SCHEDULE_CONFIGS = {
@@ -164,46 +330,53 @@ class DriftScheduler:
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
-            'burst_rate': 0.2
+            'burst_rate': 0.2,
+            'initial_delay': 50  # Add initial delay
         },
         "burst_1": lambda: {
             'burst_interval': 80,
             'burst_duration': 5,
             'base_rate': 0.0,
-            'burst_rate': 0.4
+            'burst_rate': 0.4,
+            'initial_delay': 80  # Add initial delay
         },
         "RV_burst_0": lambda: {
             'burst_interval': np.random.uniform(30, 70),
             'burst_duration': np.random.uniform(1, 9),
             'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.1, 0.3)
+            'burst_rate': np.random.uniform(0.1, 0.3),
+            'initial_delay': np.random.uniform(30, 70)  # Random initial delay
         },
         "RV_burst_1": lambda: {
             'burst_interval': np.random.uniform(80, 120),
             'burst_duration': np.random.uniform(1, 9),
             'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.4, 0.7)
+            'burst_rate': np.random.uniform(0.4, 0.7),
+            'initial_delay': np.random.uniform(80, 120)  # Random initial delay
         },
         "domain_change_burst_0": lambda: {
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.2,
-            'target_domains': ['sketch', 'art_painting', 'cartoon']
+            'target_domains': ['sketch', 'art_painting', 'cartoon'],
+            'initial_delay': 50  # Add initial delay
         },
         "domain_change_burst_1": lambda: {
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.2,
-            'target_domains': ['sketch', 'cartoon', 'art_painting']
+            'target_domains': ['sketch', 'cartoon', 'art_painting'],
+            'initial_delay': 50  # Add initial delay
         },
         "domain_change_burst_2": lambda: {
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.2,
-            'target_domains': ['sketch', 'cartoon', 'photo']
+            'target_domains': ['sketch', 'cartoon', 'photo'],
+            'initial_delay': 50  # Add initial delay
         },
         "oscillating_0": lambda: {
             'high_duration': 20,
@@ -273,9 +446,14 @@ class DriftScheduler:
 
         # Burst schedules (including RV and domain-changing bursts)
         if 'burst_interval' in self.__dict__:
-            cycle_position = t % self.burst_interval
+            # If within the initial delay period, return base_rate
+            if t < self.initial_delay:
+                return self.base_rate
+            # Adjust time to account for the initial delay
+            adjusted_t = t - self.initial_delay
+            cycle_position = adjusted_t % self.burst_interval
             # Handle domain changes at the end of a burst
-            if 'target_domains' in self.__dict__ and cycle_position == self.burst_duration and t > 0 and t != self.last_burst_time:
+            if 'target_domains' in self.__dict__ and cycle_position == self.burst_duration and adjusted_t > 0 and t != self.last_burst_time:
                 self.select_new_target_domain()
                 self.last_burst_time = t
             return self.burst_rate if cycle_position < self.burst_duration else self.base_rate
@@ -320,7 +498,8 @@ class DriftScheduler:
                 'burst_interval': self.burst_interval,
                 'burst_duration': self.burst_duration,
                 'base_rate': self.base_rate,
-                'burst_rate': self.burst_rate
+                'burst_rate': self.burst_rate,
+                'initial_delay': self.initial_delay  # Include initial_delay in params
             })
             if 'target_domains' in self.__dict__:
                 params['target_domains'] = self.target_domains
@@ -372,11 +551,21 @@ class DriftScheduler:
             str or None: The current target domain, or None if not applicable.
         """
         return self.current_target_domain if 'target_domains' in self.__dict__ else None
-    
+
+# Set seed for reproducibility
+def set_seed(seed):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
+    torch.backends.cudnn.deterministic = True
+    torch.backends.cudnn.benchmark = False 
+  
 def test_policy_under_drift(
     source_domains,
     target_domains,
     model_path,
+    model_architecture,
     seed,
     drift_scheduler,
     n_rounds,
@@ -385,7 +574,8 @@ def test_policy_under_drift(
     setting_id=0,
     batch_size=128,
     pi_bar=0.1,
-    V=1
+    V=1, 
+    L_i=1.0
     ):
     """
     Modify retraining with policy under drift using the new DriftScheduler.
@@ -411,7 +601,7 @@ def test_policy_under_drift(
     torch.manual_seed(seed)
 
     # Initialize policy and data handler
-    policy = Policy(alpha=learning_rate)
+    policy = Policy(alpha=learning_rate, L_i = L_i)
     data_handler = PACSDataHandler()
     data_handler.load_data()
     train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
@@ -431,10 +621,11 @@ def test_policy_under_drift(
     # Initialize client
     client = FederatedDriftClient(
         client_id=0,
-        model_architecture=PACSCNN,
+        model_architecture=model_architecture,
         train_domain_drift=train_drift,
         test_domain_drift=test_drift
     )
+    print(f'Client device: {client.device}')
 
     # Set up data loaders
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
@@ -452,9 +643,10 @@ def test_policy_under_drift(
     # Track loss and results
     loss_array = [client.get_train_metric(metric_fn=criterion, verbose=False)]
     results = []
-
+    time_arr = []
     # Training loop
     for t in range(n_rounds):
+        time_start_round = time.time()
         # Get current drift rate from scheduler
         current_drift_rate = drift_scheduler.get_drift_rate(t)
 
@@ -467,8 +659,9 @@ def test_policy_under_drift(
         # Apply drift rates
         client.train_domain_drift.drift_rate = current_drift_rate
         client.test_domain_drift.drift_rate = current_drift_rate
-        client.apply_test_drift()
-        client.apply_train_drift()
+        if current_drift_rate > 0:
+            client.apply_test_drift()
+            client.apply_train_drift()
 
         # Evaluate and compute loss
         current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
@@ -477,7 +670,7 @@ def test_policy_under_drift(
 
         # Make retraining decision
         decision = policy.policy_decision(
-            decision_id=4,  # Or 0, 1, 2, 3 as needed
+            decision_id=policy_id,  # Or 0, 1, 2, 3 as needed
             loss_curr=loss_array[-1],
             loss_prev=loss_array[-2],
             current_time=t,
@@ -488,7 +681,7 @@ def test_policy_under_drift(
         # Train or evaluate based on decision
         if decision:
             current_loss = client.train(
-                epochs=5,
+                epochs=2,
                 optimizer=optimizer,
                 loss_fn=criterion,
                 verbose=True
@@ -509,7 +702,8 @@ def test_policy_under_drift(
             result_dict['target_domain'] = drift_scheduler.get_current_target_domain()
 
         results.append(result_dict)
-
+        time_arr.append(time.time() - time_start_round)
+        print(f'Round {t} took {time_arr[-1]} seconds')
         # Print progress
         print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}, Drift = {current_drift_rate:.4f}")
         if hasattr(drift_scheduler, 'target_domains'):
@@ -530,6 +724,7 @@ def test_policy_under_drift(
             'source_domains': source_domains,
             'target_domains': target_domains,
             'model_path': model_path,
+            "model_architecture": model_architecture.__name__,
             'seed': seed,
             'n_rounds': n_rounds,
             'learning_rate': learning_rate,
@@ -545,24 +740,42 @@ def test_policy_under_drift(
 
     with open(results_filename, 'w') as f:
         json.dump(data, f, indent=4)
-
+    print(f"Average time per round: {np.mean(time_arr)}")
+    print(f"Total time: {np.sum(time_arr)}")
     return results
     
 def main():
     parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
     
     # Update schedule type choices to reflect DriftScheduler's capabilities
-    parser.add_argument('--schedule_type', type=str, default='burst_0',
+    parser.add_argument('--schedule_type', type=str, default='domain_change_burst_0',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')
 
     # Settings dictionary (unchanged)
     settings = {
-        0: {'pi_bar': 0.1, 'V': 65},
-        1: {'pi_bar': 0.1, 'V': 95},
-        2: {'pi_bar': 0.1, 'V': 125},
-        3: {'pi_bar': 0.1, 'V': 155},
-        4: {'pi_bar': 0.1, 'V': 185},
+        0: {'pi_bar': 0.03, 'V': 65, 'L_i': 1.0},
+        1: {'pi_bar': 0.05, 'V': 65, 'L_i': 1.0},
+        2: {'pi_bar': 0.1, 'V': 65, 'L_i': 1.0},
+        3: {'pi_bar': 0.15, 'V': 65, 'L_i': 1.0},
+        4: {'pi_bar': 0.2, 'V': 65, 'L_i': 1.0},
+        5: {'pi_bar': 0.25, 'V': 65, 'L_i': 1.0},
+        6: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
+        7: {'pi_bar': 0.1, 'V': 1, 'L_i': 1.0},
+        8: {'pi_bar': 0.1, 'V': 10, 'L_i': 1.0},
+        9: {'pi_bar': 0.1, 'V': 100, 'L_i': 1.0},
+        10: {'pi_bar': 0.1, 'V': 1, 'L_i': 10.0},
+        11: {'pi_bar': 0.1, 'V': 10, 'L_i': 10.0},
+        12: {'pi_bar': 0.1, 'V': 100, 'L_i': 10.0},
+        13: {'pi_bar': 0.1, 'V': 1, 'L_i': 100.0},
+        14: {'pi_bar': 0.1, 'V': 10, 'L_i': 100.0},
+        15: {'pi_bar': 0.1, 'V': 100, 'L_i': 100.0}, 
+        16: {'pi_bar': 0.1, 'V': 1, 'L_i': 50.0}, 
+        17: {'pi_bar': 0.1, 'V': 10, 'L_i': 50.0},
+        18: {'pi_bar': 0.1, 'V': 100, 'L_i': 50.0},
+        19: {'pi_bar': 0.1, 'V': 1, 'L_i': 200.0},
+        20: {'pi_bar': 0.1, 'V': 10, 'L_i': 200.0},
+        21: {'pi_bar': 0.1, 'V': 100, 'L_i': 200.0}
     }
     
     # Existing arguments
@@ -571,16 +784,32 @@ def main():
     parser.add_argument('--tgt_domains', type=str, nargs='+', default=['sketch'])
     parser.add_argument('--n_rounds', type=int, default=200)
     parser.add_argument('--lr', type=float, default=0.005)
-    parser.add_argument('--policy_id', type=int, default=0)
+    parser.add_argument('--policy_id', type=int, default=4)
     parser.add_argument('--setting_id', type=int, default=0)
+    parser.add_argument('--model_name', type=str, default='PACSCNN_3', choices=['PACSCNN', 'PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
+    
+    model_architectures = {
+        'PACSCNN': PACSCNN,
+        'PACSCNN_1': PACSCNN_1,
+        'PACSCNN_2': PACSCNN_2,
+        'PACSCNN_3': PACSCNN_3,
+        'PACSCNN_4': PACSCNN_4
+    }
     
     args = parser.parse_args()
+    
+    print(f'Model used: {args.model_name}')
+    
     # Initialize DriftScheduler
     drift_scheduler = DriftScheduler(args.schedule_type)
 
     # Construct model path
     domains_str = "_".join(args.src_domains)
-    model_path = f"/scratch/gautschi/apiasecz/models/concept_drift_models/PACSCNN_{domains_str}_seed_{args.seed}.pth"
+    ###### DELETE THIS LINE AFTER TESTING
+    if args.seed == 42:
+        model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_0.pth"
+    else:
+        model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_{args.seed}.pth"
 
     # Get settings
     current_settings = settings[args.setting_id]
@@ -590,6 +819,7 @@ def main():
         source_domains=args.src_domains,
         target_domains=args.tgt_domains,
         model_path=model_path,
+        model_architecture=model_architectures[args.model_name],
         seed=args.seed,
         drift_scheduler=drift_scheduler,
         n_rounds=args.n_rounds,
@@ -597,7 +827,8 @@ def main():
         policy_id=args.policy_id,
         setting_id=args.setting_id,
         pi_bar=current_settings['pi_bar'],
-        V=current_settings['V']
+        V=current_settings['V'], 
+        L_i=current_settings['L_i']
     )
 
 if __name__ == "__main__":

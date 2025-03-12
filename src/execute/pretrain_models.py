@@ -409,7 +409,7 @@ def main():
                         help='List of model architectures to train')
     parser.add_argument('--domains', type=str, nargs='+', default=['photo', 'cartoon', 'sketch', 'art_painting'],
                         help='List of domains to train on')
-    parser.add_argument('--epochs', type=int, default=200, help='Number of training epochs per model-domain')
+    parser.add_argument('--epochs', type=int, default=100, help='Number of training epochs per model-domain')
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size for training')
     parser.add_argument('--learning_rate', type=float, default=0.005, help='Initial learning rate')
     parser.add_argument('--optimizer', type=str, default='adam', choices=['adam', 'sgd'], help='Optimizer choice')
@@ -417,8 +417,6 @@ def main():
     parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Directory to save training results')
     args = parser.parse_args()
 
-    # Set seed for reproducibility
-    set_seed(args.seed)
 
     # Ensure save directories exist
     os.makedirs(args.model_save_dir, exist_ok=True)
@@ -443,17 +441,21 @@ def main():
         domain_str = '_'.join(args.domains)
         print(f"\n========== Training {model_name} on Domain: {domain_str} ==========")
 
-        # Define model save path
-        model_filename = f"{model_name}_{domain_str}_seed_{args.seed}.pth"
-        model_save_path = os.path.join(args.model_save_dir, model_filename)
-
-        # Define results save path
-        results_filename = f"{model_name}_{domain_str}_seed_{args.seed}_results.json"
-        results_save_path = os.path.join(args.results_save_dir, results_filename)
-
         # Train the model
         try:
+            
             for seed in range(5):
+                print(f'Using seed {seed}')
+                set_seed(seed)
+                
+                # Define model save path
+                model_filename = f"{model_name}_{domain_str}_seed_{seed}.pth"
+                model_save_path = os.path.join(args.model_save_dir, model_filename)
+
+                # Define results save path
+                results_filename = f"{model_name}_{domain_str}_seed_{seed}_results.json"
+                results_save_path = os.path.join(args.results_save_dir, results_filename)
+
                 train_model(
                     model_architecture=model_class,
                     model_path=model_save_path,

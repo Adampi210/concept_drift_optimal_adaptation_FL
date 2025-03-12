@@ -6,14 +6,17 @@ ALL_SRC_DOMAINS=("photo")
 # List of target domain sets (each entry can be space-separated if multiple domains)
 ALL_TGT_DOMAINS=("sketch")
 
+# List of model names to iterate over
+ALL_MODEL_NAMES=("PACSCNN_1" "PACSCNN_3")
+
 # Policies to iterate over
-POLICIES=(0 1 2)
+POLICIES=(4)
 
 # Setting IDs to iterate over
-SETTING_IDS=(0 1 2 3 4 5 6)
+SETTING_IDS=(22 23 24 25 26 27 28 29)
 
 # Schedules to iterate over
-SCHEDULES=("burst_0" "RV_burst_0" "domain_change_burst_0" "domain_change_burst_1" "domain_change_burst_2")
+SCHEDULES=("domain_change_burst_0")
 
 # Array of seeds for reproducibility
-seeds=(0 1 2 4 5)
+seeds=(0 1 2 3 4)

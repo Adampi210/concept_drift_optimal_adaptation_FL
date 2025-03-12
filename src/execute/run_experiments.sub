@@ -1,10 +1,12 @@
 #!/bin/bash
-#SBATCH -A cgb-n            # Account name (adjust as needed)
+#SBATCH -A cgb-l            # Account name (adjust as needed)
 #SBATCH --nodes=1           # Number of nodes
 #SBATCH --ntasks=1          # Number of tasks
-#SBATCH --cpus-per-task=14  # CPUs per task
+#SBATCH --cpus-per-task=16  # CPUs per task
 #SBATCH --gpus-per-node=1   # GPUs per node
 #SBATCH --time=96:00:00     # Time limit (adjust as needed)
+
+# To check the usage: squeue | grep cgb
 
 # Load necessary modules (adjust based on your system)
 module load cuda
@@ -22,15 +24,19 @@ len_B=${#ALL_TGT_DOMAINS[@]}
 len_C=${#POLICIES[@]}
 len_D=${#SETTING_IDS[@]}
 len_E=${#SCHEDULES[@]}
+len_F=${#ALL_MODEL_NAMES[@]}  # Length of model names array
 
 # Calculate indices based on SLURM_ARRAY_TASK_ID
-e_idx=$((SLURM_ARRAY_TASK_ID % len_E))
-d_idx=$(((SLURM_ARRAY_TASK_ID / len_E) % len_D))
-c_idx=$(((SLURM_ARRAY_TASK_ID / (len_E * len_D)) % len_C))
-b_idx=$(((SLURM_ARRAY_TASK_ID / (len_E * len_D * len_C)) % len_B))
-a_idx=$((SLURM_ARRAY_TASK_ID / (len_E * len_D * len_C * len_B)))
+f_idx=$((SLURM_ARRAY_TASK_ID % len_F))
+remainder=$((SLURM_ARRAY_TASK_ID / len_F))
+e_idx=$((remainder % len_E))
+d_idx=$(((remainder / len_E) % len_D))
+c_idx=$(((remainder / (len_E * len_D)) % len_C))
+b_idx=$(((remainder / (len_E * len_D * len_C)) % len_B))
+a_idx=$((remainder / (len_E * len_D * len_C * len_B)))
 
 # Assign parameters for this task
+MODEL_NAME="${ALL_MODEL_NAMES[$f_idx]}"  # Assign the model name
 SRC_SET="${ALL_SRC_DOMAINS[$a_idx]}"
 TGT_SET="${ALL_TGT_DOMAINS[$b_idx]}"
 POLICY_ID="${POLICIES[$c_idx]}"
@@ -38,4 +44,4 @@ SETTING_ID="${SETTING_IDS[$d_idx]}"
 SCHEDULE="${SCHEDULES[$e_idx]}"
 
 # Execute the experiment script with the assigned parameters
-./execute_experiment.sh "$SRC_SET" "$TGT_SET" "$POLICY_ID" "$SETTING_ID" "$SCHEDULE"
+./execute_experiment.sh "$MODEL_NAME" "$SRC_SET" "$TGT_SET" "$POLICY_ID" "$SETTING_ID" "$SCHEDULE"

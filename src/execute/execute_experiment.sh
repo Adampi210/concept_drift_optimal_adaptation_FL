@@ -5,11 +5,12 @@
 
 # ========== PARAMETERS FROM SLURM ==========
 
-SRC_SET="$1"        # Source domains
-TGT_SET="$2"        # Target domains
-POLICY_ID="$3"      # Policy ID
-SETTING_ID="$4"     # Setting ID
-SCHEDULE="$5"       # Schedule type
+MODEL_NAME="$1"     # Model name
+SRC_SET="$2"        # Source domains
+TGT_SET="$3"        # Target domains
+POLICY_ID="$4"      # Policy ID
+SETTING_ID="$5"     # Setting ID
+SCHEDULE="$6"       # Schedule type
 
 # ========== USER CONFIGURATION ==========
 
@@ -17,7 +18,7 @@ SCHEDULE="$5"       # Schedule type
 experiment_filename='test_loss_behavior_under_drift.py'
 
 # Array of seeds for reproducibility
-seeds=(0 1 2 4 5)
+seeds=(0 1 2 3 4)
 
 # Directory to store log files
 log_dir="../../logs"
@@ -34,12 +35,13 @@ for seed in "${seeds[@]}"; do
     src_log_str=$(echo "$SRC_SET" | tr ' ' '_')
     tgt_log_str=$(echo "$TGT_SET" | tr ' ' '_')
 
-    # Construct a unique log filename
-    log_file="$log_dir/drift_${src_log_str}_to_${tgt_log_str}_policy_${POLICY_ID}_setting${SETTING_ID}_schedule${SCHEDULE}_seed${seed}_${timestamp}.log"
+    # Construct a unique log filename including model name
+    log_file="$log_dir/drift_${src_log_str}_to_${tgt_log_str}_model_${MODEL_NAME}_policy_${POLICY_ID}_setting${SETTING_ID}_schedule${SCHEDULE}_seed${seed}_${timestamp}.log"
 
     # Display the current experiment configuration
     echo "=========================================="
     echo "Running experiment with the following configuration:"
+    echo "  Model Name     : ${MODEL_NAME}"
     echo "  Source Domains : ${SRC_SET}"
     echo "  Target Domains : ${TGT_SET}"
     echo "  Policy ID      : ${POLICY_ID}"
@@ -51,6 +53,7 @@ for seed in "${seeds[@]}"; do
 
     # Execute the Python experiment script
     python3 "$experiment_filename" \
+        --model_name "$MODEL_NAME" \
         --seed "$seed" \
         --src_domains $SRC_SET \
         --tgt_domains $TGT_SET \
