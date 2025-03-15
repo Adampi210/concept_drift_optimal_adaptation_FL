@@ -23,47 +23,6 @@ print(f"PyTorch Version: {torch.__version__}")
 # =========================
 # Models
 # =========================
-class PACSCNN(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN, self).__init__()
-        self.features = nn.Sequential(
-            # First block
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Second block
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Third block
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Fourth block
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Dropout(p=0.5),
-            nn.Linear(512, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
-
 class ResidualBlock(nn.Module):
     """A residual block with skip connections for PACSCNN_4."""
     def __init__(self, in_channels, out_channels, stride=1):
@@ -272,7 +231,7 @@ class Policy:
                 break  # Use one batch for efficiency
         model.train()
 
-    def policy_decision(self, decision_id, loss_curr, loss_prev, current_time, V, pi_bar):
+    def policy_decision(self, decision_id, loss_curr, loss_prev, current_time, V, pi_bar, loss_best=float('inf')):
         """
         Decide whether to update the model based on the selected policy.
 
@@ -309,6 +268,17 @@ class Policy:
         elif decision_id == 4:
             # Policy 4: New policy with gradient magnitude and internal L_i
             delta_L = loss_curr - loss_prev
+            grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
+            left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
+            right_side = self.virtual_queue + (pi_bar - 0.5)
+            should_update = left_side >= right_side
+            self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
+            if should_update:
+                self.update_history.append(current_time)
+            return int(should_update)
+        elif decision_id == 5:
+            # Policy 4: New policy with gradient magnitude and internal L_i
+            delta_L = loss_curr - loss_best
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
             right_side = self.virtual_queue + (pi_bar - 0.5)
@@ -642,6 +612,7 @@ def test_policy_under_drift(
 
     # Track loss and results
     loss_array = [client.get_train_metric(metric_fn=criterion, verbose=False)]
+    loss_best = loss_array[0]
     results = []
     time_arr = []
     # Training loop
@@ -667,6 +638,8 @@ def test_policy_under_drift(
         current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
         current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
         loss_array.append(current_loss)
+        if current_loss < loss_best:
+            loss_best = current_loss
 
         # Make retraining decision
         decision = policy.policy_decision(
@@ -675,7 +648,8 @@ def test_policy_under_drift(
             loss_prev=loss_array[-2],
             current_time=t,
             V=1.0,
-            pi_bar=0.1
+            pi_bar=0.1,
+            loss_best=loss_best
         )
 
         # Train or evaluate based on decision
@@ -716,7 +690,7 @@ def test_policy_under_drift(
     tgt_domains_str = "_".join(target_domains)
     results_filename = (
         f"../../data/results/policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}"
-        f"_src_{src_domains_str}_tgt_{tgt_domains_str}_seed_{seed}.json"
+        f"_src_{src_domains_str}_tgt_{tgt_domains_str}_model_{model_architecture.__name__}_seed_{seed}.json"
     )
 
     data = {
@@ -776,14 +750,14 @@ def main():
         19: {'pi_bar': 0.1, 'V': 1, 'L_i': 1000.0},
         20: {'pi_bar': 0.1, 'V': 1000, 'L_i': 1},
         21: {'pi_bar': 0.1, 'V': 1000, 'L_i': 1000},
-        22: {{'pi_bar': 0.1, 'V': 10000, 'L_i': 0.1}},
-        23: {{'pi_bar': 0.1, 'V': 1000, 'L_i': 0.1}},
-        24: {{'pi_bar': 0.1, 'V': 100, 'L_i': 0.1}},
-        25: {{'pi_bar': 0.1, 'V': 10, 'L_i': 0.1}},
-        26: {{'pi_bar': 0.1, 'V': 10000, 'L_i': 0.01}},
-        27: {{'pi_bar': 0.1, 'V': 1000, 'L_i': 0.01}},
-        28: {{'pi_bar': 0.1, 'V': 100, 'L_i': 0.01}},
-        29: {{'pi_bar': 0.1, 'V': 10, 'L_i': 0.01}},
+        22: {'pi_bar': 0.1, 'V': 10000, 'L_i': 0.1},
+        23: {'pi_bar': 0.1, 'V': 1000, 'L_i': 0.1},
+        24: {'pi_bar': 0.1, 'V': 100, 'L_i': 0.1},
+        25: {'pi_bar': 0.1, 'V': 10, 'L_i': 0.1},
+        26: {'pi_bar': 0.1, 'V': 10000, 'L_i': 0.01},
+        27: {'pi_bar': 0.1, 'V': 1000, 'L_i': 0.01},
+        28: {'pi_bar': 0.1, 'V': 100, 'L_i': 0.01},
+        29: {'pi_bar': 0.1, 'V': 10, 'L_i': 0.01},
     }
     
     # Existing arguments
@@ -794,10 +768,9 @@ def main():
     parser.add_argument('--lr', type=float, default=0.005)
     parser.add_argument('--policy_id', type=int, default=4)
     parser.add_argument('--setting_id', type=int, default=0)
-    parser.add_argument('--model_name', type=str, default='PACSCNN_3', choices=['PACSCNN', 'PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
+    parser.add_argument('--model_name', type=str, default='PACSCNN_3', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
     
     model_architectures = {
-        'PACSCNN': PACSCNN,
         'PACSCNN_1': PACSCNN_1,
         'PACSCNN_2': PACSCNN_2,
         'PACSCNN_3': PACSCNN_3,

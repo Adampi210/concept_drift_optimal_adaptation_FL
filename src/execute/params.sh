@@ -10,10 +10,10 @@ ALL_TGT_DOMAINS=("sketch")
 ALL_MODEL_NAMES=("PACSCNN_1" "PACSCNN_3")
 
 # Policies to iterate over
-POLICIES=(4)
+POLICIES=(5)
 
 # Setting IDs to iterate over
-SETTING_IDS=(22 23 24 25 26 27 28 29)
+SETTING_IDS=(7 8 9 17 18 20 23 24 25 26 27 28 29)
 
 # Schedules to iterate over
 SCHEDULES=("domain_change_burst_0")
