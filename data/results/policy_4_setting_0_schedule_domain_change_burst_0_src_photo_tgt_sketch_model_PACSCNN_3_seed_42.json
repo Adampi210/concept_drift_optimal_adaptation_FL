@@ -1,0 +1,75 @@
+{
+    "parameters": {
+        "source_domains": [
+            "photo"
+        ],
+        "target_domains": [
+            "sketch"
+        ],
+        "model_path": "/scratch/gilbreth/apiasecz/models/concept_drift_models/PACSCNN_3_photo_seed_0.pth",
+        "model_architecture": "PACSCNN_3",
+        "seed": 42,
+        "n_rounds": 5,
+        "learning_rate": 0.005,
+        "batch_size": 128,
+        "policy_id": 4,
+        "setting_id": 0,
+        "pi_bar": 0.03,
+        "V": 65
+    },
+    "schedule_params": {
+        "schedule_type": "domain_change_burst_0",
+        "burst_interval": 50,
+        "burst_duration": 5,
+        "base_rate": 0.0,
+        "burst_rate": 0.2,
+        "initial_delay": 50,
+        "target_domains": [
+            "sketch",
+            "art_painting",
+            "cartoon"
+        ]
+    },
+    "results": [
+        {
+            "t": 0,
+            "accuracy": 0.7517361243565878,
+            "loss": 1.1676871045069261,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 1,
+            "accuracy": 0.561631957689921,
+            "loss": 0.8684129904616963,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 2,
+            "accuracy": 0.6935763955116272,
+            "loss": 0.8826581835746765,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 3,
+            "accuracy": 0.6935763955116272,
+            "loss": 0.8911604122682051,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 4,
+            "accuracy": 0.6935763955116272,
+            "loss": 0.8845497423952277,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        }
+    ]
+}

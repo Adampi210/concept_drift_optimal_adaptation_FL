@@ -23,47 +23,6 @@ print(f"PyTorch Version: {torch.__version__}")
 # =========================
 # Models
 # =========================
-class PACSCNN(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN, self).__init__()
-        self.features = nn.Sequential(
-            # First block
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Second block
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Third block
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-
-            # Fourth block
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Dropout(p=0.5),
-            nn.Linear(512, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
-
 class ResidualBlock(nn.Module):
     """A residual block with skip connections for PACSCNN_4."""
     def __init__(self, in_channels, out_channels, stride=1):
@@ -228,19 +187,25 @@ class PACSCNN_4(BaseModelArchitecture):
 # Policies
 # =========================
 class Policy:
-    def __init__(self, alpha=0.01, L_i = 1):
+    def __init__(self, alpha=0.01, L_i=1.0, K_p=1.0, K_d=1.0):
         """
         Initialize the Policy class.
 
         Args:
             alpha (float): Learning rate or step size.
+            L_i (float): Lipschitz constant (for other policies).
+            K_p (float): Proportional gain for Policy 6.
+            K_d (float): Derivative gain for Policy 6.
         """
         self.virtual_queue = 0  # Virtual queue Q(t)
         self.update_history = []  # History of update times
         self.last_gradient_magnitude = None  # Store the last gradient magnitude
         self.alpha = alpha  # Learning rate
-        self.L_i = L_i # Lipschitz constant defined internally (default value)
-
+        self.L_i = L_i  # Lipschitz constant
+        self.K_p = K_p  # Proportional gain for PD control
+        self.K_d = K_d  # Derivative gain for PD control
+        self.loss_initial = None  # Initial loss for Policy 6
+        
     def update_gradient(self, model, data_loader, criterion, device):
         """
         Compute and store the gradient magnitude after a model update.
@@ -272,17 +237,27 @@ class Policy:
                 break  # Use one batch for efficiency
         model.train()
 
-    def policy_decision(self, decision_id, loss_curr, loss_prev, current_time, V, pi_bar):
+    def set_initial_loss(self, loss_initial):
+        """
+        Set the initial loss for Policy 6.
+
+        Args:
+            loss_initial (float): The initial loss before drift.
+        """
+        self.loss_initial = loss_initial
+
+    def policy_decision(self, decision_id, loss_curr, loss_prev, current_time, V, pi_bar, loss_best=float('inf')):
         """
         Decide whether to update the model based on the selected policy.
 
         Args:
-            decision_id (int): ID of the policy to use (0-4).
+            decision_id (int): ID of the policy to use (0-6).
             loss_curr (float): Current loss L(θ_t; D_{t+1}).
             loss_prev (float): Previous loss L(θ_{t-1}; D_t).
             current_time (int): Current time step.
             V (float): Trade-off parameter.
             pi_bar (float): Average update rate (λ̄).
+            loss_best (float): Best loss seen so far (optional).
 
         Returns:
             int: 1 if update, 0 if not.
@@ -307,7 +282,7 @@ class Policy:
                 self.update_history.append(current_time)
             return int(should_update)
         elif decision_id == 4:
-            # Policy 4: New policy with gradient magnitude and internal L_i
+            # Policy 4: Gradient magnitude with internal L_i
             delta_L = loss_curr - loss_prev
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
@@ -317,8 +292,32 @@ class Policy:
             if should_update:
                 self.update_history.append(current_time)
             return int(should_update)
+        elif decision_id == 5:
+            # Policy 5: Gradient magnitude with best loss
+            delta_L = loss_curr - loss_best
+            grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
+            left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
+            right_side = self.virtual_queue + (pi_bar - 0.5)
+            should_update = left_side >= right_side
+            self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
+            if should_update:
+                self.update_history.append(current_time)
+            return int(should_update)
+        elif decision_id == 6:
+            # Policy 6: PD-based decision
+            if self.loss_initial is None:
+                raise ValueError("Initial loss not set for Policy 6")
+            e_t = loss_curr - self.loss_initial  # Proportional term
+            delta_e = loss_curr - loss_prev  # Derivative term
+            pd_term = self.K_p * e_t + self.K_d * delta_e
+            threshold = self.virtual_queue + 0.5 - pi_bar
+            should_update = V * pd_term > threshold
+            self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
+            if should_update:
+                self.update_history.append(current_time)
+            return int(should_update)
         else:
-            raise ValueError("Invalid decision_id")
+            raise ValueError(f"Invalid decision_id: {decision_id}")
 
 # =========================
 # Drift Scheduling
@@ -575,7 +574,9 @@ def test_policy_under_drift(
     batch_size=128,
     pi_bar=0.1,
     V=1, 
-    L_i=1.0
+    L_i=1.0,
+    K_p=1.0,
+    K_d=1.0
     ):
     """
     Modify retraining with policy under drift using the new DriftScheduler.
@@ -601,7 +602,7 @@ def test_policy_under_drift(
     torch.manual_seed(seed)
 
     # Initialize policy and data handler
-    policy = Policy(alpha=learning_rate, L_i = L_i)
+    policy = Policy(alpha=learning_rate, L_i=L_i, K_p=K_p, K_d=K_d)
     data_handler = PACSDataHandler()
     data_handler.load_data()
     train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
@@ -642,6 +643,8 @@ def test_policy_under_drift(
 
     # Track loss and results
     loss_array = [client.get_train_metric(metric_fn=criterion, verbose=False)]
+    loss_best = loss_array[0]
+    policy.set_initial_loss(loss_array[0])
     results = []
     time_arr = []
     # Training loop
@@ -667,15 +670,18 @@ def test_policy_under_drift(
         current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
         current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
         loss_array.append(current_loss)
+        if current_loss < loss_best:
+            loss_best = current_loss
 
         # Make retraining decision
         decision = policy.policy_decision(
-            decision_id=policy_id,  # Or 0, 1, 2, 3 as needed
+            decision_id=policy_id,
             loss_curr=loss_array[-1],
             loss_prev=loss_array[-2],
             current_time=t,
-            V=1.0,
-            pi_bar=0.1
+            V=V,
+            pi_bar=pi_bar,
+            loss_best=loss_best
         )
 
         # Train or evaluate based on decision
@@ -716,7 +722,7 @@ def test_policy_under_drift(
     tgt_domains_str = "_".join(target_domains)
     results_filename = (
         f"../../data/results/policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}"
-        f"_src_{src_domains_str}_tgt_{tgt_domains_str}_seed_{seed}.json"
+        f"_src_{src_domains_str}_tgt_{tgt_domains_str}_model_{model_architecture.__name__}_seed_{seed}.json"
     )
 
     data = {
@@ -732,7 +738,9 @@ def test_policy_under_drift(
             'policy_id': policy_id,
             'setting_id': setting_id,
             'pi_bar': pi_bar,
-            'V': V
+            'V': V,
+            'K_p': K_p,
+            'K_d': K_d
         },
         'schedule_params': schedule_params,
         'results': results
@@ -770,12 +778,40 @@ def main():
         13: {'pi_bar': 0.1, 'V': 1, 'L_i': 100.0},
         14: {'pi_bar': 0.1, 'V': 10, 'L_i': 100.0},
         15: {'pi_bar': 0.1, 'V': 100, 'L_i': 100.0}, 
-        16: {'pi_bar': 0.1, 'V': 1, 'L_i': 50.0}, 
-        17: {'pi_bar': 0.1, 'V': 10, 'L_i': 50.0},
-        18: {'pi_bar': 0.1, 'V': 100, 'L_i': 50.0},
-        19: {'pi_bar': 0.1, 'V': 1, 'L_i': 200.0},
-        20: {'pi_bar': 0.1, 'V': 10, 'L_i': 200.0},
-        21: {'pi_bar': 0.1, 'V': 100, 'L_i': 200.0}
+        16: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 1}, 
+        17: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0.1},
+        18: {'pi_bar': 0.1, 'V': 1, 'L_i': 0.1},
+        19: {'pi_bar': 0.1, 'V': 1, 'L_i': 1000.0},
+        20: {'pi_bar': 0.1, 'V': 1000, 'L_i': 1},
+        21: {'pi_bar': 0.1, 'V': 1000, 'L_i': 1000},
+        22: {'pi_bar': 0.1, 'V': 10000, 'L_i': 0.1},
+        23: {'pi_bar': 0.1, 'V': 1000, 'L_i': 0.1},
+        24: {'pi_bar': 0.1, 'V': 100, 'L_i': 0.1},
+        25: {'pi_bar': 0.1, 'V': 10, 'L_i': 0.1},
+        26: {'pi_bar': 0.1, 'V': 10000, 'L_i': 0.01},
+        27: {'pi_bar': 0.1, 'V': 1000, 'L_i': 0.01},
+        28: {'pi_bar': 0.1, 'V': 100, 'L_i': 0.01},
+        29: {'pi_bar': 0.1, 'V': 10, 'L_i': 0.01},
+        30: {'pi_bar': 0.1, 'V': 100, 'L_i': 0.0001},
+        31: {'pi_bar': 0.1, 'V': 50, 'L_i': 0.0001},
+        32: {'pi_bar': 0.1, 'V': 10, 'L_i': 0.0001},
+        33: {'pi_bar': 0.1, 'V': 1, 'L_i': 0.0001},
+        34: {'pi_bar': 0.1, 'V': 0.5, 'L_i': 0.0001},
+        35: {'pi_bar': 0.1, 'V': 100, 'L_i': 0},
+        36: {'pi_bar': 0.1, 'V': 50, 'L_i': 0},
+        37: {'pi_bar': 0.1, 'V': 10, 'L_i': 0},
+        38: {'pi_bar': 0.1, 'V': 1, 'L_i': 0},
+        39: {'pi_bar': 0.1, 'V': 0.5, 'L_i': 0},
+        40: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
+        41: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 2.0},
+        42: {'pi_bar': 0.1, 'V': 1, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
+        43: {'pi_bar': 0.1, 'V': 1, 'L_i': 0, 'K_p': 2.0, 'K_d': 2.0},
+        44: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
+        45: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 2.0, 'K_d': 2.0},
+        46: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 5.0, 'K_d': 5.0},
+        47: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 10.0, 'K_d': 10.0},
+        48: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.5},
+        49: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0},
     }
     
     # Existing arguments
@@ -786,10 +822,9 @@ def main():
     parser.add_argument('--lr', type=float, default=0.005)
     parser.add_argument('--policy_id', type=int, default=4)
     parser.add_argument('--setting_id', type=int, default=0)
-    parser.add_argument('--model_name', type=str, default='PACSCNN_3', choices=['PACSCNN', 'PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
+    parser.add_argument('--model_name', type=str, default='PACSCNN_1', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
     
     model_architectures = {
-        'PACSCNN': PACSCNN,
         'PACSCNN_1': PACSCNN_1,
         'PACSCNN_2': PACSCNN_2,
         'PACSCNN_3': PACSCNN_3,
@@ -813,7 +848,8 @@ def main():
 
     # Get settings
     current_settings = settings[args.setting_id]
-
+    K_p = current_settings.get('K_p', 1.0)
+    K_d = current_settings.get('K_d', 1.0)
     # Run evaluation
     results = test_policy_under_drift(
         source_domains=args.src_domains,
@@ -828,7 +864,9 @@ def main():
         setting_id=args.setting_id,
         pi_bar=current_settings['pi_bar'],
         V=current_settings['V'], 
-        L_i=current_settings['L_i']
+        L_i=current_settings['L_i'], 
+        K_p=K_p,
+        K_d=K_d
     )
 
 if __name__ == "__main__":

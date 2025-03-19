@@ -1,0 +1,77 @@
+{
+    "parameters": {
+        "source_domains": [
+            "photo"
+        ],
+        "target_domains": [
+            "sketch"
+        ],
+        "model_path": "/scratch/gilbreth/apiasecz/models/concept_drift_models/PACSCNN_1_photo_seed_0.pth",
+        "model_architecture": "PACSCNN_1",
+        "seed": 0,
+        "n_rounds": 5,
+        "learning_rate": 0.005,
+        "batch_size": 128,
+        "policy_id": 6,
+        "setting_id": 40,
+        "pi_bar": 0.1,
+        "V": 10,
+        "K_p": 1.0,
+        "K_d": 1.0
+    },
+    "schedule_params": {
+        "schedule_type": "domain_change_burst_0",
+        "burst_interval": 50,
+        "burst_duration": 5,
+        "base_rate": 0.0,
+        "burst_rate": 0.2,
+        "initial_delay": 50,
+        "target_domains": [
+            "sketch",
+            "art_painting",
+            "cartoon"
+        ]
+    },
+    "results": [
+        {
+            "t": 0,
+            "accuracy": 0.733506957689921,
+            "loss": 0.7925548174164512,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 1,
+            "accuracy": 0.733506957689921,
+            "loss": 0.7929596142335371,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 2,
+            "accuracy": 0.733506957689921,
+            "loss": 0.8002665367993441,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 3,
+            "accuracy": 0.733506957689921,
+            "loss": 0.7999155575578863,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 4,
+            "accuracy": 0.733506957689921,
+            "loss": 0.7946672656319358,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        }
+    ]
+}

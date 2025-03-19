@@ -929,15 +929,16 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
     for policy_id, color in zip(policy_ids, colors):
         if policy_id == 4:
             adjusted_setting_id = setting_id + offset_4  # Keep as is unless specific adjustment logic is provided
+
         else:
             adjusted_setting_id = setting_id  # Keep as is unless specific adjustment logic is provided
+        
         # File pattern assumes model_name is not in drift file names; adjust if necessary
         pattern = re.compile(
             rf'^policy_{policy_id}_setting_{adjusted_setting_id}_schedule_{re.escape(schedule_type)}'
             rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_seed_\d+\.json$'
         )
         matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
-        
         if not matching_files:
             print(f"No files found for Policy {policy_id}, Setting {adjusted_setting_id}, Schedule {schedule_type}")
             continue
@@ -1099,7 +1100,7 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
         # Define file pattern for this policy and setting
         pattern = re.compile(
             rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
-            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_seed_\d+\.json$'
+            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_model_{model_name}_seed_\d+\.json$'
         )
         matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
         
@@ -1237,18 +1238,21 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
 if __name__ == "__main__":
     source_domain = 'photo'
     target_domain = 'sketch'
-    policy_ids = [1, 2, 4]
+    policy_ids = [1, 2, 4, 5]
     schedule_type = 'domain_change_burst_0'
-    model_name = 'PACSCNN_3'  # Default model name, can be changed
-
-    for setting_id in range(2,3):  # Adjust range as needed
-        compare_policies(
-            setting_id=setting_id,
-            schedule_type=schedule_type,
-            source_domain=source_domain,
-            target_domain=target_domain,
-            policy_ids=policy_ids,
-            model_name=model_name,
-            T=199  # Match your n_rounds - 1 from the JSON
-        )
-    compare_settings(4, range(7, 22), schedule_type, source_domain, target_domain, model_name, T=199)
+    model_names = ['PACSCNN_3',]
+    
+    for model_name in model_names:
+        for setting_id in range(2,3):
+            compare_policies(
+                setting_id=setting_id,
+                schedule_type=schedule_type,
+                source_domain=source_domain,
+                target_domain=target_domain,
+                policy_ids=policy_ids,
+                model_name=model_name,
+                T=199  # Match your n_rounds - 1 from the JSON
+            )
+        # [7, 11, 18, 21]
+        # [7, 8, 9, 17, 18, 20, 23, 24, 25, 26, 27, 28, 29]
+        compare_settings(5, [7, 29], schedule_type, source_domain, target_domain, model_name, T=199)

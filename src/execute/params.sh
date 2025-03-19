@@ -7,13 +7,13 @@ ALL_SRC_DOMAINS=("photo")
 ALL_TGT_DOMAINS=("sketch")
 
 # List of model names to iterate over
-ALL_MODEL_NAMES=("PACSCNN_1" "PACSCNN_3")
+ALL_MODEL_NAMES=("PACSCNN_3")
 
 # Policies to iterate over
-POLICIES=(5)
+POLICIES=(6)
 
 # Setting IDs to iterate over
-SETTING_IDS=(7 8 9 17 18 20 23 24 25 26 27 28 29)
+SETTING_IDS=(45 46 47 48 49)
 
 # Schedules to iterate over
 SCHEDULES=("domain_change_burst_0")
