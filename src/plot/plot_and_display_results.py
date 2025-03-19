@@ -1243,6 +1243,7 @@ if __name__ == "__main__":
     model_names = ['PACSCNN_3',]
     
     for model_name in model_names:
+        '''
         for setting_id in range(2,3):
             compare_policies(
                 setting_id=setting_id,
@@ -1253,6 +1254,7 @@ if __name__ == "__main__":
                 model_name=model_name,
                 T=199  # Match your n_rounds - 1 from the JSON
             )
+        '''
         # [7, 11, 18, 21]
         # [7, 8, 9, 17, 18, 20, 23, 24, 25, 26, 27, 28, 29]
-        compare_settings(5, [7, 29], schedule_type, source_domain, target_domain, model_name, T=199)
+        compare_settings(5, list(range(30, 40)), schedule_type, source_domain, target_domain, model_name, T=199)

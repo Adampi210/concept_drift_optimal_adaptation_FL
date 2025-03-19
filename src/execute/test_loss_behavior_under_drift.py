@@ -286,7 +286,7 @@ class Policy:
             delta_L = loss_curr - loss_prev
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
-            right_side = self.virtual_queue + (pi_bar - 0.5)
+            right_side = self.virtual_queue + (0.5 - pi_bar)
             should_update = left_side >= right_side
             self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
             if should_update:
@@ -297,7 +297,7 @@ class Policy:
             delta_L = loss_curr - loss_best
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
-            right_side = self.virtual_queue + (pi_bar - 0.5)
+            right_side = self.virtual_queue + (0.5 - pi_bar)
             should_update = left_side >= right_side
             self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
             if should_update:
