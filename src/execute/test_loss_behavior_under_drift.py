@@ -374,7 +374,7 @@ class DriftScheduler:
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.2,
-            'target_domains': ['sketch', 'cartoon', 'photo'],
+            'target_domains': ['cartoon', 'sketch', 'photo'],
             'initial_delay': 50  # Add initial delay
         },
         "oscillating_0": lambda: {
@@ -769,9 +769,9 @@ def main():
         4: {'pi_bar': 0.2, 'V': 65, 'L_i': 1.0},
         5: {'pi_bar': 0.25, 'V': 65, 'L_i': 1.0},
         6: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
-        7: {'pi_bar': 0.1, 'V': 1, 'L_i': 1.0},
-        8: {'pi_bar': 0.1, 'V': 10, 'L_i': 1.0},
-        9: {'pi_bar': 0.1, 'V': 100, 'L_i': 1.0},
+        7: {'pi_bar': 0.5, 'V': 1, 'L_i': 1.0},
+        8: {'pi_bar': 0.7, 'V': 10, 'L_i': 1.0},
+        9: {'pi_bar': 0.9, 'V': 100, 'L_i': 1.0},
         10: {'pi_bar': 0.1, 'V': 1, 'L_i': 10.0},
         11: {'pi_bar': 0.1, 'V': 10, 'L_i': 10.0},
         12: {'pi_bar': 0.1, 'V': 100, 'L_i': 10.0},
@@ -812,6 +812,12 @@ def main():
         47: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 10.0, 'K_d': 10.0},
         48: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.5},
         49: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0},
+        50: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 2.0},
+        51: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.5},
+        52: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
+        53: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 2.0},
+        54: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 1.5},
+        55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 1.0},
     }
     
     # Existing arguments
@@ -841,10 +847,11 @@ def main():
     # Construct model path
     domains_str = "_".join(args.src_domains)
     ###### DELETE THIS LINE AFTER TESTING
+    cluster_used = 'gautschi' # gilbreth or gautschi
     if args.seed == 42:
-        model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_0.pth"
+        model_path = f"/scratch/{cluster_used}/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_0.pth"
     else:
-        model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_{args.seed}.pth"
+        model_path = f"/scratch/{cluster_used}/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_{args.seed}.pth"
 
     # Get settings
     current_settings = settings[args.setting_id]
@@ -871,3 +878,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Try SVHN dataset next

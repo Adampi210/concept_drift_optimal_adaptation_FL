@@ -1,11 +1,15 @@
 import os
 import glob
 import re
+import sys
 import json
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
+
+sys.path.append(os.path.abspath('../execute'))
+from test_loss_behavior_under_drift import DriftScheduler
 
 def read_main_data(main_path):
     """
@@ -902,45 +906,37 @@ def analyze_schedule_performance(policy_id, setting_id, source_domain, target_do
             r = results[schedule_type]
             print(f"{schedule_type:12} | {r['mean_accuracy']:6.2f} ± {r['std_accuracy']:4.2f} | {r['mean_update_rate']:10.3f} | {r['mean_drift_rate']:13.3f}")
 
-def compare_policies(setting_id, schedule_type, source_domain='photo', target_domain='sketch', 
-                     policy_ids=[1, 2, 3, 4], model_name='PACSCNN_3', results_dir='../../data/results/', T=None):
+def compare_policies(policy_setting_pairs, schedule_type, source_domain='photo', target_domain='sketch',
+                     model_name='PACSCNN_3', results_dir='../../data/results/', T=None):
     """
-    Compares different policies for the same setting and schedule type, plotting accuracy, loss, 
+    Compares different policies with their respective settings for the same schedule type, plotting accuracy, loss, 
     drift rate, and cumulative updates.
 
     Args:
-        setting_id (int): Setting ID to analyze.
+        policy_setting_pairs (list of tuples): List of (policy_id, setting) pairs to compare.
         schedule_type (str): Type of drift schedule (e.g., 'domain_change_burst_2').
         source_domain (str): Source domain name (default: 'photo').
         target_domain (str): Target domain name (default: 'sketch').
-        policy_ids (list): List of policy IDs to compare (default: [1, 2, 3, 4]).
-        model_name (str): Model architecture name (e.g., 'PACSCNN') (default: 'PACSCNN').
+        model_name (str): Model architecture name (e.g., 'PACSCNN_3') (default: 'PACSCNN_3').
         results_dir (str): Directory containing result JSON files (default: '../../data/results/').
         T (int, optional): Upper limit of time steps to plot. If None, plots all time steps.
     """
-    offset_4 = 9
-    print(f"Comparing policies for Setting ID: {setting_id}, Schedule: {schedule_type}, Model: {model_name}")
+    print(f"Comparing policies with settings: {policy_setting_pairs}, Schedule: {schedule_type}, Model: {model_name}")
     
     # Initialize plot with 4 subplots
     fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(14, 16), height_ratios=[3, 3, 2, 2])
-    colors = plt.cm.rainbow(np.linspace(0, 1, len(policy_ids)))
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(policy_setting_pairs)))
     all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
 
-    for policy_id, color in zip(policy_ids, colors):
-        if policy_id == 4:
-            adjusted_setting_id = setting_id + offset_4  # Keep as is unless specific adjustment logic is provided
-
-        else:
-            adjusted_setting_id = setting_id  # Keep as is unless specific adjustment logic is provided
-        
-        # File pattern assumes model_name is not in drift file names; adjust if necessary
+    for (policy_id, setting), color in zip(policy_setting_pairs, colors):
+        # File pattern for matching JSON files
         pattern = re.compile(
-            rf'^policy_{policy_id}_setting_{adjusted_setting_id}_schedule_{re.escape(schedule_type)}'
-            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_seed_\d+\.json$'
+            rf'^policy_{policy_id}_setting_{setting}_schedule_{re.escape(schedule_type)}'
+            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_model_{model_name}_seed_\d+\.json$'
         )
         matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
         if not matching_files:
-            print(f"No files found for Policy {policy_id}, Setting {adjusted_setting_id}, Schedule {schedule_type}")
+            print(f"No files found for Policy {policy_id}, Setting {setting}, Schedule {schedule_type}")
             continue
             
         combined_data = defaultdict(lambda: {
@@ -959,7 +955,7 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
                 combined_data[epoch]['drift_rates'].append(drift_rates[idx])
         
         if not combined_data:
-            print(f"No data aggregated for Policy {policy_id}")
+            print(f"No data aggregated for Policy {policy_id}, Setting {setting}")
             continue
             
         # Sort epochs and apply time limit if specified
@@ -968,7 +964,7 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
             epochs = [e for e in epochs if e <= T]
             
         if not epochs:
-            print(f"No epochs within T={T} for Policy {policy_id}")
+            print(f"No epochs within T={T} for Policy {policy_id}, Setting {setting}")
             continue
             
         # Compute averages and standard deviations
@@ -983,21 +979,21 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
         cumulative_updates = np.cumsum(avg_decisions)
         
         # Plotting with enhanced labels
-        ax1.plot(epochs, avg_accuracies, color=color, label=f'Policy {policy_id}')
+        ax1.plot(epochs, avg_accuracies, color=color, label=f'Policy {policy_id} Setting {setting}')
         ax1.fill_between(epochs, 
                          np.array(avg_accuracies) - np.array(std_accuracies),
                          np.array(avg_accuracies) + np.array(std_accuracies), 
                          color=color, alpha=0.2)
         
-        ax2.plot(epochs, avg_losses, color=color, label=f'Policy {policy_id}')
+        ax2.plot(epochs, avg_losses, color=color, label=f'Policy {policy_id} Setting {setting}')
         ax2.fill_between(epochs, 
                          np.array(avg_losses) - np.array(std_losses),
                          np.array(avg_losses) + np.array(std_losses), 
                          color=color, alpha=0.2)
         
-        ax3.plot(epochs, avg_drift_rates, color=color, label=f'Policy {policy_id}')
+        ax3.plot(epochs, avg_drift_rates, color=color, label=f'Policy {policy_id} Setting {setting}')
         
-        ax4.plot(epochs, cumulative_updates, color=color, label=f'Policy {policy_id}')
+        ax4.plot(epochs, cumulative_updates, color=color, label=f'Policy {policy_id} Setting {setting}')
         
         # Add update markers on drift rate plot
         decision_epochs = [epoch for epoch, decision in zip(epochs, avg_decisions) if decision > 0.5]
@@ -1005,10 +1001,10 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
             ax3.scatter(decision_epochs, 
                         [avg_drift_rates[epochs.index(e)] for e in decision_epochs],
                         color=color, marker='x', alpha=0.7, s=50, 
-                        label=f'Updates Policy {policy_id}')
+                        label=f'Updates Policy {policy_id} Setting {setting}')
 
     # Customize plots
-    ax1.set_title(f'Policy Comparison for {model_name}\n(Setting: {setting_id}, Schedule: {schedule_type}, Source: {source_domain}, Target: {target_domain})')
+    ax1.set_title(f'Policy Comparison for {model_name}\n(Schedule: {schedule_type}, Source: {source_domain}, Target: {target_domain})')
     ax1.set_ylabel('Accuracy (%)')
     ax1.grid(True)
     ax1.legend(loc='lower right')
@@ -1033,7 +1029,7 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
     plt.tight_layout()
     output_path = os.path.join(
         '../../data/plots/', 
-        f'policy_comparison_setting_{setting_id}_schedule_{schedule_type}_{source_domain}_to_{target_domain}_{model_name}.png'
+        f'policy_comparison_schedule_{schedule_type}_{source_domain}_to_{target_domain}_{model_name}.png'
     )
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -1042,14 +1038,10 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
     # Summary statistics
     print("\nSummary Statistics:")
     print("-" * 50)
-    for policy_id in policy_ids:
-        if policy_id == 4:
-            adjusted_setting_id = setting_id + offset_4
-        else:
-            adjusted_setting_id = setting_id
+    for policy_id, setting in policy_setting_pairs:
         pattern = re.compile(
-            rf'^policy_{policy_id}_setting_{adjusted_setting_id}_schedule_{re.escape(schedule_type)}'
-            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_seed_\d+\.json$'
+            rf'^policy_{policy_id}_setting_{setting}_schedule_{re.escape(schedule_type)}'
+            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_model_{model_name}_seed_\d+\.json$'
         )
         matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
         
@@ -1068,11 +1060,137 @@ def compare_policies(setting_id, schedule_type, source_domain='photo', target_do
                 mean_acc = np.mean(all_accuracies)
                 std_acc = np.std(all_accuracies)
                 update_rate = np.sum(all_updates) / len(all_updates) if all_updates else 0
-                print(f"Policy {policy_id} (Setting {adjusted_setting_id}):")
+                print(f"Policy {policy_id} (Setting {setting}):")
                 print(f"  Mean Accuracy: {mean_acc:.2f}% ± {std_acc:.2f}%")
                 print(f"  Update Rate: {update_rate:.3f}")
-                print("-" * 50)           
+                print("-" * 50)
+       
+def compare_policies_scaled(policy_setting_pairs, schedule_type, source_domain='photo', target_domain='sketch',
+                            model_name='PACSCNN_3', results_dir='../../data/results/', T=None):
+    """
+    Plots accuracy and loss over time, scaled by resource usage (cumulative updates), along with drift rate and 
+    cumulative updates, for comparing different policies.
+
+    Args:
+        policy_setting_pairs (list of tuples): List of (policy_id, setting) pairs to compare, e.g., [(1, 'a'), (2, 'b')].
+        schedule_type (str): Type of drift schedule (e.g., 'domain_change_burst_2').
+        source_domain (str): Source domain name (default: 'photo').
+        target_domain (str): Target domain name (default: 'sketch').
+        model_name (str): Model architecture name (default: 'PACSCNN_3').
+        results_dir (str): Directory containing result JSON files (default: '../../data/results/').
+        T (int, optional): Upper limit of time steps to plot. If None, plots all time steps.
+    """
+    print(f"Comparing policies with settings: {policy_setting_pairs}, Schedule: {schedule_type}, Model: {model_name}")
+    
+    # Initialize figure with four subplots
+    fig, (ax1, ax2, ax3, ax4) = plt.subplots(4, 1, figsize=(14, 16), height_ratios=[3, 3, 2, 2])
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(policy_setting_pairs)))
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+
+    for (policy_id, setting), color in zip(policy_setting_pairs, colors):
+        # Define regex pattern to match relevant JSON files
+        pattern = re.compile(
+            rf'^policy_{policy_id}_setting_{setting}_schedule_{re.escape(schedule_type)}'
+            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_model_{model_name}_seed_\d+\.json$'
+        )
+        matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
         
+        if not matching_files:
+            print(f"No files found for Policy {policy_id}, Setting {setting}, Schedule {schedule_type}")
+            continue
+
+        # Aggregate data across seeds
+        combined_data = defaultdict(lambda: {
+            'accuracies': [], 'losses': [], 'decisions': [], 'drift_rates': []
+        })
+        
+        for file_path in matching_files:
+            # Replace `read_drift_data` with your actual data extraction function
+            epochs, accs, losses, decisions, drift_rates = read_drift_data(file_path)
+            if not epochs:
+                continue
+            for idx, epoch in enumerate(epochs):
+                combined_data[epoch]['accuracies'].append(accs[idx])
+                combined_data[epoch]['losses'].append(losses[idx])
+                combined_data[epoch]['decisions'].append(decisions[idx])
+                combined_data[epoch]['drift_rates'].append(drift_rates[idx])
+        
+        if not combined_data:
+            print(f"No data aggregated for Policy {policy_id}, Setting {setting}")
+            continue
+
+        # Sort epochs and apply time limit if specified
+        epochs = sorted(combined_data.keys())
+        if T is not None:
+            epochs = [e for e in epochs if e <= T]
+        
+        if not epochs:
+            print(f"No epochs within T={T} for Policy {policy_id}, Setting {setting}")
+            continue
+
+        # Compute average metrics across seeds
+        avg_accuracies = [np.mean(combined_data[e]['accuracies']) for e in epochs]
+        avg_losses = [np.mean(combined_data[e]['losses']) for e in epochs]
+        avg_drift_rates = [np.mean(combined_data[e]['drift_rates']) for e in epochs]
+        avg_decisions = [np.mean(combined_data[e]['decisions']) for e in epochs]
+        
+        # Compute cumulative updates (resource usage)
+        cumulative_updates = np.cumsum(avg_decisions)
+        
+        # Compute scaled metrics
+        scaled_accuracy = [a / (1 + u) for a, u in zip(avg_accuracies, cumulative_updates)]
+        scaled_loss = [l * (1 + u) for l, u in zip(avg_losses, cumulative_updates)]
+        
+        # Plot the scaled metrics and additional metrics
+        label = f'Policy {policy_id} Setting {setting}'
+        ax1.plot(epochs, scaled_accuracy, color=color, label=label)
+        ax2.plot(epochs, scaled_loss, color=color, label=label)
+        ax3.plot(epochs, avg_drift_rates, color=color, label=label)
+        ax4.plot(epochs, cumulative_updates, color=color, label=label)
+        
+        # Add markers for updates on the drift rate plot
+        decision_epochs = [e for e, d in zip(epochs, avg_decisions) if d > 0.5]
+        if decision_epochs:
+            ax3.scatter(decision_epochs, 
+                        [avg_drift_rates[epochs.index(e)] for e in decision_epochs],
+                        color=color, marker='x', alpha=0.7, s=50, 
+                        label=f'Updates {label}')
+
+    # Customize plot appearance
+    ax1.set_title(f'Resource-Scaled Policy Comparison for {model_name}\n'
+                  f'(Schedule: {schedule_type}, Source: {source_domain}, Target: {target_domain})')
+    ax1.set_ylabel('Scaled Accuracy')
+    ax1.grid(True)
+    ax1.legend(loc='lower right')
+
+    ax2.set_ylabel('Scaled Loss')
+    ax2.grid(True)
+    ax2.legend(loc='upper right')
+
+    ax3.set_ylabel('Drift Rate')
+    ax3.grid(True)
+    ax3.legend(loc='upper right')
+
+    ax4.set_xlabel('Time')
+    ax4.set_ylabel('Cumulative Updates')
+    ax4.grid(True)
+    ax4.legend(loc='upper left')
+    
+    # Set x-axis limit if T is provided
+    if T is not None:
+        ax4.set_xlim(0, T)
+
+    plt.tight_layout()
+    
+    # Save the plot
+    output_path = os.path.join(
+        '../../data/plots/', 
+        f'resource_scaled_policy_comparison_schedule_{schedule_type}_{source_domain}_to_{target_domain}_{model_name}.png'
+    )
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+    print(f"Saved plot to {output_path}")       
+               
 def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo', target_domain='sketch', 
                      model_name='PACSCNN_3', results_dir='../../data/results/', T=None):
     """
@@ -1234,27 +1352,83 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
                 print(f"  Mean Accuracy: {mean_acc:.2f}% ± {std_acc:.2f}%")
                 print(f"  Update Rate: {update_rate:.3f}")
                 print("-" * 50)
+      
+def plot_all_drift_schedules(n_rounds=200, output_dir='../../data/plots/', seed=0):
+    """
+    Plot drift rates over time for all schedule types in DriftScheduler.SCHEDULE_CONFIGS.
+    Each schedule is saved as a separate PNG file.
+
+    Args:
+        n_rounds (int): Number of time steps to simulate (default: 200).
+        output_dir (str): Directory to save the plot files (default: 'drift_plots').
+        seed (int): Random seed for reproducibility (default: 0).
+    """
+    # Set random seed for reproducibility of random schedules
+    np.random.seed(seed)
+
+    # Create output directory if it doesn't exist
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Iterate over all schedule types defined in DriftScheduler
+    for schedule_type in DriftScheduler.SCHEDULE_CONFIGS.keys():
+        # Instantiate DriftScheduler with the current schedule type
+        drift_scheduler = DriftScheduler(schedule_type)
+
+        # Simulate drift rates over n_rounds
+        drift_rates = []
+        for t in range(n_rounds):
+            drift_rate = drift_scheduler.get_drift_rate(t)
+            drift_rates.append(drift_rate)
+
+        # Create a new plot
+        plt.figure(figsize=(10, 6))
+        plt.plot(range(n_rounds), drift_rates, label=schedule_type, color='blue')
+        plt.xlabel('Time Step')
+        plt.ylabel('Drift Rate')
+        plt.title(f'Drift Schedule: {schedule_type}')
+        plt.ylim(0, 1)  # Drift rates are between 0 and 1
+        plt.legend()
+        plt.grid(True)
+
+        # Save the plot to a file
+        output_file = os.path.join(output_dir, f'drift_schedule_{schedule_type}.png')
+        plt.savefig(output_file)
+        print(f"Saved plot for {schedule_type} to {output_file}")
+
+        # Close the figure to free memory
+        plt.close()
         
 if __name__ == "__main__":
     source_domain = 'photo'
     target_domain = 'sketch'
-    policy_ids = [1, 2, 4, 5]
-    schedule_type = 'domain_change_burst_0'
+    policy_ids = [0, 1, 2, 6]
+    schedule_type = 'domain_change_burst_2'
     model_names = ['PACSCNN_3',]
     
+    policy_setting_pairs = [(1, 2), (2, 30), (4, 30), (5, 49), (6, 50)]
+    
     for model_name in model_names:
-        '''
-        for setting_id in range(2,3):
-            compare_policies(
-                setting_id=setting_id,
-                schedule_type=schedule_type,
-                source_domain=source_domain,
-                target_domain=target_domain,
-                policy_ids=policy_ids,
-                model_name=model_name,
-                T=199  # Match your n_rounds - 1 from the JSON
-            )
-        '''
+        
+        compare_policies(
+            policy_setting_pairs=policy_setting_pairs,
+            schedule_type=schedule_type,
+            source_domain=source_domain,
+            target_domain=target_domain,
+            model_name=model_name,
+            T=199  # Match your n_rounds - 1 from the JSON
+        )
+        compare_policies_scaled(
+            policy_setting_pairs=policy_setting_pairs,
+            schedule_type=schedule_type,
+            source_domain=source_domain,
+            target_domain=target_domain,
+            model_name=model_name,
+            T=199  # Match your n_rounds - 1 from the JSON
+        )
+        
         # [7, 11, 18, 21]
         # [7, 8, 9, 17, 18, 20, 23, 24, 25, 26, 27, 28, 29]
-        compare_settings(5, list(range(30, 40)), schedule_type, source_domain, target_domain, model_name, T=199)
+        compare_settings(6, list(range(48, 52)), schedule_type, source_domain, target_domain, model_name, T=199)
+        
+    # plot_all_drift_schedules()

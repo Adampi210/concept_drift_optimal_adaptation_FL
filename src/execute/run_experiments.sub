@@ -1,10 +1,12 @@
 #!/bin/bash
-#SBATCH -A cgb-l            # Account name (adjust as needed)
+#SBATCH -A cgb              # Account name (adjust as needed)
+#SBATCH -p ai               # Partition
+#SBATCH -q preemptible      # Queue
 #SBATCH --nodes=1           # Number of nodes
 #SBATCH --ntasks=1          # Number of tasks
-#SBATCH --cpus-per-task=16  # CPUs per task
+#SBATCH --cpus-per-task=14  # CPUs per task
 #SBATCH --gpus-per-node=1   # GPUs per node
-#SBATCH --time=96:00:00     # Time limit (adjust as needed)
+#SBATCH --time=6:00:00     # Time limit (adjust as needed)
 
 # To check the usage: squeue | grep cgb
 
