@@ -8,6 +8,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from collections import defaultdict
 
+from fl_toolkit import *
+
 sys.path.append(os.path.abspath('../execute'))
 from test_loss_behavior_under_drift import DriftScheduler
 
@@ -1398,12 +1400,109 @@ def plot_all_drift_schedules(n_rounds=200, output_dir='../../data/plots/', seed=
 
         # Close the figure to free memory
         plt.close()
-        
+
+def plot_dataset_composition(source_domains, target_domains, drift_scheduler, n_rounds, dataset, output_dir='../../data/plots/'):
+    """
+    Plots the composition of the dataset over time as a stacked area chart, showing the proportion
+    of samples from each domain as drift is applied.
+
+    Args:
+        source_domains (list): List of source domain names (e.g., ['photo']).
+        target_domains (list): List of initial target domain names (e.g., ['sketch']).
+        drift_scheduler (DriftScheduler): Instance of DriftScheduler managing drift rates and possibly target domains.
+        n_rounds (int): Number of time steps to simulate.
+        dataset: The full dataset (e.g., PACS dataset) containing samples with domain labels.
+        output_dir (str): Directory to save the plot (default: '../../data/plots/').
+
+    Returns:
+        None: Saves the plot to a file and prints the save location.
+    """
+    # Ensure output directory exists
+    if not os.path.exists(output_dir):
+        os.makedirs(output_dir)
+
+    # Initialize the drift object with an initial drift rate of 0.0
+    drift = PACSDomainDrift(source_domains=source_domains, target_domains=target_domains, drift_rate=0.0)
+
+    # Determine all possible domains: source domains plus all target domains that could be introduced
+    all_possible_target_domains = (
+        drift_scheduler.target_domains if hasattr(drift_scheduler, 'target_domains') else target_domains
+    )
+    all_domains = list(set(source_domains + all_possible_target_domains))
+
+    # Initialize a dictionary to store proportions over time for each domain
+    proportions_over_time = {domain: [] for domain in all_domains}
+
+    # Simulate drift over n_rounds
+    for t in range(n_rounds):
+        print(f"Time step {t}/{n_rounds}...")
+        # Get the current drift rate, which may internally update the target domain for domain-changing schedules
+        current_drift_rate = drift_scheduler.get_drift_rate(t)
+
+        # Update the target domains if the scheduler supports domain changes
+        if hasattr(drift_scheduler, 'target_domains'):
+            current_target = drift_scheduler.get_current_target_domain()
+            drift.target_domains = [current_target]
+
+        # Set the drift rate
+        drift.drift_rate = current_drift_rate
+
+        # Apply drift to get the current subset of the dataset
+        current_subset = drift.apply(dataset)
+        current_indices = current_subset.indices
+
+        # Count samples per domain in the current subset
+        domain_counts = {domain: 0 for domain in all_domains}
+        for idx in current_indices:
+            domain = dataset[idx][2]  # Assuming dataset returns (img, label, domain)
+            if domain in domain_counts:
+                domain_counts[domain] += 1
+
+        # Calculate proportions
+        total_samples = len(current_indices)
+        for domain in all_domains:
+            proportion = domain_counts[domain] / total_samples if total_samples > 0 else 0
+            proportions_over_time[domain].append(proportion)
+
+    # Create the stacked area plot
+    time_steps = list(range(n_rounds))
+    plt.figure(figsize=(12, 6))
+    bottom = np.zeros(len(time_steps))
+
+    for domain in all_domains:
+        plt.fill_between(
+            time_steps,
+            bottom,
+            bottom + proportions_over_time[domain],
+            label=domain,
+            alpha=0.7  # Slight transparency for better visibility
+        )
+        bottom += proportions_over_time[domain]
+
+    # Customize the plot
+    plt.xlabel('Time Step')
+    plt.ylabel('Proportion')
+    plt.title(f'Dataset Composition Over Time (Schedule: {drift_scheduler.schedule_type})')
+    plt.legend(title='Domains', loc='upper right')
+    plt.ylim(0, 1)
+    plt.grid(True, linestyle='--', alpha=0.5)
+
+    # Save the plot
+    schedule_type = drift_scheduler.schedule_type
+    src_str = '_'.join(source_domains)
+    tgt_str = '_'.join(target_domains)
+    output_filename = f"dataset_composition_{schedule_type}_src_{src_str}_tgt_{tgt_str}.png"
+    output_path = os.path.join(output_dir, output_filename)
+    plt.savefig(output_path, dpi=300, bbox_inches='tight')
+    plt.close()
+
+    print(f"Saved dataset composition plot to {output_path}")
+       
 if __name__ == "__main__":
     source_domain = 'photo'
     target_domain = 'sketch'
     policy_ids = [0, 1, 2, 6]
-    schedule_type = 'domain_change_burst_2'
+    schedule_type = 'domain_change_burst_0'
     model_names = ['PACSCNN_3',]
     
     policy_setting_pairs = [(1, 2), (2, 30), (4, 30), (5, 49), (6, 50)]
@@ -1430,5 +1529,25 @@ if __name__ == "__main__":
         # [7, 11, 18, 21]
         # [7, 8, 9, 17, 18, 20, 23, 24, 25, 26, 27, 28, 29]
         compare_settings(6, list(range(48, 52)), schedule_type, source_domain, target_domain, model_name, T=199)
-        
     # plot_all_drift_schedules()
+    
+    # Plot how the dataset evolves
+    schedule_array = ['domain_change_burst_0', 'domain_change_burst_1', 'domain_change_burst_2', 'RV_burst_0', 'step_0', 'burst_0', 'oscillating_0']
+    # Plot composition
+    for schedule in schedule_array:
+        drift_scheduler = DriftScheduler(schedule)
+        data_handler = PACSDataHandler()
+        data_handler.load_data()
+        train_data = data_handler.train_dataset
+        print(schedule)
+        plot_dataset_composition(
+            source_domains=['photo',],
+            target_domains=['sketch',],
+            drift_scheduler=drift_scheduler,
+            n_rounds=200,
+            dataset=train_data
+        )
+    # plot_all_drift_schedules()
+    # x axis = number of updates, y axis = accuracy/loss
+    # CDF to show how quickly we can recover to good accuracy
+    # Change pretraining

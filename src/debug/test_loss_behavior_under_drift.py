@@ -286,7 +286,7 @@ class Policy:
             delta_L = loss_curr - loss_prev
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
-            right_side = self.virtual_queue + (pi_bar - 0.5)
+            right_side = self.virtual_queue + (0.5 - pi_bar)
             should_update = left_side >= right_side
             self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
             if should_update:
@@ -297,7 +297,7 @@ class Policy:
             delta_L = loss_curr - loss_best
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
-            right_side = self.virtual_queue + (pi_bar - 0.5)
+            right_side = self.virtual_queue + (0.5 - pi_bar)
             should_update = left_side >= right_side
             self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
             if should_update:
@@ -323,43 +323,15 @@ class Policy:
 # Drift Scheduling
 # =========================
 class DriftScheduler:
-    # Class-level configuration dictionary for all schedule types
     SCHEDULE_CONFIGS = {
-        "burst_0": lambda: {
-            'burst_interval': 50,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 0.2,
-            'initial_delay': 50  # Add initial delay
-        },
-        "burst_1": lambda: {
-            'burst_interval': 80,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 0.4,
-            'initial_delay': 80  # Add initial delay
-        },
-        "RV_burst_0": lambda: {
-            'burst_interval': np.random.uniform(30, 70),
-            'burst_duration': np.random.uniform(1, 9),
-            'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.1, 0.3),
-            'initial_delay': np.random.uniform(30, 70)  # Random initial delay
-        },
-        "RV_burst_1": lambda: {
-            'burst_interval': np.random.uniform(80, 120),
-            'burst_duration': np.random.uniform(1, 9),
-            'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.4, 0.7),
-            'initial_delay': np.random.uniform(80, 120)  # Random initial delay
-        },
         "domain_change_burst_0": lambda: {
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.2,
             'target_domains': ['sketch', 'art_painting', 'cartoon'],
-            'initial_delay': 50  # Add initial delay
+            'initial_delay': 50,
+            'strategy': 'add'
         },
         "domain_change_burst_1": lambda: {
             'burst_interval': 50,
@@ -367,189 +339,201 @@ class DriftScheduler:
             'base_rate': 0.0,
             'burst_rate': 0.2,
             'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': 50  # Add initial delay
+            'initial_delay': 50,
+            'strategy': 'add'
         },
         "domain_change_burst_2": lambda: {
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.2,
-            'target_domains': ['sketch', 'cartoon', 'photo'],
-            'initial_delay': 50  # Add initial delay
+            'target_domains': ['cartoon', 'sketch', 'photo'],
+            'initial_delay': 50,
+            'strategy': 'add'
         },
-        "oscillating_0": lambda: {
-            'high_duration': 20,
-            'low_duration': 20,
-            'high_rate': 0.05,
-            'low_rate': 0.01
+        "domain_change_burst_replace_0": lambda: {
+            'burst_interval': 50,
+            'burst_duration': 5,
+            'base_rate': 0.0,
+            'burst_rate': 0.2,
+            'target_domains': ['sketch', 'art_painting', 'cartoon'],
+            'initial_delay': 50,
+            'strategy': 'replace'
         },
-        "oscillating_1": lambda: {
-            'high_duration': 40,
-            'low_duration': 40,
-            'high_rate': 0.04,
-            'low_rate': 0.01
+        "domain_change_burst_replace_1": lambda: {
+            'burst_interval': 50,
+            'burst_duration': 5,
+            'base_rate': 0.0,
+            'burst_rate': 0.2,
+            'target_domains': ['sketch', 'cartoon', 'art_painting'],
+            'initial_delay': 50,
+            'strategy': 'replace'
         },
-        "oscillating_increasing_0": lambda: {
-            'alpha': 0.01,
-            'period': 20
+        "domain_change_burst_replace_2": lambda: {
+            'burst_interval': 50,
+            'burst_duration': 5,
+            'base_rate': 0.0,
+            'burst_rate': 0.2,
+            'target_domains': ['cartoon', 'sketch', 'photo'],
+            'initial_delay': 50,
+            'strategy': 'replace'
+        },
+        "RV_domain_change_burst_0": lambda: {
+            'burst_interval': np.random.uniform(30, 70),
+            'burst_duration': np.random.uniform(1, 9),
+            'base_rate': 0.0,
+            'burst_rate': np.random.uniform(0.1, 0.3),
+            'target_domains': random.sample(['sketch', 'art_painting', 'cartoon', 'photo'], 3),
+            'initial_delay': np.random.uniform(30, 70),
+            'strategy': 'replace'
+        },
+        "RV_domain_change_burst_1": lambda: {
+            'burst_interval': np.random.uniform(40, 80),
+            'burst_duration': np.random.uniform(2, 10),
+            'base_rate': 0.0,
+            'burst_rate': np.random.uniform(0.2, 0.4),
+            'target_domains': random.sample(['sketch', 'art_painting', 'cartoon', 'photo'], 3),
+            'initial_delay': np.random.uniform(40, 80),
+            'strategy': 'replace'
+        },
+        "RV_domain_change_burst_2": lambda: {
+            'burst_interval': np.random.uniform(50, 90),
+            'burst_duration': np.random.uniform(3, 11),
+            'base_rate': 0.0,
+            'burst_rate': np.random.uniform(0.3, 0.5),
+            'target_domains': random.sample(['sketch', 'art_painting', 'cartoon', 'photo'], 3),
+            'initial_delay': np.random.uniform(50, 90),
+            'strategy': 'replace'
         },
         "step_0": lambda: {
             'step_points': [50, 100, 150],
-            'step_rates': [0.01, 0.03, 0.05, 0.07]
+            'step_rates': [0.01, 0.03, 0.05, 0.07],
+            'step_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'strategy': 'replace'
         },
-        "custom": lambda: {
-            'custom_schedule': {i: 0.1 for i in range(0, 200, 50)}
-        }
+        "step_1": lambda: {
+            'step_points': [40, 80, 120, 160],
+            'step_rates': [0.02, 0.04, 0.06, 0.08, 0.1],
+            'step_domains': ['sketch', 'cartoon', 'art_painting', 'photo', 'sketch'],
+            'strategy': 'replace'
+        },
+        "step_2": lambda: {
+            'step_points': [30, 60, 90, 120, 150],
+            'step_rates': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03],
+            'step_domains': ['art_painting', 'photo', 'sketch', 'cartoon', 'art_painting', 'photo'],
+            'strategy': 'replace'
+        },
+        "constant_drift_domain_change": lambda: {
+            'drift_rate': 0.05,
+            'domain_change_interval': 50,
+            'target_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'strategy': 'replace'
+        },
+        "sine_wave_domain_change": lambda: {
+            'amplitude': 0.1,
+            'period': 50,
+            'target_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'strategy': 'replace'
+        },
     }
 
     def __init__(self, schedule_type, **kwargs):
-        """
-        Initialize the DriftScheduler with a specified schedule type.
-
-        Args:
-            schedule_type (str): The type of schedule to use (key in SCHEDULE_CONFIGS).
-            **kwargs: Optional overrides for configuration parameters.
-        """
         if schedule_type not in self.SCHEDULE_CONFIGS:
             raise ValueError(f"Unknown schedule type: {schedule_type}")
-
-        # Get the configuration and allow overrides via kwargs
         config = self.SCHEDULE_CONFIGS[schedule_type]()
         config.update(kwargs)
-
-        # Set all configuration parameters as instance attributes
         for key, value in config.items():
             setattr(self, key, value)
-
         self.schedule_type = schedule_type
         self.current_step = 0
-        self.last_burst_time = -1  # Track last burst for domain changes
-
-        # Initialize domain-related attributes if applicable
+        self.last_burst_time = -1
         if 'target_domains' in config:
             self.current_target_domain = self.target_domains[0]
             self.domain_index = 0
             self.first_burst_completed = False
 
     def get_drift_rate(self, t):
-        """
-        Calculate the drift rate at time t based on the schedule type.
-
-        Args:
-            t (int): Current timestep.
-
-        Returns:
-            float: The drift rate at time t.
-        """
         self.current_step = t
-
-        # Burst schedules (including RV and domain-changing bursts)
         if 'burst_interval' in self.__dict__:
-            # If within the initial delay period, return base_rate
             if t < self.initial_delay:
                 return self.base_rate
-            # Adjust time to account for the initial delay
             adjusted_t = t - self.initial_delay
             cycle_position = adjusted_t % self.burst_interval
-            # Handle domain changes at the end of a burst
             if 'target_domains' in self.__dict__ and cycle_position == self.burst_duration and adjusted_t > 0 and t != self.last_burst_time:
                 self.select_new_target_domain()
                 self.last_burst_time = t
             return self.burst_rate if cycle_position < self.burst_duration else self.base_rate
-
-        # Oscillating schedules (fixed high/low periods)
-        elif 'high_duration' in self.__dict__:
-            cycle_length = self.high_duration + self.low_duration
-            cycle_position = t % cycle_length
-            return self.high_rate if cycle_position < self.high_duration else self.low_rate
-
-        # Oscillating increasing schedules (sinusoidal with increasing amplitude)
-        elif 'alpha' in self.__dict__:
-            oscillation = 0.5 * np.sin(2 * np.pi * t / self.period) + 0.5
-            rate = self.alpha * t * oscillation
-            return min(max(rate, 0.0), 1.0)
-
-        # Step schedules
         elif 'step_points' in self.__dict__:
-            for point, rate in zip(self.step_points + [float('inf')], self.step_rates):
+            for i, point in enumerate(self.step_points):
                 if t < point:
-                    return rate
+                    return self.step_rates[i]
             return self.step_rates[-1]
-
-        # Custom schedules (dictionary-based)
-        elif 'custom_schedule' in self.__dict__:
-            return self.custom_schedule.get(t, 0.0)
-
+        elif 'drift_rate' in self.__dict__ and 'domain_change_interval' in self.__dict__:
+            return self.drift_rate
+        elif 'amplitude' in self.__dict__ and 'period' in self.__dict__:
+            return self.amplitude * (1 + np.sin(2 * np.pi * t / self.period)) / 2
         else:
             raise ValueError(f"Unsupported schedule type: {self.schedule_type}")
 
     def get_schedule_params(self):
-        """
-        Return the current schedule parameters for logging or saving.
-
-        Returns:
-            dict: Parameters defining the current schedule.
-        """
-        params = {'schedule_type': self.schedule_type}
-
+        params = {'schedule_type': self.schedule_type, 'strategy': self.strategy}
         if 'burst_interval' in self.__dict__:
             params.update({
                 'burst_interval': self.burst_interval,
                 'burst_duration': self.burst_duration,
                 'base_rate': self.base_rate,
                 'burst_rate': self.burst_rate,
-                'initial_delay': self.initial_delay  # Include initial_delay in params
-            })
-            if 'target_domains' in self.__dict__:
-                params['target_domains'] = self.target_domains
-        elif 'high_duration' in self.__dict__:
-            params.update({
-                'high_duration': self.high_duration,
-                'low_duration': self.low_duration,
-                'high_rate': self.high_rate,
-                'low_rate': self.low_rate
-            })
-        elif 'alpha' in self.__dict__:
-            params.update({
-                'alpha': self.alpha,
-                'period': self.period
+                'initial_delay': self.initial_delay,
+                'target_domains': self.target_domains
             })
         elif 'step_points' in self.__dict__:
             params.update({
                 'step_points': self.step_points,
-                'step_rates': self.step_rates
+                'step_rates': self.step_rates,
+                'step_domains': self.step_domains
             })
-        elif 'custom_schedule' in self.__dict__:
-            params['custom_schedule'] = self.custom_schedule
-
+        elif 'domain_change_interval' in self.__dict__:
+            params.update({
+                'drift_rate': self.drift_rate,
+                'domain_change_interval': self.domain_change_interval,
+                'target_domains': self.target_domains
+            })
+        elif 'amplitude' in self.__dict__:
+            params.update({
+                'amplitude': self.amplitude,
+                'period': self.period,
+                'target_domains': self.target_domains
+            })
         return params
 
     def select_new_target_domain(self):
-        """
-        Select the next target domain for domain-changing schedules.
-
-        Returns:
-            str: The new current target domain, or None if not applicable.
-        """
         if 'target_domains' not in self.__dict__:
             return None
-
         if not self.first_burst_completed:
             self.first_burst_completed = True
             return self.current_target_domain
-
         self.domain_index = (self.domain_index + 1) % len(self.target_domains)
         self.current_target_domain = self.target_domains[self.domain_index]
         return self.current_target_domain
 
     def get_current_target_domain(self):
-        """
-        Get the current target domain.
-
-        Returns:
-            str or None: The current target domain, or None if not applicable.
-        """
-        return self.current_target_domain if 'target_domains' in self.__dict__ else None
+        t = self.current_step
+        if 'step_points' in self.__dict__:
+            for i, point in enumerate(self.step_points):
+                if t < point:
+                    return self.step_domains[i]
+            return self.step_domains[-1]
+        elif 'domain_change_interval' in self.__dict__:
+            domain_index = (t // self.domain_change_interval) % len(self.target_domains)
+            return self.target_domains[domain_index]
+        elif 'period' in self.__dict__:
+            domain_index = (t // self.period) % len(self.target_domains)
+            return self.target_domains[domain_index]
+        elif 'burst_interval' in self.__dict__:
+            return self.current_target_domain
+        else:
+            return self.target_domains[0] if 'target_domains' in self.__dict__ else None
+        
 
 # Set seed for reproducibility
 def set_seed(seed):
@@ -577,37 +561,13 @@ def test_policy_under_drift(
     L_i=1.0,
     K_p=1.0,
     K_d=1.0
-    ):
-    """
-    Modify retraining with policy under drift using the new DriftScheduler.
-
-    Args:
-        source_domains (list): List of source domain names.
-        target_domains (list): List of target domain names.
-        model_path (str): Path to the pretrained model.
-        seed (int): Random seed for reproducibility.
-        drift_scheduler (DriftScheduler): Instance of DriftScheduler managing drift rates and domains.
-        n_rounds (int): Number of training rounds.
-        learning_rate (float): Learning rate for the optimizer.
-        policy_id (int): Identifier for the policy.
-        setting_id (int): Identifier for the setting.
-        batch_size (int): Batch size for data loaders.
-        pi_bar (float): Policy threshold parameter.
-        V (int): Policy parameter for decision-making.
-
-    Returns:
-        list: List of result dictionaries for each round.
-    """
-    # Set random seed for reproducibility
+):
     torch.manual_seed(seed)
-
-    # Initialize policy and data handler
     policy = Policy(alpha=learning_rate, L_i=L_i, K_p=K_p, K_d=K_d)
     data_handler = PACSDataHandler()
     data_handler.load_data()
     train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
 
-    # Initialize domain drifts
     train_drift = PACSDomainDrift(
         source_domains=source_domains,
         target_domains=target_domains,
@@ -619,7 +579,6 @@ def test_policy_under_drift(
         drift_rate=0.0
     )
 
-    # Initialize client
     client = FederatedDriftClient(
         client_id=0,
         model_architecture=model_architecture,
@@ -628,52 +587,58 @@ def test_policy_under_drift(
     )
     print(f'Client device: {client.device}')
 
-    # Set up data loaders
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
     test_loader = DataLoader(test_data, batch_size=batch_size)
     client.set_data(train_loader, test_loader)
 
-    # Load pretrained model
+    # Apply initial drift to set initial subsets
+    client.apply_train_drift()
+    client.apply_test_drift()
+    initial_train_size = len(train_data)
+    initial_test_size = len(test_data)
+ 
+    # Set desired_size based on strategy
+    schedule_params = drift_scheduler.get_schedule_params()
+    strategy = schedule_params.get('strategy', 'add')
+    if strategy == 'replace':
+        client.train_domain_drift.desired_size = initial_train_size
+        client.test_domain_drift.desired_size = initial_test_size
+    else:
+        client.train_domain_drift.desired_size = None
+        client.test_domain_drift.desired_size = None
+
     model = client.get_model()
     model.load_state_dict(torch.load(model_path))
-
-    # Set up optimizer and loss function
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
 
-    # Track loss and results
     loss_array = [client.get_train_metric(metric_fn=criterion, verbose=False)]
     loss_best = loss_array[0]
     policy.set_initial_loss(loss_array[0])
     results = []
     time_arr = []
-    # Training loop
+
     for t in range(n_rounds):
         time_start_round = time.time()
-        # Get current drift rate from scheduler
         current_drift_rate = drift_scheduler.get_drift_rate(t)
 
-        # Update target domains if the schedule involves domain changes
         if hasattr(drift_scheduler, 'target_domains'):
             current_target = drift_scheduler.get_current_target_domain()
             client.train_domain_drift.target_domains = [current_target]
             client.test_domain_drift.target_domains = [current_target]
 
-        # Apply drift rates
         client.train_domain_drift.drift_rate = current_drift_rate
         client.test_domain_drift.drift_rate = current_drift_rate
         if current_drift_rate > 0:
             client.apply_test_drift()
             client.apply_train_drift()
 
-        # Evaluate and compute loss
         current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
         current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
         loss_array.append(current_loss)
         if current_loss < loss_best:
             loss_best = current_loss
 
-        # Make retraining decision
         decision = policy.policy_decision(
             decision_id=policy_id,
             loss_curr=loss_array[-1],
@@ -684,7 +649,6 @@ def test_policy_under_drift(
             loss_best=loss_best
         )
 
-        # Train or evaluate based on decision
         if decision:
             current_loss = client.train(
                 epochs=2,
@@ -696,7 +660,6 @@ def test_policy_under_drift(
         else:
             current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
 
-        # Collect results
         result_dict = {
             't': t,
             'accuracy': current_accuracy,
@@ -710,12 +673,10 @@ def test_policy_under_drift(
         results.append(result_dict)
         time_arr.append(time.time() - time_start_round)
         print(f'Round {t} took {time_arr[-1]} seconds')
-        # Print progress
         print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}, Drift = {current_drift_rate:.4f}")
         if hasattr(drift_scheduler, 'target_domains'):
             print(f"Current target domain: {drift_scheduler.get_current_target_domain()}")
 
-    # Save results as JSON
     schedule_params = drift_scheduler.get_schedule_params()
     schedule_type = schedule_params['schedule_type']
     src_domains_str = "_".join(source_domains)
@@ -751,7 +712,7 @@ def test_policy_under_drift(
     print(f"Average time per round: {np.mean(time_arr)}")
     print(f"Total time: {np.sum(time_arr)}")
     return results
-    
+   
 def main():
     parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
     
@@ -769,9 +730,9 @@ def main():
         4: {'pi_bar': 0.2, 'V': 65, 'L_i': 1.0},
         5: {'pi_bar': 0.25, 'V': 65, 'L_i': 1.0},
         6: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
-        7: {'pi_bar': 0.1, 'V': 1, 'L_i': 1.0},
-        8: {'pi_bar': 0.1, 'V': 10, 'L_i': 1.0},
-        9: {'pi_bar': 0.1, 'V': 100, 'L_i': 1.0},
+        7: {'pi_bar': 0.5, 'V': 1, 'L_i': 1.0},
+        8: {'pi_bar': 0.7, 'V': 10, 'L_i': 1.0},
+        9: {'pi_bar': 0.9, 'V': 100, 'L_i': 1.0},
         10: {'pi_bar': 0.1, 'V': 1, 'L_i': 10.0},
         11: {'pi_bar': 0.1, 'V': 10, 'L_i': 10.0},
         12: {'pi_bar': 0.1, 'V': 100, 'L_i': 10.0},
@@ -812,6 +773,12 @@ def main():
         47: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 10.0, 'K_d': 10.0},
         48: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.5},
         49: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0},
+        50: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 2.0},
+        51: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.5},
+        52: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
+        53: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 2.0},
+        54: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 1.5},
+        55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 1.0},
     }
     
     # Existing arguments
@@ -841,10 +808,11 @@ def main():
     # Construct model path
     domains_str = "_".join(args.src_domains)
     ###### DELETE THIS LINE AFTER TESTING
+    cluster_used = 'gautschi' # gilbreth or gautschi
     if args.seed == 42:
-        model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_0.pth"
+        model_path = f"/scratch/{cluster_used}/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_0.pth"
     else:
-        model_path = f"/scratch/gilbreth/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_{args.seed}.pth"
+        model_path = f"/scratch/{cluster_used}/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_seed_{args.seed}.pth"
 
     # Get settings
     current_settings = settings[args.setting_id]
@@ -871,3 +839,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+    # Try SVHN dataset next
