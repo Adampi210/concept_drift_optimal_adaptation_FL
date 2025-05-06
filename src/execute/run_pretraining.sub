@@ -1,8 +1,12 @@
 #!/bin/bash
 #SBATCH -A cgb              # Account name (adjust as needed)
+#SBATCH -p ai               # Partition
+#SBATCH -q normal      # Queue
 #SBATCH --nodes=1           # Number of nodes
+#SBATCH --ntasks=1          # Number of tasks
+#SBATCH --cpus-per-task=14  # CPUs per task
 #SBATCH --gpus-per-node=1   # GPUs per node
-#SBATCH --time=96:00:00     # Time limit (adjust as needed)
+#SBATCH --time=36:00:00     # Time limit (adjust as needed)
 
 # Load necessary modules (adjust based on your system)
 module load cuda
@@ -12,4 +16,5 @@ module load conda
 conda activate cog_fl_llm_env
 
 # Execute the experiment script with the assigned parameters
-python3 pretrain_models.py --domains photo 
+# python3 pretrain_models.py --domains sketch cartoon --img_size 128
+python3 test_acc.py

@@ -334,21 +334,21 @@ class DriftScheduler:
             'strategy': 'add'
         },
         "domain_change_burst_1": lambda: {
-            'burst_interval': 50,
-            'burst_duration': 5,
+            'burst_interval': 60,
+            'burst_duration': 3,
             'base_rate': 0.0,
-            'burst_rate': 0.2,
+            'burst_rate': 0.4,
             'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': 50,
+            'initial_delay': 60,
             'strategy': 'add'
         },
         "domain_change_burst_2": lambda: {
-            'burst_interval': 50,
-            'burst_duration': 5,
+            'burst_interval': 80,
+            'burst_duration': 2,
             'base_rate': 0.0,
-            'burst_rate': 0.2,
+            'burst_rate': 0.5,
             'target_domains': ['cartoon', 'sketch', 'photo'],
-            'initial_delay': 50,
+            'initial_delay': 30,
             'strategy': 'add'
         },
         "domain_change_burst_replace_0": lambda: {
@@ -361,47 +361,47 @@ class DriftScheduler:
             'strategy': 'replace'
         },
         "domain_change_burst_replace_1": lambda: {
-            'burst_interval': 50,
-            'burst_duration': 5,
+            'burst_interval': 60,
+            'burst_duration': 3,
             'base_rate': 0.0,
-            'burst_rate': 0.2,
+            'burst_rate': 0.4,
             'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': 50,
+            'initial_delay': 60,
             'strategy': 'replace'
         },
         "domain_change_burst_replace_2": lambda: {
-            'burst_interval': 50,
-            'burst_duration': 5,
+            'burst_interval': 80,
+            'burst_duration': 25,
             'base_rate': 0.0,
-            'burst_rate': 0.2,
+            'burst_rate': 0.5,
             'target_domains': ['cartoon', 'sketch', 'photo'],
-            'initial_delay': 50,
+            'initial_delay': 30,
             'strategy': 'replace'
         },
         "RV_domain_change_burst_0": lambda: {
             'burst_interval': np.random.uniform(30, 70),
-            'burst_duration': np.random.uniform(1, 9),
+            'burst_duration': np.random.uniform(2, 8),
             'base_rate': 0.0,
             'burst_rate': np.random.uniform(0.1, 0.3),
-            'target_domains': random.sample(['sketch', 'art_painting', 'cartoon', 'photo'], 3),
+            'target_domains': ['sketch', 'art_painting', 'cartoon'],
             'initial_delay': np.random.uniform(30, 70),
             'strategy': 'replace'
         },
         "RV_domain_change_burst_1": lambda: {
             'burst_interval': np.random.uniform(40, 80),
-            'burst_duration': np.random.uniform(2, 10),
+            'burst_duration': np.random.uniform(3, 6),
             'base_rate': 0.0,
             'burst_rate': np.random.uniform(0.2, 0.4),
-            'target_domains': random.sample(['sketch', 'art_painting', 'cartoon', 'photo'], 3),
+            'target_domains': ['sketch', 'cartoon', 'art_painting'],
             'initial_delay': np.random.uniform(40, 80),
             'strategy': 'replace'
         },
         "RV_domain_change_burst_2": lambda: {
             'burst_interval': np.random.uniform(50, 90),
-            'burst_duration': np.random.uniform(3, 11),
+            'burst_duration': np.random.uniform(2, 6),
             'base_rate': 0.0,
             'burst_rate': np.random.uniform(0.3, 0.5),
-            'target_domains': random.sample(['sketch', 'art_painting', 'cartoon', 'photo'], 3),
+            'target_domains': ['sketch', 'art_painting', 'cartoon'],
             'initial_delay': np.random.uniform(50, 90),
             'strategy': 'replace'
         },
@@ -459,11 +459,12 @@ class DriftScheduler:
                 return self.base_rate
             adjusted_t = t - self.initial_delay
             cycle_position = adjusted_t % self.burst_interval
-            if 'target_domains' in self.__dict__ and cycle_position == self.burst_duration and adjusted_t > 0 and t != self.last_burst_time:
+            if cycle_position == 0 and adjusted_t >= 0:
                 self.select_new_target_domain()
-                self.last_burst_time = t
             return self.burst_rate if cycle_position < self.burst_duration else self.base_rate
         elif 'step_points' in self.__dict__:
+            if t < self.step_points[0]:
+                return 0.0  # No drift before the first step
             for i, point in enumerate(self.step_points):
                 if t < point:
                     return self.step_rates[i]
@@ -519,9 +520,17 @@ class DriftScheduler:
     def get_current_target_domain(self):
         t = self.current_step
         if 'step_points' in self.__dict__:
-            for i, point in enumerate(self.step_points):
-                if t < point:
-                    return self.step_domains[i]
+            # Before the first step point, use the first domain
+            if t < self.step_points[0]:
+                return self.step_domains[0]
+            # After the last step point, use the last domain
+            for i in range(len(self.step_points)):
+                if i == len(self.step_points) - 1:
+                    if t >= self.step_points[i]:
+                        return self.step_domains[i + 1]
+                # Between step points
+                elif t >= self.step_points[i] and t < self.step_points[i + 1]:
+                    return self.step_domains[i + 1]
             return self.step_domains[-1]
         elif 'domain_change_interval' in self.__dict__:
             domain_index = (t // self.domain_change_interval) % len(self.target_domains)
@@ -533,7 +542,6 @@ class DriftScheduler:
             return self.current_target_domain
         else:
             return self.target_domains[0] if 'target_domains' in self.__dict__ else None
-        
 
 # Set seed for reproducibility
 def set_seed(seed):

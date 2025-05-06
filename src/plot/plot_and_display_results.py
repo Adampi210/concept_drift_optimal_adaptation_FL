@@ -1410,21 +1410,6 @@ def plot_all_drift_schedules(n_rounds=200, output_dir='../../data/plots/', seed=
         plt.close()
 
 def plot_dataset_composition(source_domains, target_domains, drift_scheduler, n_rounds, dataset, output_dir='../../data/plots/'):
-    """
-    Plots the composition of the dataset over time as a stacked area chart, showing the proportion
-    of samples from each domain as drift is applied. Saves the composition data to a CSV file for quick loading.
-
-    Args:
-        source_domains (list): List of source domain names (e.g., ['photo']).
-        target_domains (list): List of initial target domain names (e.g., ['sketch']).
-        drift_scheduler (DriftScheduler): Instance of DriftScheduler managing drift rates and possibly target domains.
-        n_rounds (int): Number of time steps to simulate.
-        dataset: The full dataset (e.g., PACS dataset) containing samples with domain labels.
-        output_dir (str): Directory to save the plot and data (default: '../../data/plots/').
-
-    Returns:
-        None: Saves the plot and data to files and prints the save locations.
-    """
     # Ensure output directory exists
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
@@ -1433,7 +1418,7 @@ def plot_dataset_composition(source_domains, target_domains, drift_scheduler, n_
     all_possible_target_domains = (
         drift_scheduler.target_domains if hasattr(drift_scheduler, 'target_domains') else target_domains
     )
-    all_domains = sorted(list(set(source_domains + all_possible_target_domains)))  # Sort for consistency
+    all_domains = sorted(list(set(source_domains + all_possible_target_domains)))
 
     # Construct data filename
     schedule_type = drift_scheduler.schedule_type
@@ -1446,51 +1431,52 @@ def plot_dataset_composition(source_domains, target_domains, drift_scheduler, n_
         df = pd.read_csv(data_path, index_col='time_step')
         print(f"Loaded composition data from {data_path}")
     else:
-        # Initialize proportions_over_time
-        proportions_over_time = {domain: [] for domain in all_domains}
+        # Determine the strategy from the scheduler
+        strategy = drift_scheduler.strategy  # Access strategy attribute
 
-        # Initialize the drift object with an initial drift rate of 0.0
+        # Initialize drift object with drift_rate=0.0
         drift = PACSDomainDrift(source_domains=source_domains, target_domains=target_domains, drift_rate=0.0)
 
+        # Apply initial drift to get the starting subset
+        initial_subset = drift.apply(dataset)
+        initial_subset_size = len(initial_subset)
+
+        # Set desired_size based on strategy
+        if strategy == 'replace':
+            drift.desired_size = initial_subset_size
+        else:
+            drift.desired_size = None
+
         # Simulate drift over n_rounds
+        proportions_over_time = {domain: [] for domain in all_domains}
         for t in range(n_rounds):
             print(f"Time step {t}/{n_rounds}...")
-            # Get the current drift rate
             current_drift_rate = drift_scheduler.get_drift_rate(t)
-
-            # Update the target domains if the scheduler supports domain changes
             if hasattr(drift_scheduler, 'target_domains'):
                 current_target = drift_scheduler.get_current_target_domain()
                 drift.target_domains = [current_target]
-
-            # Set the drift rate
             drift.drift_rate = current_drift_rate
-
-            # Apply drift to get the current subset of the dataset
             current_subset = drift.apply(dataset)
             current_indices = current_subset.indices
 
-            # Count samples per domain in the current subset
+            # Calculate domain proportions
             domain_counts = {domain: 0 for domain in all_domains}
             for idx in current_indices:
-                domain = dataset[idx][2]  # Assuming dataset returns (img, label, domain)
+                domain = dataset[idx][2]  # Assuming (img, label, domain)
                 if domain in domain_counts:
                     domain_counts[domain] += 1
-
-            # Calculate proportions
             total_samples = len(current_indices)
             for domain in all_domains:
                 proportion = domain_counts[domain] / total_samples if total_samples > 0 else 0
                 proportions_over_time[domain].append(proportion)
 
-        # Create DataFrame
+        # Save data
         df = pd.DataFrame(proportions_over_time, index=list(range(n_rounds)))
         df.index.name = 'time_step'
-        # Save to CSV
         df.to_csv(data_path)
         print(f"Saved composition data to {data_path}")
 
-    # Plot the data
+    # Plotting remains the same
     fig, ax = plt.subplots(figsize=(12, 6))
     df.plot.area(ax=ax, stacked=True, alpha=0.7)
     ax.set_xlabel('Time Step')
@@ -1499,15 +1485,12 @@ def plot_dataset_composition(source_domains, target_domains, drift_scheduler, n_
     ax.legend(title='Domains', loc='upper right')
     ax.set_ylim(0, 1)
     ax.grid(True, linestyle='--', alpha=0.5)
-
-    # Save the plot
     output_filename = f"dataset_composition_{schedule_type}_src_{src_str}_tgt_{tgt_str}.png"
     output_path = os.path.join(output_dir, output_filename)
     fig.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close(fig)
-
     print(f"Saved dataset composition plot to {output_path}")
-
+    
 def plot_compostion_from_saved_data(output_dir, schedule_type, source_domains, target_domains, n_rounds):
     """
     Plots the dataset composition over time from saved CSV data.
@@ -1757,22 +1740,22 @@ if __name__ == "__main__":
     source_domain = 'photo'
     target_domain = 'sketch'
     policy_ids = [0, 1, 2, 6]
-    schedule_type = 'domain_change_burst_0'
+    schedule_type = 'domain_change_burst_3'
     model_names = ['PACSCNN_4',]
     
     policy_setting_pairs = [(1, 49), (2, 49), (6, 49)]
     
     for model_name in model_names:
         for img_size in [128,]:
-            # compare_policies(
-            #     policy_setting_pairs=policy_setting_pairs,
-            #     schedule_type=schedule_type,
-            #     source_domain=source_domain,
-            #     target_domain=target_domain,
-            #     model_name=model_name,
-            #     img_size=img_size,
-            #     T=199  # Match your n_rounds - 1 from the JSON
-            # )
+            compare_policies(
+                policy_setting_pairs=policy_setting_pairs,
+                schedule_type=schedule_type,
+                source_domain=source_domain,
+                target_domain=target_domain,
+                model_name=model_name,
+                img_size=img_size,
+                T=199  # Match your n_rounds - 1 from the JSON
+            )
             compare_settings(
                 policy_id=6,
                 setting_ids=[49, 50, 51, 52, 53, 54, 55],
@@ -1825,21 +1808,22 @@ if __name__ == "__main__":
     # Plot how the dataset evolves
     # schedule_array = list(DriftScheduler.SCHEDULE_CONFIGS.keys())[1:]
     
-    schedule_array = ['domain_change_burst_3',]
+    # schedule_array = ['domain_change_burst_0', 'domain_change_burst_1',
+    #                   'domain_change_burst_2', 'domain_change_burst_3',]
     # Plot composition
-    for schedule in schedule_array:
-        drift_scheduler = DriftScheduler(schedule)
-        data_handler = PACSDataHandler()
-        data_handler.load_data()
-        train_data = data_handler.train_dataset
-        print(schedule)
-        plot_dataset_composition(
-            source_domains=['photo',],
-            target_domains=['sketch',],
-            drift_scheduler=drift_scheduler,
-            n_rounds=200,
-            dataset=train_data
-        )
+    # for schedule in schedule_array:
+    #     drift_scheduler = DriftScheduler(schedule)
+    #     data_handler = PACSDataHandler()
+    #     data_handler.load_data()
+    #     train_data = data_handler.train_dataset
+    #     print(schedule)
+    #     plot_dataset_composition(
+    #         source_domains=['photo',],
+    #         target_domains=['sketch',],
+    #         drift_scheduler=drift_scheduler,
+    #         n_rounds=200,
+    #         dataset=train_data
+    #     )
     # plot_all_drift_schedules()
     # x axis = number of updates, y axis = accuracy/loss
     # CDF to show how quickly we can recover to good accuracy

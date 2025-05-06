@@ -1,0 +1,1638 @@
+{
+    "parameters": {
+        "source_domains": [
+            "photo"
+        ],
+        "target_domains": [
+            "sketch"
+        ],
+        "model_path": "/scratch/gautschi/apiasecz/models/concept_drift_models/PACSCNN_3_photo_seed_1.pth",
+        "model_architecture": "PACSCNN_3",
+        "seed": 1,
+        "n_rounds": 200,
+        "learning_rate": 0.005,
+        "batch_size": 128,
+        "policy_id": 1,
+        "setting_id": 50,
+        "pi_bar": 0.1,
+        "V": 10,
+        "K_p": 1.0,
+        "K_d": 2.0
+    },
+    "schedule_params": {
+        "schedule_type": "domain_change_burst_replace_1",
+        "strategy": "replace",
+        "burst_interval": 60,
+        "burst_duration": 3,
+        "base_rate": 0.0,
+        "burst_rate": 0.4,
+        "initial_delay": 60,
+        "target_domains": [
+            "sketch",
+            "cartoon",
+            "art_painting"
+        ]
+    },
+    "results": [
+        {
+            "t": 0,
+            "accuracy": 0.7265625,
+            "loss": 0.5850538394667886,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 1,
+            "accuracy": 0.7265625,
+            "loss": 0.5849308344450864,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 2,
+            "accuracy": 0.7265625,
+            "loss": 0.5868023796515032,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 3,
+            "accuracy": 0.7265625,
+            "loss": 0.5875101495872844,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 4,
+            "accuracy": 0.7265625,
+            "loss": 0.5870344638824463,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 5,
+            "accuracy": 0.7265625,
+            "loss": 0.5855719609694048,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 6,
+            "accuracy": 0.7265625,
+            "loss": 0.5893663276325573,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 7,
+            "accuracy": 0.7265625,
+            "loss": 0.5846610015088861,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 8,
+            "accuracy": 0.7265625,
+            "loss": 1.1504282057285309,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 9,
+            "accuracy": 0.5112847288449606,
+            "loss": 1.9702071384950117,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 10,
+            "accuracy": 0.5112847288449606,
+            "loss": 1.9597502621737393,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 11,
+            "accuracy": 0.5112847288449606,
+            "loss": 0.8891252496025779,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 12,
+            "accuracy": 0.5243055621782938,
+            "loss": 1.245934475551952,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 13,
+            "accuracy": 0.5243055621782938,
+            "loss": 1.2394724759188565,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 14,
+            "accuracy": 0.5243055621782938,
+            "loss": 1.2345561601898887,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 15,
+            "accuracy": 0.5243055621782938,
+            "loss": 1.2553502104499124,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 16,
+            "accuracy": 0.5243055621782938,
+            "loss": 0.808544172482057,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 17,
+            "accuracy": 0.6484375,
+            "loss": 0.8631136525760997,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 18,
+            "accuracy": 0.6484375,
+            "loss": 0.8650177175348456,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 19,
+            "accuracy": 0.6484375,
+            "loss": 0.873007367957722,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 20,
+            "accuracy": 0.6484375,
+            "loss": 0.8638905557719144,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 21,
+            "accuracy": 0.6484375,
+            "loss": 0.872239735993472,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 22,
+            "accuracy": 0.6484375,
+            "loss": 0.8603471192446622,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 23,
+            "accuracy": 0.6484375,
+            "loss": 0.8711793151768771,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 24,
+            "accuracy": 0.6484375,
+            "loss": 0.8693213354457509,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 25,
+            "accuracy": 0.6484375,
+            "loss": 0.8602742119268938,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 26,
+            "accuracy": 0.6484375,
+            "loss": 0.8692256699908864,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 27,
+            "accuracy": 0.6484375,
+            "loss": 0.8654054024002769,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 28,
+            "accuracy": 0.6484375,
+            "loss": 0.8655773455446417,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 29,
+            "accuracy": 0.6484375,
+            "loss": 0.8758285966786471,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 30,
+            "accuracy": 0.6484375,
+            "loss": 0.8692816333337263,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 31,
+            "accuracy": 0.6484375,
+            "loss": 0.875903991135684,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 32,
+            "accuracy": 0.6484375,
+            "loss": 0.8634601831436157,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 33,
+            "accuracy": 0.6484375,
+            "loss": 0.8619232827966864,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 34,
+            "accuracy": 0.6484375,
+            "loss": 0.8644229011102156,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 35,
+            "accuracy": 0.6484375,
+            "loss": 0.816210930997675,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 36,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1905555562539534,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 37,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1908797784285112,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 38,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1850685206326572,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 39,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1934814832427285,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 40,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1887748512354763,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 41,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1817513650113887,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 42,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1854859807274558,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 43,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1880635998465798,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 44,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1937851147218184,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 45,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1856798312880776,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 46,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1839011799205432,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 47,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1825505711815574,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 48,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1791974089362405,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 49,
+            "accuracy": 0.5581597288449606,
+            "loss": 1.1828973455862566,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 50,
+            "accuracy": 0.5581597288449606,
+            "loss": 0.8154675445773385,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 51,
+            "accuracy": 0.6588541666666666,
+            "loss": 0.839303043755618,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 52,
+            "accuracy": 0.6588541666666666,
+            "loss": 0.8397293415936556,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 53,
+            "accuracy": 0.6588541666666666,
+            "loss": 0.8364785205234181,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 54,
+            "accuracy": 0.6588541666666666,
+            "loss": 0.8360490961508318,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 55,
+            "accuracy": 0.6588541666666666,
+            "loss": 0.7307385368780657,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 56,
+            "accuracy": 0.6223958333333334,
+            "loss": 0.8420191515575756,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 57,
+            "accuracy": 0.6223958333333334,
+            "loss": 0.8402709906751459,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 58,
+            "accuracy": 0.6223958333333334,
+            "loss": 0.8399732275442644,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 59,
+            "accuracy": 0.6223958333333334,
+            "loss": 0.844090770591389,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 60,
+            "accuracy": 0.45936547219753265,
+            "loss": 2.4380142211914064,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 61,
+            "accuracy": 0.3722891569137573,
+            "loss": 3.50494452885219,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 62,
+            "accuracy": 0.31181318845067707,
+            "loss": 4.315862862269084,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 63,
+            "accuracy": 0.31181318845067707,
+            "loss": 4.320676438013712,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 64,
+            "accuracy": 0.31181318845067707,
+            "loss": 4.359218001365662,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 65,
+            "accuracy": 0.31181318845067707,
+            "loss": 4.3189758141835535,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 66,
+            "accuracy": 0.31181318845067707,
+            "loss": 4.3167226632436115,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 67,
+            "accuracy": 0.31181318845067707,
+            "loss": 4.303019913037618,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 68,
+            "accuracy": 0.31181318845067707,
+            "loss": 4.328164410591126,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 69,
+            "accuracy": 0.31181318845067707,
+            "loss": 1.5073175072669982,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 70,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2932039300600688,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 71,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2869162400563559,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 72,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.296053417523702,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 73,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.288405215740204,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 74,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.28977073431015,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 75,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.29382111231486,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 76,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2908225099245707,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 77,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2939331849416098,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 78,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.292605447769165,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 79,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2933160146077474,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 80,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.289588177204132,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 81,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2966115991274516,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 82,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.295538894335429,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 83,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2868198156356812,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 84,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2914746522903442,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 85,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.29405624071757,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 86,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2948310732841493,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 87,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2955454389254253,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 88,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.288087296485901,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 89,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.288175388177236,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 90,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2952287673950196,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 91,
+            "accuracy": 0.4976133278438023,
+            "loss": 1.2532243112723034,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 92,
+            "accuracy": 0.49115728054727825,
+            "loss": 1.1996291557947794,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 93,
+            "accuracy": 0.49115728054727825,
+            "loss": 1.1223702232042947,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 94,
+            "accuracy": 0.37532623750822885,
+            "loss": 2.663084308306376,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 95,
+            "accuracy": 0.37532623750822885,
+            "loss": 2.6471633195877073,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 96,
+            "accuracy": 0.37532623750822885,
+            "loss": 2.6304129282633464,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 97,
+            "accuracy": 0.37532623750822885,
+            "loss": 2.6585131168365477,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 98,
+            "accuracy": 0.37532623750822885,
+            "loss": 2.670575666427612,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 99,
+            "accuracy": 0.37532623750822885,
+            "loss": 2.6496030569076536,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 100,
+            "accuracy": 0.37532623750822885,
+            "loss": 2.665869641304016,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 101,
+            "accuracy": 0.37532623750822885,
+            "loss": 1.0657305498917897,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 102,
+            "accuracy": 0.5245364052908761,
+            "loss": 1.119089992841085,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 103,
+            "accuracy": 0.5245364052908761,
+            "loss": 1.1262776931126912,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 104,
+            "accuracy": 0.5245364052908761,
+            "loss": 1.0051921248435973,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 105,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8346850196520488,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 106,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.844090175628662,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 107,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8376087109247843,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 108,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.844905706246694,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 109,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8319745143254598,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 110,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.845655075709025,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 111,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8389256318410239,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 112,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8331504503885905,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 113,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8574231743812561,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 114,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8346689621607462,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 115,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8384196639060975,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 116,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8437732537587483,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 117,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8172746419906616,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 118,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8421034455299377,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 119,
+            "accuracy": 0.43085508261408123,
+            "loss": 1.8304991086324056,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "sketch"
+        },
+        {
+            "t": 120,
+            "accuracy": 0.38504464626312257,
+            "loss": 2.090045574234753,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 121,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1629139401695947,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 122,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1715685481374916,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 123,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.166935763575814,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 124,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1680610992691736,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 125,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1633194983005524,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 126,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1655597632581536,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 127,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1758945801041345,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 128,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1669282533905725,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 129,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1669365248896857,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 130,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.16988249800422,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 131,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.167231497439471,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 132,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.160073987462304,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 133,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1750994135033,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 134,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.164293500510129,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 135,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1508788520639595,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 136,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1556390849026767,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 137,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1583864201198923,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 138,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1690931157632307,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 139,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.162579747763547,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 140,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.159917891025543,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 141,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1635310378941623,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 142,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1638915701345964,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 143,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1713813976808027,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 144,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1626189296895806,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 145,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.155153689059344,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 146,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.164343153888529,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 147,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1694855906746606,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 148,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1653976440429688,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 149,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.165453539653258,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 150,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1680125431580977,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 151,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.168286228721792,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 152,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1681841503490102,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 153,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.16429846666076,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 154,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1646941764788195,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 155,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.1680235916917976,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 156,
+            "accuracy": 0.36843885345892474,
+            "loss": 2.159801271828738,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 157,
+            "accuracy": 0.36843885345892474,
+            "loss": 1.2401026182553985,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 158,
+            "accuracy": 0.46875,
+            "loss": 1.4337415586818347,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 159,
+            "accuracy": 0.46875,
+            "loss": 1.4345053109255703,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 160,
+            "accuracy": 0.46875,
+            "loss": 1.4339581755074589,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 161,
+            "accuracy": 0.46875,
+            "loss": 1.4340161112221805,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 162,
+            "accuracy": 0.46875,
+            "loss": 1.4332390969449824,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 163,
+            "accuracy": 0.46875,
+            "loss": 1.4358277510512958,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 164,
+            "accuracy": 0.46875,
+            "loss": 1.4335554458878257,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 165,
+            "accuracy": 0.46875,
+            "loss": 1.4340547485785051,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 166,
+            "accuracy": 0.46875,
+            "loss": 1.4383982257409529,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 167,
+            "accuracy": 0.46875,
+            "loss": 1.4301370436495,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 168,
+            "accuracy": 0.46875,
+            "loss": 1.4347096654501827,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 169,
+            "accuracy": 0.46875,
+            "loss": 1.43310039693659,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 170,
+            "accuracy": 0.46875,
+            "loss": 1.4364589263092389,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 171,
+            "accuracy": 0.46875,
+            "loss": 1.435053901238875,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 172,
+            "accuracy": 0.46875,
+            "loss": 1.4323949326168408,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 173,
+            "accuracy": 0.46875,
+            "loss": 1.4346659915013746,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 174,
+            "accuracy": 0.46875,
+            "loss": 1.4361933198842136,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 175,
+            "accuracy": 0.46875,
+            "loss": 1.4311517693779685,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 176,
+            "accuracy": 0.46875,
+            "loss": 1.4372187581929294,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 177,
+            "accuracy": 0.46875,
+            "loss": 1.1007720245556398,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 178,
+            "accuracy": 0.4886701865629716,
+            "loss": 1.0777404044162142,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 179,
+            "accuracy": 0.4268465909090909,
+            "loss": 1.4143600220030004,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "cartoon"
+        },
+        {
+            "t": 180,
+            "accuracy": 0.375328255551202,
+            "loss": 1.6325235241337825,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 181,
+            "accuracy": 0.34375,
+            "loss": 1.751926222573156,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 182,
+            "accuracy": 0.34375,
+            "loss": 1.7623080829294717,
+            "decision": 0,
+            "drift_rate": 0.4,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 183,
+            "accuracy": 0.34375,
+            "loss": 1.7619841709369566,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 184,
+            "accuracy": 0.34375,
+            "loss": 1.763709832982319,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 185,
+            "accuracy": 0.34375,
+            "loss": 1.2537332656906872,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 186,
+            "accuracy": 0.4791666666666667,
+            "loss": 1.232990439345197,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 187,
+            "accuracy": 0.4791666666666667,
+            "loss": 1.2367183987687274,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 188,
+            "accuracy": 0.4791666666666667,
+            "loss": 1.236593278442941,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 189,
+            "accuracy": 0.4791666666666667,
+            "loss": 1.2368469848865415,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 190,
+            "accuracy": 0.4791666666666667,
+            "loss": 1.23593079462284,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 191,
+            "accuracy": 0.4791666666666667,
+            "loss": 1.2067780705486855,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 192,
+            "accuracy": 0.4627604161699613,
+            "loss": 1.27022545802884,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 193,
+            "accuracy": 0.4627604161699613,
+            "loss": 1.2730980588168632,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 194,
+            "accuracy": 0.4627604161699613,
+            "loss": 1.2754624820337064,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 195,
+            "accuracy": 0.4627604161699613,
+            "loss": 1.2715162300482028,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 196,
+            "accuracy": 0.4627604161699613,
+            "loss": 1.271656417265171,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 197,
+            "accuracy": 0.4627604161699613,
+            "loss": 1.272778231923173,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 198,
+            "accuracy": 0.4627604161699613,
+            "loss": 1.1395566245404685,
+            "decision": 1,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        },
+        {
+            "t": 199,
+            "accuracy": 0.47513020783662796,
+            "loss": 1.2293904496402275,
+            "decision": 0,
+            "drift_rate": 0.0,
+            "target_domain": "art_painting"
+        }
+    ]
+}

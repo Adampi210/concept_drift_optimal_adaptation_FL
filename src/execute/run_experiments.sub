@@ -6,7 +6,7 @@
 #SBATCH --ntasks=1          # Number of tasks
 #SBATCH --cpus-per-task=14  # CPUs per task
 #SBATCH --gpus-per-node=1   # GPUs per node
-#SBATCH --time=6:00:00     # Time limit (adjust as needed)
+#SBATCH --time=6:00:00      # Time limit (adjust as needed)
 
 # To check the usage: squeue | grep cgb
 
@@ -26,24 +26,36 @@ len_B=${#ALL_TGT_DOMAINS[@]}
 len_C=${#POLICIES[@]}
 len_D=${#SETTING_IDS[@]}
 len_E=${#SCHEDULES[@]}
-len_F=${#ALL_MODEL_NAMES[@]}  # Length of model names array
+len_F=${#ALL_MODEL_NAMES[@]}
+len_G=${#seeds[@]}          # Length of seeds array
+len_H=${#IMG_SIZES[@]}      # Length of image sizes array
 
-# Calculate indices based on SLURM_ARRAY_TASK_ID
-f_idx=$((SLURM_ARRAY_TASK_ID % len_F))
-remainder=$((SLURM_ARRAY_TASK_ID / len_F))
+# Calculate indices based on SLURM_ARRAY_TASK_ID, with seed as the fastest varying index
+g_idx=$((SLURM_ARRAY_TASK_ID % len_G))
+remainder=$((SLURM_ARRAY_TASK_ID / len_G))
+f_idx=$((remainder % len_F))
+remainder=$((remainder / len_F))
 e_idx=$((remainder % len_E))
-d_idx=$(((remainder / len_E) % len_D))
-c_idx=$(((remainder / (len_E * len_D)) % len_C))
-b_idx=$(((remainder / (len_E * len_D * len_C)) % len_B))
-a_idx=$((remainder / (len_E * len_D * len_C * len_B)))
+remainder=$((remainder / len_E))
+d_idx=$((remainder % len_D))
+remainder=$((remainder / len_D))
+c_idx=$((remainder % len_C))
+remainder=$((remainder / len_C))
+b_idx=$((remainder % len_B))
+remainder=$((remainder / len_B))
+a_idx=$((remainder % len_A))
+remainder=$((remainder / len_A))
+h_idx=$((remainder % len_H))
 
-# Assign parameters for this task
-MODEL_NAME="${ALL_MODEL_NAMES[$f_idx]}"  # Assign the model name
+# Assign parameters for this task, including the seed and image size
+SEED="${seeds[$g_idx]}"
+MODEL_NAME="${ALL_MODEL_NAMES[$f_idx]}"
 SRC_SET="${ALL_SRC_DOMAINS[$a_idx]}"
 TGT_SET="${ALL_TGT_DOMAINS[$b_idx]}"
 POLICY_ID="${POLICIES[$c_idx]}"
 SETTING_ID="${SETTING_IDS[$d_idx]}"
 SCHEDULE="${SCHEDULES[$e_idx]}"
+IMG_SIZE="${IMG_SIZES[$h_idx]}"
 
-# Execute the experiment script with the assigned parameters
-./execute_experiment.sh "$MODEL_NAME" "$SRC_SET" "$TGT_SET" "$POLICY_ID" "$SETTING_ID" "$SCHEDULE"
+# Execute the experiment script with the assigned parameters, including the seed and image size
+./execute_experiment.sh "$MODEL_NAME" "$SRC_SET" "$TGT_SET" "$POLICY_ID" "$SETTING_ID" "$SCHEDULE" "$SEED" "$IMG_SIZE"
