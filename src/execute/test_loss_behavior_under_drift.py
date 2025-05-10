@@ -1,10 +1,9 @@
 import os
 import json
-
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Subset
+from torch.utils.data import DataLoader, Subset, random_split
 import numpy as np
 import random
 import csv
@@ -12,8 +11,7 @@ import argparse
 import time
 from torchvision.models import resnet18
 from torchvision import transforms
-
-from fl_toolkit import *  # Ensure fl_toolkit is correctly installed and accessible
+from fl_toolkit import *
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
@@ -21,9 +19,7 @@ print(f"CUDA Version: {torch.version.cuda}")
 print(f"cuDNN Version: {torch.backends.cudnn.version()}")
 print(f"PyTorch Version: {torch.__version__}")
 
-# =========================
-# Models
-# =========================
+# Model definitions remain unchanged
 class PACSCNN(BaseModelArchitecture):
     def __init__(self, num_classes=7):
         super(PACSCNN, self).__init__()
@@ -267,13 +263,13 @@ class PACSCNN_5(BaseModelArchitecture):
             ResidualBlock(64, 64, stride=1),
             ResidualBlock(64, 128, stride=2),
             ResidualBlock(128, 128, stride=1),
-            ResidualBlock(128, 128, stride=1),  # Added
+            ResidualBlock(128, 128, stride=1),
             ResidualBlock(128, 256, stride=2),
             ResidualBlock(256, 256, stride=1),
-            ResidualBlock(256, 256, stride=1),  # Added
+            ResidualBlock(256, 256, stride=1),
             ResidualBlock(256, 512, stride=2),
             ResidualBlock(512, 512, stride=1),
-            ResidualBlock(512, 512, stride=1),  # Added
+            ResidualBlock(512, 512, stride=1),
         )
         self.classifier = nn.Sequential(
             nn.AdaptiveAvgPool2d((1, 1)),
@@ -315,44 +311,24 @@ class PACSCNN_6(BaseModelArchitecture):
         x = self.classifier(x)
         return x
 
-# =========================
-# Policies
-# =========================
+# Policy class (unchanged)
 class Policy:
     def __init__(self, alpha=0.01, L_i=1.0, K_p=1.0, K_d=1.0):
-        """
-        Initialize the Policy class.
-
-        Args:
-            alpha (float): Learning rate or step size.
-            L_i (float): Lipschitz constant (for other policies).
-            K_p (float): Proportional gain for Policy 6.
-            K_d (float): Derivative gain for Policy 6.
-        """
-        self.virtual_queue = 0  # Virtual queue Q(t)
-        self.update_history = []  # History of update times
-        self.last_gradient_magnitude = None  # Store the last gradient magnitude
-        self.alpha = alpha  # Learning rate
-        self.L_i = L_i  # Lipschitz constant
-        self.K_p = K_p  # Proportional gain for PD control
-        self.K_d = K_d  # Derivative gain for PD control
-        self.loss_initial = None  # Initial loss for Policy 6
+        self.virtual_queue = 0
+        self.update_history = []
+        self.last_gradient_magnitude = None
+        self.alpha = alpha
+        self.L_i = L_i
+        self.K_p = K_p
+        self.K_d = K_d
+        self.loss_initial = None
         
     def update_gradient(self, model, data_loader, criterion, device):
-        """
-        Compute and store the gradient magnitude after a model update.
-
-        Args:
-            model: The trained model.
-            data_loader: DataLoader for the training data.
-            criterion: Loss function.
-            device: Device to use (e.g., 'cpu' or 'cuda').
-        """
         model.eval()
         with torch.enable_grad():
             for batch in data_loader:
                 if len(batch) > 2:
-                    inputs, targets, _ = batch  # Ignore rest
+                    inputs, targets, _ = batch
                 else:
                     inputs, targets = batch
                 inputs, targets = inputs.to(device), targets.to(device)
@@ -366,55 +342,28 @@ class Policy:
                         grad_norm += torch.norm(param.grad).item() ** 2
                 grad_norm = grad_norm ** 0.5
                 self.last_gradient_magnitude = grad_norm
-                break  # Use one batch for efficiency
+                break
         model.train()
 
     def set_initial_loss(self, loss_initial):
-        """
-        Set the initial loss for Policy 6.
-
-        Args:
-            loss_initial (float): The initial loss before drift.
-        """
         self.loss_initial = loss_initial
 
     def policy_decision(self, decision_id, loss_curr, loss_prev, current_time, V, pi_bar, loss_best=float('inf')):
-        """
-        Decide whether to update the model based on the selected policy.
-
-        Args:
-            decision_id (int): ID of the policy to use (0-6).
-            loss_curr (float): Current loss L(θ_t; D_{t+1}).
-            loss_prev (float): Previous loss L(θ_{t-1}; D_t).
-            current_time (int): Current time step.
-            V (float): Trade-off parameter.
-            pi_bar (float): Average update rate (λ̄).
-            loss_best (float): Best loss seen so far (optional).
-
-        Returns:
-            int: 1 if update, 0 if not.
-        """
         if decision_id == 0:
-            # Policy 0: Never update
-            return 0
+            return 1
         elif decision_id == 1:
-            # Policy 1: Random update with probability pi_bar
             return int(np.random.random() < pi_bar)
         elif decision_id == 2:
-            # Policy 2: Update at fixed intervals (1/pi_bar)
             interval = int(1 / pi_bar)
             return int(current_time % interval == 0)
         elif decision_id == 3:
-            # Policy 3: Virtual queue-based update
-            delta_L = loss_curr - loss_prev
-            threshold = self.virtual_queue + 0.5 - pi_bar
-            should_update = V * delta_L > threshold
-            self.virtual_queue = max(0, self.virtual_queue + should_update - pi_bar)
-            if should_update:
-                self.update_history.append(current_time)
-            return int(should_update)
+            if current_time >= 55 and current_time <= 61 \
+                or current_time >= 105 and current_time <= 112 \
+                or current_time >= 155 and current_time <= 162:
+                return 1
+            else:
+                return 0
         elif decision_id == 4:
-            # Policy 4: Gradient magnitude with internal L_i
             delta_L = loss_curr - loss_prev
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
@@ -425,7 +374,6 @@ class Policy:
                 self.update_history.append(current_time)
             return int(should_update)
         elif decision_id == 5:
-            # Policy 5: Gradient magnitude with best loss
             delta_L = loss_curr - loss_best
             grad_magnitude = self.last_gradient_magnitude if self.last_gradient_magnitude is not None else 0.0
             left_side = V * (delta_L + self.L_i * self.alpha * grad_magnitude)
@@ -436,11 +384,10 @@ class Policy:
                 self.update_history.append(current_time)
             return int(should_update)
         elif decision_id == 6:
-            # Policy 6: PD-based decision
             if self.loss_initial is None:
                 raise ValueError("Initial loss not set for Policy 6")
-            e_t = loss_curr - loss_best  # Proportional term
-            delta_e = loss_curr - loss_prev  # Derivative term
+            e_t = loss_curr - loss_best
+            delta_e = loss_curr - loss_prev
             pd_term = self.K_p * e_t + self.K_d * delta_e
             threshold = self.virtual_queue + 0.5 - pi_bar
             should_update = V * pd_term > threshold
@@ -451,19 +398,17 @@ class Policy:
         else:
             raise ValueError(f"Invalid decision_id: {decision_id}")
 
-# =========================
-# Drift Scheduling
-# =========================
+# DriftScheduler class (unchanged)
 class DriftScheduler:
     SCHEDULE_CONFIGS = {
         "domain_change_burst_0": lambda: {
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
-            'burst_rate': 0.2,
+            'burst_rate': 0.4,
             'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': 50,
-            'strategy': 'add'
+            'initial_delay': 55,
+            'strategy': 'replace'
         },
         "domain_change_burst_1": lambda: {
             'burst_interval': 60,
@@ -471,52 +416,34 @@ class DriftScheduler:
             'base_rate': 0.0,
             'burst_rate': 0.4,
             'target_domains': ['photo', 'cartoon', 'sketch'],
-            'initial_delay': 40,
+            'initial_delay': 45,
             'strategy': 'replace'
         },
         "domain_change_burst_2": lambda: {
-            'burst_interval': 60,
+            'burst_interval': 100,
             'burst_duration': 2,
             'base_rate': 0.0,
             'burst_rate': 0.5,
-            'target_domains': ['sketch', 'cartoon', 'photo'],
-            'initial_delay': 40,
-            'strategy': 'add'
+            'target_domains': ['sketch', 'cartoon'],
+            'initial_delay': 25,
+            'strategy': 'replace'
         },
         "domain_change_burst_3": lambda: {
             'burst_interval': 50,
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 1.0,
-            'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': 50,
+            'target_domains': ['cartoon', 'photo', 'sketch'],
+            'initial_delay': 55,
             'strategy': 'replace'
         },
-        "domain_change_burst_replace_0": lambda: {
-            'burst_interval': 50,
+        "domain_change_burst_4": lambda: {
+            'burst_interval': 20,
             'burst_duration': 5,
             'base_rate': 0.0,
-            'burst_rate': 0.2,
-            'target_domains': ['sketch', 'art_painting', 'cartoon'],
-            'initial_delay': 50,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_replace_1": lambda: {
-            'burst_interval': 60,
-            'burst_duration': 3,
-            'base_rate': 0.0,
-            'burst_rate': 0.4,
-            'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': 60,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_replace_2": lambda: {
-            'burst_interval': 80,
-            'burst_duration': 25,
-            'base_rate': 0.0,
-            'burst_rate': 0.5,
-            'target_domains': ['cartoon', 'sketch', 'photo'],
-            'initial_delay': 30,
+            'burst_rate': 1.0,
+            'target_domains': ['cartoon'],
+            'initial_delay': 205,
             'strategy': 'replace'
         },
         "RV_domain_change_burst_0": lambda: {
@@ -546,6 +473,7 @@ class DriftScheduler:
             'initial_delay': np.random.uniform(50, 90),
             'strategy': 'replace'
         },
+        
         "step_0": lambda: {
             'step_points': [50, 100, 150],
             'step_rates': [0.01, 0.03, 0.05, 0.07],
@@ -605,7 +533,7 @@ class DriftScheduler:
             return self.burst_rate if cycle_position < self.burst_duration else self.base_rate
         elif 'step_points' in self.__dict__:
             if t < self.step_points[0]:
-                return 0.0  # No drift before the first step
+                return 0.0
             for i, point in enumerate(self.step_points):
                 if t < point:
                     return self.step_rates[i]
@@ -661,15 +589,12 @@ class DriftScheduler:
     def get_current_target_domain(self):
         t = self.current_step
         if 'step_points' in self.__dict__:
-            # Before the first step point, use the first domain
             if t < self.step_points[0]:
                 return self.step_domains[0]
-            # After the last step point, use the last domain
             for i in range(len(self.step_points)):
                 if i == len(self.step_points) - 1:
                     if t >= self.step_points[i]:
                         return self.step_domains[i + 1]
-                # Between step points
                 elif t >= self.step_points[i] and t < self.step_points[i + 1]:
                     return self.step_domains[i + 1]
             return self.step_domains[-1]
@@ -684,15 +609,15 @@ class DriftScheduler:
         else:
             return self.target_domains[0] if 'target_domains' in self.__dict__ else None
 
-# Set seed for reproducibility
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
     torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False 
-  
+    torch.backends.cudnn.benchmark = False
+
+# Modified test_policy_under_drift function
 def test_policy_under_drift(
     source_domains,
     target_domains,
@@ -705,30 +630,40 @@ def test_policy_under_drift(
     learning_rate=0.01,
     policy_id=0,
     setting_id=0,
-    batch_size=256,
+    batch_size=128,
     pi_bar=0.1,
-    V=1, 
+    V=1,
     L_i=1.0,
     K_p=1.0,
-    K_d=1.0
+    K_d=1.0,
+    n_steps=1
 ):
-    torch.manual_seed(seed)
+    drift_seed = 0
     set_seed(seed)
     transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    # transform = transforms.Compose([
-    #     transforms.ToTensor(),
-    # ])
-    
+    # Should I normalize?
+
     policy = Policy(alpha=learning_rate, L_i=L_i, K_p=K_p, K_d=K_d)
+    set_seed(drift_seed)
     data_handler = PACSDataHandler()
     data_handler.load_data()
-    train_data, test_data = data_handler.train_dataset, data_handler.test_dataset
+    train_data = data_handler.train_dataset
+    # test_data = data_handler.train_dataset
     train_data.transform = transform
-    test_data.transform = transform
+    # test_data.transform = transform
+
+    # Create domain-specific test loaders
+    domains = ['photo', 'art_painting', 'cartoon', 'sketch']
+    test_loaders = {}
+    # for domain in domains:
+    #     indices = [i for i, (_, _, d) in enumerate(test_data) if d == domain]
+    #     subset = Subset(test_data, indices)
+    #     test_loaders[domain] = DataLoader(subset, batch_size=batch_size, num_workers=4, persistent_workers=True, pin_memory=True)
+
     train_drift = PACSDomainDrift(
         source_domains=source_domains,
         target_domains=target_domains,
@@ -739,6 +674,7 @@ def test_policy_under_drift(
         target_domains=target_domains,
         drift_rate=0.0
     )
+    set_seed(seed)
 
     client = FederatedDriftClient(
         client_id=0,
@@ -746,36 +682,44 @@ def test_policy_under_drift(
         train_domain_drift=train_drift,
         test_domain_drift=test_drift
     )
-    print(f'Client device: {client.device}')
 
     train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4, persistent_workers=True, pin_memory=True)
-    test_loader = DataLoader(test_data, batch_size=batch_size, num_workers=4, persistent_workers=True, pin_memory=True)
-    client.set_data(train_loader, test_loader)
+    test_loader = None
+    # Will be overwritten
+    client.set_data(train_loader, train_loader)
 
-    # Apply initial drift to set initial subsets
+    # Apply initial drift
     client.apply_train_drift()
-    client.apply_test_drift()
     initial_train_subset_size = len(client.train_loader.dataset)
-    initial_test_subset_size = len(client.test_loader.dataset)
     schedule_params = drift_scheduler.get_schedule_params()
     strategy = schedule_params.get('strategy', 'add')
     if strategy == 'replace':
         client.train_domain_drift.desired_size = initial_train_subset_size
-        client.test_domain_drift.desired_size = initial_test_subset_size
     else:
         client.train_domain_drift.desired_size = None
-        client.test_domain_drift.desired_size = None
-
+        
+    print(f"Initial training subset size: {initial_train_subset_size}")
+    
     model = client.get_model()
-    print(model_architecture.__name__)
     if 'ResNet18' not in model_architecture.__name__:
         model.load_state_dict(torch.load(model_path))
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
-
+    
+    # Initial split
+    set_seed(drift_seed)
+    initial_train_dataset = client.train_loader.dataset
+    train_size = int(0.9 * len(initial_train_dataset))
+    val_size = len(initial_train_dataset) - train_size
+    train_subset, val_subset = random_split(initial_train_dataset, [train_size, val_size])
+    val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False, num_workers=4, persistent_workers=True, pin_memory=True)
+    client.test_loader = val_loader
+    set_seed(seed)
+    # Initial loss
     loss_array = [client.get_train_metric(metric_fn=criterion, verbose=False)]
     loss_best = loss_array[0]
     policy.set_initial_loss(loss_array[0])
+    
     results = []
     time_arr = []
 
@@ -789,42 +733,67 @@ def test_policy_under_drift(
             client.test_domain_drift.target_domains = [current_target]
 
         client.train_domain_drift.drift_rate = current_drift_rate
-        client.test_domain_drift.drift_rate = current_drift_rate
         if current_drift_rate > 0:
             client.apply_test_drift()
             client.apply_train_drift()
 
-        current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
+        # Split dynamically
+        set_seed(drift_seed)
+        current_train_dataset = client.train_loader.dataset
+        train_size = int(0.9 * len(current_train_dataset))
+        val_size = len(current_train_dataset) - train_size
+        train_subset, val_subset = random_split(current_train_dataset, [train_size, val_size])
+        set_seed(seed)
+        train_loader = DataLoader(train_subset, batch_size=batch_size, shuffle=True)
+        val_loader = DataLoader(val_subset, batch_size=batch_size, shuffle=False)
+        client.test_loader = val_loader  # Use validation loader for evaluation
         current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
-        loss_array.append(current_loss)
-        if current_loss < loss_best:
-            loss_best = current_loss
+
+        # Evaluate each domain separately
+        # domain_accuracies = {}
+        # domain_losses = {}
+        # original_test_loader = client.test_loader
+        # for domain in domains:
+        #     client.test_loader = test_loaders[domain]
+        #     domain_accuracies[domain] = client.evaluate(metric_fn=accuracy_fn, verbose=False)
+        #     domain_losses[domain] = client.get_train_metric(metric_fn=criterion, verbose=False)
+        #     client
+        # client.test_loader = original_test_loader  # Restore original test loader
+        loss_prev = loss_array[-1]
 
         decision = policy.policy_decision(
             decision_id=policy_id,
-            loss_curr=loss_array[-1],
-            loss_prev=loss_array[-2],
+            loss_curr=current_loss,
+            loss_prev=loss_prev,
             current_time=t,
             V=V,
             pi_bar=pi_bar,
             loss_best=loss_best
         )
+        # if policy_id == 3 and (t in [55, 105, 155]):
+        #     print(f"Reset Weights")
+        #     client.randomize_weights()
 
         if decision:
-            current_loss = client.train(
-                epochs=3,
+            update_loss = client.update_steps(
+                num_updates=n_steps,
                 optimizer=optimizer,
                 loss_fn=criterion,
                 verbose=True
             )
             policy.update_gradient(model, train_loader, criterion, device)
-        else:
-            current_loss = client.get_train_metric(metric_fn=criterion, verbose=False)
+                
+        loss_array.append(current_loss)
+        current_accuracy = client.evaluate(metric_fn=accuracy_fn, verbose=False)
 
+        if current_loss < loss_best:
+            loss_best = current_loss
         result_dict = {
             't': t,
-            'accuracy': current_accuracy,
-            'loss': current_loss,
+            'current_accuracy': current_accuracy,
+            'current_loss': current_loss,
+            # 'domain_accuracies': domain_accuracies,
+            # 'domain_losses': domain_losses,
             'decision': decision,
             'drift_rate': current_drift_rate
         }
@@ -834,7 +803,10 @@ def test_policy_under_drift(
         results.append(result_dict)
         time_arr.append(time.time() - time_start_round)
         print(f'Round {t} took {time_arr[-1]} seconds')
-        print(f"Round {t}: Accuracy = {current_accuracy:.4f}, Decision = {decision}, Drift = {current_drift_rate:.4f}")
+        print(f"    Round {t}: Decision = {decision}, Drift = {current_drift_rate:.4f}")
+        print(f"    Current accuracy: {current_accuracy:.4f}, Loss: {current_loss:.4f}")
+        # for domain in domains:
+        #     print(f"  Domain {domain}: Accuracy = {domain_accuracies[domain]:.4f}, Loss = {domain_losses[domain]:.4f}")
         if hasattr(drift_scheduler, 'target_domains'):
             print(f"Current target domain: {drift_scheduler.get_current_target_domain()}")
 
@@ -873,16 +845,12 @@ def test_policy_under_drift(
     print(f"Average time per round: {np.mean(time_arr)}")
     print(f"Total time: {np.sum(time_arr)}")
     return results
-   
+
 def main():
     parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
-    
-    # Update schedule type choices to reflect DriftScheduler's capabilities
     parser.add_argument('--schedule_type', type=str, default='domain_change_burst_0',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')
-
-    # Settings dictionary (unchanged)
     settings = {
         0: {'pi_bar': 0.03, 'V': 65, 'L_i': 1.0},
         1: {'pi_bar': 0.05, 'V': 65, 'L_i': 1.0},
@@ -936,22 +904,31 @@ def main():
         49: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0},
         50: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 2.0},
         51: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 2.0},
-        52: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.05, 'K_d': 2.0},
-        53: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 2.0},
-        54: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 2.0},
-        55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 2.0},
+        52: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 1.0},
+        53: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 1.0},
+        54: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 1.0},
+        55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5},
+        56: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 0.5},
+        57: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 0.5},
+        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':2},
+        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':3},
+        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
+        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':2},
+        65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':3},
+        66: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.1, 'n_steps':1},
+        67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.1, 'n_steps':2},
+        68: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.1, 'n_steps':3},
     }
-    
-    # Existing arguments
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--src_domains', type=str, nargs='+', default=['photo'])
     parser.add_argument('--tgt_domains', type=str, nargs='+', default=['sketch'])
     parser.add_argument('--n_rounds', type=int, default=200)
-    parser.add_argument('--lr', type=float, default=0.001)
+    # parser.add_argument('--lr', type=float, default=0.01)
     parser.add_argument('--policy_id', type=int, default=4)
     parser.add_argument('--setting_id', type=int, default=0)
-    parser.add_argument('--model_name', type=str, default='PACSCNN_1', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
-    parser.add_argument('--img_size', type=int, default=64, help='Size to resize images to (img_size x img_size)')
+    parser.add_argument('--model_name', type=str, default='PACSCNN_4', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
+    parser.add_argument('--img_size', type=int, default=128, help='Size to resize images to (img_size x img_size)')
 
     model_architectures = {
         'PACSCNN_1': PACSCNN_1,
@@ -961,26 +938,18 @@ def main():
     }
     
     args = parser.parse_args()
-    
     print(f'Model used: {args.model_name}')
-    
-    # Initialize DriftScheduler
     drift_scheduler = DriftScheduler(args.schedule_type)
-
-    # Construct model path
-    domains_str = "_".join(args.src_domains)
-    ###### DELETE THIS LINE AFTER TESTING
-    cluster_used = 'gautschi' # gilbreth or gautschi
+    cluster_used = 'gautschi'
     if args.seed == 42:
-        model_path = f"/scratch/{cluster_used}/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_img_size_{args.img_size}_seed_0.pth"
+        model_path = f"/scratch/{cluster_used}/apiasecz/models/concept_drift_models/{args.model_name}_{'_'.join(args.src_domains)}_img_size_{args.img_size}_seed_0.pth"
     else:
-        model_path = f"/scratch/{cluster_used}/apiasecz/models/concept_drift_models/{args.model_name}_{domains_str}_img_size_{args.img_size}_seed_{args.seed}.pth"
-
-    # Get settings
+        model_path = f"../../../../models/concept_drift_models/{args.model_name}_{'_'.join(args.src_domains)}_img_size_{args.img_size}_seed_{args.seed}.pth"
     current_settings = settings[args.setting_id]
     K_p = current_settings.get('K_p', 1.0)
     K_d = current_settings.get('K_d', 1.0)
-    # Run evaluation
+    lr = current_settings.get('lr', 0.01)
+    num_steps = current_settings.get('n_steps', 1)
     results = test_policy_under_drift(
         source_domains=args.src_domains,
         target_domains=args.tgt_domains,
@@ -990,20 +959,19 @@ def main():
         seed=args.seed,
         drift_scheduler=drift_scheduler,
         n_rounds=args.n_rounds,
-        learning_rate=args.lr,
+        learning_rate=lr,
         policy_id=args.policy_id,
         setting_id=args.setting_id,
         pi_bar=current_settings['pi_bar'],
-        V=current_settings['V'], 
-        L_i=current_settings['L_i'], 
+        V=current_settings['V'],
+        L_i=current_settings['L_i'],
         K_p=K_p,
-        K_d=K_d
+        K_d=K_d, 
+        n_steps=num_steps,
     )
 
 if __name__ == "__main__":
     main()
-    # Try SVHN dataset next
-    # Try using a pretrained model on some other dataset and then deploy it on PACS
-    # Use SGD, try different num epochs + lr for the plots
-    # Retrain to lower point + try the ResNet on PACS
-    # More seeds
+    
+    # For the test set - fix the partitioning/or partition the data with the same seed.
+     

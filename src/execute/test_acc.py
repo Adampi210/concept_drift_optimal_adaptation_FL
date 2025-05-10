@@ -355,16 +355,11 @@ def extract_domains_from_filename(filename):
 if __name__ == "__main__":
     # Define model architectures
     model_architectures = {
-        'PACSCNN_1': PACSCNN_1,
-        'PACSCNN_2': PACSCNN_2,
-        'PACSCNN_3': PACSCNN_3,
         'PACSCNN_4': PACSCNN_4,
-        'PACSCNN_5': PACSCNN_5,
-        'PACSCNN_6': PACSCNN_6,
     }
 
     # Base directory for models
-    model_dir = '/scratch/gautschi/apiasecz/models/concept_drift_models/'
+    model_dir = '../../../../models/concept_drift_models/'
 
     # Initialize results list
     results = []
@@ -374,6 +369,8 @@ if __name__ == "__main__":
         if model_file.endswith('.pth'):
             model_path = os.path.join(model_dir, model_file)
             model_name = model_file.split('_')[0] + '_' + model_file.split('_')[1]
+            if 'PACSCNN_4' not in model_name:
+                continue
             domains = extract_domains_from_filename(model_file)
             match = re.search(r'img_size_(\d+)', model_file)
             if match:
