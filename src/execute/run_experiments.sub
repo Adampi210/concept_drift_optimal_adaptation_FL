@@ -22,19 +22,16 @@ source ./params.sh
 
 # Calculate the lengths of each array
 len_A=${#ALL_SRC_DOMAINS[@]}
-len_B=${#ALL_TGT_DOMAINS[@]}
-len_C=${#POLICIES[@]}
-len_D=${#SETTING_IDS[@]}
-len_E=${#SCHEDULES[@]}
-len_F=${#ALL_MODEL_NAMES[@]}
-len_G=${#seeds[@]}          # Length of seeds array
-len_H=${#IMG_SIZES[@]}      # Length of image sizes array
+len_B=${#POLICIES[@]}
+len_C=${#SETTING_IDS[@]}
+len_D=${#SCHEDULES[@]}
+len_E=${#ALL_MODEL_NAMES[@]}
+len_F=${#seeds[@]}          # Length of seeds array
+len_G=${#IMG_SIZES[@]}      # Length of image sizes array
 
 # Calculate indices based on SLURM_ARRAY_TASK_ID, with seed as the fastest varying index
-g_idx=$((SLURM_ARRAY_TASK_ID % len_G))
-remainder=$((SLURM_ARRAY_TASK_ID / len_G))
-f_idx=$((remainder % len_F))
-remainder=$((remainder / len_F))
+f_idx=$((SLURM_ARRAY_TASK_ID % len_F))
+remainder=$((SLURM_ARRAY_TASK_ID / len_F))
 e_idx=$((remainder % len_E))
 remainder=$((remainder / len_E))
 d_idx=$((remainder % len_D))
@@ -45,17 +42,16 @@ b_idx=$((remainder % len_B))
 remainder=$((remainder / len_B))
 a_idx=$((remainder % len_A))
 remainder=$((remainder / len_A))
-h_idx=$((remainder % len_H))
+g_idx=$((remainder % len_G))
 
 # Assign parameters for this task, including the seed and image size
-SEED="${seeds[$g_idx]}"
-MODEL_NAME="${ALL_MODEL_NAMES[$f_idx]}"
+SEED="${seeds[$f_idx]}"
+MODEL_NAME="${ALL_MODEL_NAMES[$e_idx]}"
 SRC_SET="${ALL_SRC_DOMAINS[$a_idx]}"
-TGT_SET="${ALL_TGT_DOMAINS[$b_idx]}"
-POLICY_ID="${POLICIES[$c_idx]}"
-SETTING_ID="${SETTING_IDS[$d_idx]}"
-SCHEDULE="${SCHEDULES[$e_idx]}"
-IMG_SIZE="${IMG_SIZES[$h_idx]}"
+POLICY_ID="${POLICIES[$b_idx]}"
+SETTING_ID="${SETTING_IDS[$c_idx]}"
+SCHEDULE="${SCHEDULES[$d_idx]}"
+IMG_SIZE="${IMG_SIZES[$g_idx]}"
 
 # Execute the experiment script with the assigned parameters, including the seed and image size
-./execute_experiment.sh "$MODEL_NAME" "$SRC_SET" "$TGT_SET" "$POLICY_ID" "$SETTING_ID" "$SCHEDULE" "$SEED" "$IMG_SIZE"
+./execute_experiment.sh "$MODEL_NAME" "$SRC_SET" "$POLICY_ID" "$SETTING_ID" "$SCHEDULE" "$SEED" "$IMG_SIZE"

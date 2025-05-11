@@ -5,16 +5,15 @@
 # ========== PARAMETERS FROM SLURM ==========
 MODEL_NAME="$1"     # Model name
 SRC_SET="$2"        # Source domains
-TGT_SET="$3"        # Target domains
-POLICY_ID="$4"      # Policy ID
-SETTING_ID="$5"     # Setting ID
-SCHEDULE="$6"       # Schedule type
-SEED="$7"           # Seed
-IMG_SIZE="$8"       # Image size
+POLICY_ID="$3"      # Policy ID
+SETTING_ID="$4"     # Setting ID
+SCHEDULE="$5"       # Schedule type
+SEED="$6"           # Seed
+IMG_SIZE="$7"       # Image size
 
 # ========== USER CONFIGURATION ==========
 # Path to the Python experiment script
-experiment_filename='test_loss_behavior_under_drift.py'
+experiment_filename='evaluate_policy.py'
 
 # Directory to store log files
 log_dir="../../logs"
@@ -26,17 +25,15 @@ timestamp=$(date +%Y%m%d_%H%M%S)
 # ========== RUN EXPERIMENT ==========
 # Convert spaces to underscores for a cleaner log filename
 src_log_str=$(echo "$SRC_SET" | tr ' ' '_')
-tgt_log_str=$(echo "$TGT_SET" | tr ' ' '_')
 
 # Construct a unique log filename including model name, seed, and image size
-log_file="$log_dir/drift_${src_log_str}_to_${tgt_log_str}_model_${MODEL_NAME}_policy_${POLICY_ID}_setting${SETTING_ID}_schedule${SCHEDULE}_seed${SEED}_imgsize${IMG_SIZE}_${timestamp}.log"
+log_file="$log_dir/drift_src_${src_log_str}_model_${MODEL_NAME}_policy_${POLICY_ID}_setting_${SETTING_ID}_schedule_${SCHEDULE}_seed_${SEED}_imgsize_${IMG_SIZE}_${timestamp}.log"
 
 # Display the current experiment configuration
 echo "=========================================="
 echo "Running experiment with the following configuration:"
 echo "  Model Name     : ${MODEL_NAME}"
 echo "  Source Domains : ${SRC_SET}"
-echo "  Target Domains : ${TGT_SET}"
 echo "  Policy ID      : ${POLICY_ID}"
 echo "  Setting ID     : ${SETTING_ID}"
 echo "  Schedule       : ${SCHEDULE}"
@@ -50,7 +47,6 @@ python3 "$experiment_filename" \
     --model_name "$MODEL_NAME" \
     --seed "$SEED" \
     --src_domains $SRC_SET \
-    --tgt_domains $TGT_SET \
     --policy_id "$POLICY_ID" \
     --setting_id "$SETTING_ID" \
     --schedule_type "$SCHEDULE" \
