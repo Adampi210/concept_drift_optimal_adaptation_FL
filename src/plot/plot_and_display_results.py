@@ -862,6 +862,78 @@ def plot_multi_schedule_comparison(policy_id, setting_id, source_domain, target_
     plt.close()
     print(f"Saved comparison plot to {output_path}")
 
+def plot_averaged_accuracy(model_name, domain, img_size, results_dir, plot_filename=None):
+    """
+    Plots the averaged accuracy over epochs for a given model, domain, and image size across all seeds.
+    
+    Parameters:
+    - model_name (str): Name of the model (e.g., 'PACSCNN_1').
+    - domain (str): Domain name (e.g., 'photo').
+    - img_size (int): Image size used in training.
+    - results_dir (str): Directory where result JSON files are stored.
+    - save_plot (bool): If True, save the plot to a file; otherwise, display it.
+    - plot_filename (str, optional): Path to save the plot. If None and save_plot is True, a default name is used.
+    """
+        
+    # Construct the file pattern to match result files
+    pattern = os.path.join(results_dir, f"{model_name}_{domain}_img_{img_size}_seed_*_results.json")
+    files = glob.glob(pattern)
+    
+    # Check if any files were found
+    if not files:
+        print(f"No result files found for {model_name} on {domain} with img_size {img_size}")
+        return
+    
+    # Load accuracy lists from each JSON file
+    accuracy_lists = []
+    for file in files:
+        with open(file, 'r') as f:
+            data = json.load(f)
+            accuracy_lists.append(data['accuracy'])
+    
+    # Determine the maximum number of epochs across all seeds
+    max_epochs = max(len(acc_list) for acc_list in accuracy_lists)
+    
+    # Compute average and standard deviation of accuracy for each epoch
+    avg_accuracy = []
+    std_accuracy = []
+    for t in range(max_epochs):
+        # Collect accuracies for seeds that have data at epoch t
+        accuracies_at_t = [acc_list[t] for acc_list in accuracy_lists if len(acc_list) > t]
+        if accuracies_at_t:
+            avg_accuracy.append(np.mean(accuracies_at_t))
+            std_accuracy.append(np.std(accuracies_at_t))
+        else:
+            # This case shouldn't occur given max_epochs, but included for robustness
+            avg_accuracy.append(np.nan)
+            std_accuracy.append(np.nan)
+    
+    # Print summary information
+    print(f"Found {len(files)} result files for {model_name} on {domain} with img_size {img_size}")
+    print(f"Maximum number of epochs: {max_epochs}")
+    
+    # Create the plot
+    plt.figure(figsize=(10, 6))
+    epochs = range(1, max_epochs + 1)
+    plt.plot(epochs, avg_accuracy, marker='o', label='Average Accuracy')
+    plt.fill_between(epochs, 
+                     np.array(avg_accuracy) - np.array(std_accuracy), 
+                     np.array(avg_accuracy) + np.array(std_accuracy), 
+                     alpha=0.2, 
+                     label='±1 Std Dev')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy (%)')
+    plt.title(f'Averaged Accuracy over Epochs for {model_name} on {domain} with img_size {img_size}')
+    plt.legend()
+    plt.grid(True)
+    
+    # Handle saving or displaying the plot
+    if plot_filename is None:
+        plot_filename = os.path.join(results_dir, f"{model_name}_{domain}_img_{img_size}_averaged_accuracy.png")
+    plt.savefig(plot_filename)
+    print(f"Plot saved to {plot_filename}")
+
+
 def analyze_schedule_performance(policy_id, setting_id, source_domain, target_domain,
                                schedule_types=['burst', 'oscillating', 'step'],
                                results_dir='../../data/results/'):
@@ -1646,26 +1718,31 @@ def plot_accuracy_and_composition(schedule_info, policies_per_schedule, source_d
 
 if __name__ == "__main__":
     source_domains = ['cartoon', 'photo', 'sketch', 'art_painting']
-    target_domain = 'sketch'
     policy_ids = [0, 1, 2, 6]
     # policy_ids = [0,]
     schedule_type = 'domain_change_burst_2'
     model_names = ['PACSCNN_4',]
     setting_used = 63
     policy_setting_pairs = [(2, setting_used), (1, setting_used), (3, setting_used), (6, setting_used)]
+    img_size = 128
+    source_domain = 'photo'
+    plot_name = f'{model_names[0]}_{source_domain}_img_size_{img_size}.png'
+    plot_name = os.path.join('../../data/plots/', plot_name)
+    plot_averaged_accuracy('PACSCNN_4', source_domain, 128, '../../data/results/', plot_name)
+
     # policy_setting_pairs = [(0, 49),]
-    for source_domain in source_domains:
-        for model_name in model_names:
-            for img_size in [128,]:
-                compare_policies(
-                    policy_setting_pairs=policy_setting_pairs,
-                    schedule_type=schedule_type,
-                    source_domain=source_domain,
-                    target_domain=target_domain,
-                    model_name=model_name,
-                    img_size=img_size,
-                    T=199  # Match your n_rounds - 1 from the JSON
-                )
+    # for source_domain in source_domains:
+    #     for model_name in model_names:
+    #         for img_size in [128,]:
+    #             compare_policies(
+    #                 policy_setting_pairs=policy_setting_pairs,
+    #                 schedule_type=schedule_type,
+    #                 source_domain=source_domain,
+    #                 target_domain=target_domain,
+    #                 model_name=model_name,
+    #                 img_size=img_size,
+    #                 T=199  # Match your n_rounds - 1 from the JSON
+    #             )
             # compare_settings(
             #     policy_id=6,
             #     setting_ids=[49, 50, 51, 52, 53, 54, 55],
@@ -1677,31 +1754,31 @@ if __name__ == "__main__":
             #     T=199  # Match your n_rounds - 1 from the JSON
             # )
         
-        '''
-        compare_policies_scaled(
-            policy_setting_pairs=policy_setting_pairs,
-            schedule_type=schedule_type,
-            source_domain=source_domain,
-            target_domain=target_domain,
-            model_name=model_name,
-            T=199  # Match your n_rounds - 1 from the JSON
-        )
-        '''
+        # '''
+        # compare_policies_scaled(
+        #     policy_setting_pairs=policy_setting_pairs,
+        #     schedule_type=schedule_type,
+        #     source_domain=source_domain,
+        #     target_domain=target_domain,
+        #     model_name=model_name,
+        #     T=199  # Match your n_rounds - 1 from the JSON
+        # )
+        # '''
         
-        # [7, 11, 18, 21]
-        # [7, 8, 9, 17, 18, 20, 23, 24, 25, 26, 27, 28, 29]
-        # compare_settings(6, list(range(48, 52)), schedule_type, source_domain, target_domain, model_name, T=199)
-        '''
-        plot_recovery_cdf(
-            policy_setting_pairs=policy_setting_pairs,
-            schedule_type=schedule_type,
-            source_domain=source_domain,
-            target_domain=target_domain,
-            model_name=model_name,
-            initial_delay=50,
-            T=199  # Adjust based on your data
-        )
-        '''
+        # # [7, 11, 18, 21]
+        # # [7, 8, 9, 17, 18, 20, 23, 24, 25, 26, 27, 28, 29]
+        # # compare_settings(6, list(range(48, 52)), schedule_type, source_domain, target_domain, model_name, T=199)
+        # '''
+        # plot_recovery_cdf(
+        #     policy_setting_pairs=policy_setting_pairs,
+        #     schedule_type=schedule_type,
+        #     source_domain=source_domain,
+        #     target_domain=target_domain,
+        #     model_name=model_name,
+        #     initial_delay=50,
+        #     T=199  # Adjust based on your data
+        # )
+        # '''
     # schedule_info = [
     #     ("composition_data_domain_change_burst_0_src_photo_tgt_sketch_nrounds_200.csv", "domain_change_burst_0"),
     #     ("composition_data_domain_change_burst_0_src_photo_tgt_sketch_nrounds_200.csv", "domain_change_burst_0"),

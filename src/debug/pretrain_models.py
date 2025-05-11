@@ -184,7 +184,7 @@ def save_model(model, save_path):
     torch.save(model.state_dict(), save_path)
 
 def print_debug_info(agent, num_epochs, loss, accuracy_fn):
-    accuracy = agent.evaluate(metric_fn=accuracy_fn, verbose=False) * 100
+    accuracy = agent.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False) * 100
     print(f"After {num_epochs} epochs: Loss = {loss:.4f}, Accuracy = {accuracy:.2f}%")
     domain_counts = {domain: agent.len_domain_samples(domain) for domain in ['photo', 'sketch', 'art_painting', 'cartoon']}
     print(f"Domain counts in current dataset: {domain_counts}")
@@ -233,7 +233,6 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         desired_size=None  # Use all available data
     )
     
-
     agent_train = DriftAgent(
         client_id=0,
         model_architecture=model_class,
