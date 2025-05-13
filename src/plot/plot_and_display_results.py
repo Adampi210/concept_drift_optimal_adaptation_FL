@@ -11,7 +11,7 @@ from collections import defaultdict
 from fl_toolkit import *
 
 sys.path.append(os.path.abspath('../execute'))
-from test_loss_behavior_under_drift import DriftScheduler
+from evaluate_policy import DriftScheduler
 
 def read_main_data(main_path):
     """
@@ -50,6 +50,7 @@ def read_drift_data(drift_path):
     losses = []
     decisions = []
     drift_rates = []
+    target_domain_list = []
     # domain_accuracies = {'photo': [], 'sketch': [], 'art_painting': [], 'cartoon': []}
     # domain_losses = {'photo': [], 'sketch': [], 'art_painting': [], 'cartoon': []}
     try:
@@ -65,6 +66,7 @@ def read_drift_data(drift_path):
             losses.append(entry['current_loss'])
             decisions.append(int(entry['decision']))  # Ensure integer
             drift_rates.append(entry['drift_rate'])
+            target_domain_list.append(entry['target_domains'])
         return t_epochs, accuracies, losses, decisions, drift_rates # , domain_accuracies, domain_losses
     except Exception as e:
         print(f"Error reading drift file {drift_path}: {e}")
@@ -985,7 +987,7 @@ def analyze_schedule_performance(policy_id, setting_id, source_domain, target_do
             r = results[schedule_type]
             print(f"{schedule_type:12} | {r['mean_accuracy']:6.2f} ± {r['std_accuracy']:4.2f} | {r['mean_update_rate']:10.3f} | {r['mean_drift_rate']:13.3f}")
 
-def compare_policies(policy_setting_pairs, schedule_type, source_domain='photo', target_domain='sketch',
+def compare_policies(policy_setting_pairs, schedule_type, source_domain='photo',
                      model_name='PACSCNN_3', img_size=128, results_dir='../../data/results/', T=None):
 
     print(f"Comparing policies with settings: {policy_setting_pairs}, Schedule: {schedule_type}, "
@@ -1011,7 +1013,7 @@ def compare_policies(policy_setting_pairs, schedule_type, source_domain='photo',
         pattern = re.compile(
             rf'^policy_{policy_id}_setting_{setting}_schedule_{re.escape(schedule_type)}'
             rf'_src_{re.escape(source_domain)}_model_{model_name}'
-            rf'_img_size_{str(img_size)}_seed_\d+\.json$'
+            rf'_img_{str(img_size)}_seed_\d+\.json$'
         )
         matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
         # matching_files = [matching_files[0],]
@@ -1124,7 +1126,7 @@ def compare_policies(policy_setting_pairs, schedule_type, source_domain='photo',
     # Save first figure
     output_path1 = os.path.join(
         '../../data/plots/', 
-        f'policy_comparison_main_schedule_{schedule_type}_{source_domain}_to_{target_domain}_{model_name}_img_size_{img_size}.png'
+        f'policy_comparison_main_schedule_{schedule_type}_{source_domain}_{model_name}_img_size_{img_size}.png'
     )
     fig1.tight_layout()
     fig1.savefig(output_path1, dpi=300, bbox_inches='tight')
@@ -1177,7 +1179,7 @@ def compare_policies(policy_setting_pairs, schedule_type, source_domain='photo',
                 print(f"  Update Rate: {update_rate:.3f}")
                 print("-" * 50)           
                
-def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo', target_domain='sketch', 
+def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo', 
                      model_name='PACSCNN_4', img_size=128, results_dir='../../data/results/', T=None):
     """
     Compares different settings for the same policy and schedule type, plotting accuracy, loss, 
@@ -1188,7 +1190,6 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
         setting_ids (list): List of setting IDs to compare.
         schedule_type (str): Type of drift schedule (e.g., 'domain_change_burst_2').
         source_domain (str): Source domain name (default: 'photo').
-        target_domain (str): Target domain name (default: 'sketch').
         model_name (str): Model architecture name (default: 'PACSCNN').
         results_dir (str): Directory containing result JSON files (default: '../../data/results/').
         T (int, optional): Upper limit of time steps to plot. If None, plots all time steps.
@@ -1205,11 +1206,10 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
         pattern = re.compile(
             rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
             rf'_src_{re.escape(source_domain)}_model_{model_name}'
-            rf'_img_size_{str(img_size)}_seed_\d+\.json$'
+            rf'_img_{str(img_size)}_seed_\d+\.json$'
         )
         matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
         print('Matching files number:', len(matching_files))
-        print('Matching files:', matching_files)
         print('\n')
         if not matching_files:
             print(f"No files found for Policy {policy_id}, Setting {setting_id}, Schedule {schedule_type}, "
@@ -1282,7 +1282,7 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
                         label=f'Updates Setting {setting_id}')
 
     # Customize plots
-    ax1.set_title(f'Setting Comparison for Policy {policy_id}\n(Schedule: {schedule_type}, Source: {source_domain}, Target: {target_domain}), Img Size: {img_size}')
+    ax1.set_title(f'Setting Comparison for Policy {policy_id}\n(Schedule: {schedule_type}, Source: {source_domain}), Img Size: {img_size}')
     ax1.set_ylabel('Accuracy (%)')
     ax1.grid(True)
     ax1.legend(loc='lower right')
@@ -1307,7 +1307,7 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
     plt.tight_layout()
     output_path = os.path.join(
         '../../data/plots/', 
-        f'setting_comparison_policy_{policy_id}_schedule_{schedule_type}_{source_domain}_to_{target_domain}_img_size_{img_size}_{model_name}.png'
+        f'setting_comparison_policy_{policy_id}_schedule_{schedule_type}_{source_domain}_img_{img_size}_{model_name}.png'
     )
     plt.savefig(output_path, dpi=300, bbox_inches='tight')
     plt.close()
@@ -1319,7 +1319,8 @@ def compare_settings(policy_id, setting_ids, schedule_type, source_domain='photo
     for setting_id in setting_ids:
         pattern = re.compile(
             rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
-            rf'_src_{re.escape(source_domain)}_tgt_{re.escape(target_domain)}_seed_\d+\.json$'
+            rf'_src_{re.escape(source_domain)}_model_{model_name}'
+            rf'_img_{str(img_size)}_seed_\d+\.json$'
         )
         matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
         
@@ -1720,39 +1721,38 @@ if __name__ == "__main__":
     source_domains = ['cartoon', 'photo', 'sketch', 'art_painting']
     policy_ids = [0, 1, 2, 6]
     # policy_ids = [0,]
-    schedule_type = 'domain_change_burst_2'
+    schedule_array = ['domain_change_burst_0', 'domain_change_burst_1',
+                      ]
     model_names = ['PACSCNN_4',]
-    setting_used = 63
+    setting_used = 62
     policy_setting_pairs = [(2, setting_used), (1, setting_used), (3, setting_used), (6, setting_used)]
     img_size = 128
-    source_domain = 'photo'
-    plot_name = f'{model_names[0]}_{source_domain}_img_size_{img_size}.png'
+    src_domain = 'photo'
+    plot_name = f'{model_names[0]}_{src_domain}_img_size_{img_size}.png'
     plot_name = os.path.join('../../data/plots/', plot_name)
-    plot_averaged_accuracy('PACSCNN_4', source_domain, 128, '../../data/results/', plot_name)
 
-    # policy_setting_pairs = [(0, 49),]
-    # for source_domain in source_domains:
-    #     for model_name in model_names:
-    #         for img_size in [128,]:
-    #             compare_policies(
-    #                 policy_setting_pairs=policy_setting_pairs,
-    #                 schedule_type=schedule_type,
-    #                 source_domain=source_domain,
-    #                 target_domain=target_domain,
-    #                 model_name=model_name,
-    #                 img_size=img_size,
-    #                 T=199  # Match your n_rounds - 1 from the JSON
-    #             )
-            # compare_settings(
-            #     policy_id=6,
-            #     setting_ids=[49, 50, 51, 52, 53, 54, 55],
-            #     schedule_type=schedule_type,
-            #     source_domain=source_domain,
-            #     target_domain=target_domain,
-            #     model_name=model_name,
-            #     img_size=img_size,
-            #     T=199  # Match your n_rounds - 1 from the JSON
-            # )
+    # 76, 78 look good
+    policy_setting_pairs = [(1, 60), (2, 60), (6, 76)]
+    for source_domain in source_domains:
+        for schedule_type in schedule_array:
+            for model_name in model_names:
+                compare_policies(
+                    policy_setting_pairs=policy_setting_pairs,
+                    schedule_type=schedule_type,
+                    source_domain=source_domain,
+                    model_name=model_name,
+                    img_size=img_size,
+                    T=199  # Match your n_rounds - 1 from the JSON
+                )
+                # compare_settings(
+                #     policy_id=6,
+                #     setting_ids=[76, 77, 78],
+                #     schedule_type=schedule_type,
+                #     source_domain=source_domain,
+                #     model_name=model_name,
+                #     img_size=img_size,
+                #     T=199  # Match your n_rounds - 1 from the JSON
+                # )
         
         # '''
         # compare_policies_scaled(
@@ -1795,8 +1795,7 @@ if __name__ == "__main__":
     # Plot how the dataset evolves
     # schedule_array = list(DriftScheduler.SCHEDULE_CONFIGS.keys())[1:]
     
-    schedule_array = ['domain_change_burst_0', 'domain_change_burst_1',
-                      'domain_change_burst_2', 'domain_change_burst_3',]
+    
     # Plot composition
     # for schedule in schedule_array:
     #     drift_scheduler = DriftScheduler(schedule)

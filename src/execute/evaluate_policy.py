@@ -231,7 +231,7 @@ class Policy:
 class DriftScheduler:
     SCHEDULE_CONFIGS = {
         "domain_change_burst_0": lambda: {
-            'burst_interval': 50,
+            'burst_interval': 100,
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.4,
@@ -240,7 +240,7 @@ class DriftScheduler:
             'strategy': 'replace'
         },
         "domain_change_burst_1": lambda: {
-            'burst_interval': 60,
+            'burst_interval': 120,
             'burst_duration': 3,
             'base_rate': 0.0,
             'burst_rate': 0.4,
@@ -304,32 +304,56 @@ class DriftScheduler:
         },
         "step_0": lambda: {
             'step_points': [50, 100, 150],
-            'step_rates': [0.01, 0.03, 0.05, 0.07],
-            'step_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'step_rates': [0.004, 0.008, 0.016],
+            'step_domains': ['sketch', 'photo', 'cartoon', 'sketch'],
             'strategy': 'replace'
         },
         "step_1": lambda: {
-            'step_points': [40, 80, 120, 160],
-            'step_rates': [0.02, 0.04, 0.06, 0.08, 0.1],
+            'step_points': [60, 120, 180],
+            'step_rates': [0.004, 0.006, 0.008, 0.01],
             'step_domains': ['sketch', 'cartoon', 'art_painting', 'photo', 'sketch'],
             'strategy': 'replace'
         },
         "step_2": lambda: {
-            'step_points': [30, 60, 90, 120, 150],
-            'step_rates': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03],
+            'step_points': [40, 80, 120, 160],
+            'step_rates': [0.004, 0.008, 0.016, 0.032],
             'step_domains': ['art_painting', 'photo', 'sketch', 'cartoon', 'art_painting', 'photo'],
             'strategy': 'replace'
         },
-        "constant_drift_domain_change": lambda: {
-            'drift_rate': 0.05,
+        "constant_drift_domain_change_0": lambda: {
+            'drift_rate': 0.016,
             'domain_change_interval': 50,
-            'target_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
             'strategy': 'replace'
         },
-        "sine_wave_domain_change": lambda: {
-            'amplitude': 0.1,
+        "constant_drift_domain_change_1": lambda: {
+            'drift_rate': 0.008,
+            'domain_change_interval': 50,
+            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
+            'strategy': 'replace'
+        },
+        "constant_drift_domain_change_2": lambda: {
+            'drift_rate': 0.004,
+            'domain_change_interval': 50,
+            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
+            'strategy': 'replace'
+        },
+        "sine_wave_domain_change_0": lambda: {
+            'amplitude': 0.008,
             'period': 50,
-            'target_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
+            'strategy': 'replace'
+        },
+        "sine_wave_domain_change_1": lambda: {
+            'amplitude': 0.016,
+            'period': 50,
+            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
+            'strategy': 'replace'
+        },
+        "sine_wave_domain_change_2": lambda: {
+            'amplitude': 0.032,
+            'period': 50,
+            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
             'strategy': 'replace'
         },
     }
@@ -380,12 +404,12 @@ class DriftScheduler:
                 else:
                     drift_rate = self.step_rates[-1]
                     target_domains = [self.step_domains[-1]]
-        elif self.schedule_type == "constant_drift_domain_change":
+        elif "constant_drift_domain_change" in self.schedule_type:
             drift_rate = self.drift_rate
             domain_index = (t // self.domain_change_interval) % len(self.target_domains)
             target_domains = [self.target_domains[domain_index]]
-        elif self.schedule_type == "sine_wave_domain_change":
-            drift_rate = self.amplitude * (1 + np.sin(2 * np.pi * t / self.period)) / 2
+        elif "sine_wave_domain_change" in self.schedule_type:
+            drift_rate = self.amplitude * (1 - np.cos(2 * np.pi * t / self.period)) / 2
             domain_index = (t // self.period) % len(self.target_domains)
             target_domains = [self.target_domains[domain_index]]
         else:
@@ -456,7 +480,8 @@ def evaluate_policy_under_drift(
     n_steps=1
 ):
     # Set the seed and define transform
-    set_seed(seed)
+    common_seed = 0
+    set_seed(common_seed)
     transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
@@ -491,7 +516,7 @@ def evaluate_policy_under_drift(
     train_data_handler.dataset = train_subset
     holdout_data_handler = PACSDataHandler()
     holdout_data_handler.dataset = holdout_subset
-
+    set_seed(seed)
     # Define drift objects
     train_drift = PACSDomainDrift(
         train_data_handler,
@@ -708,15 +733,26 @@ settings = {
         55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5},
         56: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 0.5},
         57: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 0.5},
-        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
-        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':2},
-        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':3},
-        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
-        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':2},
-        65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':3},
-        66: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.1, 'n_steps':1},
-        67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.1, 'n_steps':2},
-        68: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.1, 'n_steps':3},
+        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':5},
+        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 2.0, 'lr': 0.01, 'n_steps':5},
+        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 2.0, 'lr': 0.01, 'n_steps':5},
+        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 2.0, 'lr': 0.01, 'n_steps':5},
+        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 2.0, 'lr': 0.01, 'n_steps':5},
+        65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
+        66: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
+        67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
+        68: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
+        69: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
+        70: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        71: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        72: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        73: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        74: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        75: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        76: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
     }
 DSET_SIZE = 1024
 
@@ -729,7 +765,7 @@ def main():
                         help='Type of drift rate schedule')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--src_domains', type=str, nargs='+', default=['photo',])
-    parser.add_argument('--n_rounds', type=int, default=200)
+    parser.add_argument('--n_rounds', type=int, default=500)
     parser.add_argument('--policy_id', type=int, default=2)
     parser.add_argument('--setting_id', type=int, default=0)
     parser.add_argument('--model_name', type=str, default='PACSCNN_4', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
