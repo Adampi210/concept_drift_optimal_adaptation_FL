@@ -217,7 +217,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
     holdout_data_handler = PACSDataHandler()
     holdout_data_handler.dataset = holdout_subset
     
-    train_drift = PACSDomainDrift(
+    train_drift = DomainDrift(
         train_data_handler,
         source_domains=[domain],
         target_domains=[domain],
@@ -225,7 +225,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         desired_size=None  # Use all available data
     )
     
-    holdout_drift = PACSDomainDrift(
+    holdout_drift = DomainDrift(
         holdout_data_handler,
         source_domains=[domain],
         target_domains=[domain],

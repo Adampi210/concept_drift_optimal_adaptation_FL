@@ -935,7 +935,6 @@ def plot_averaged_accuracy(model_name, domain, img_size, results_dir, plot_filen
     plt.savefig(plot_filename)
     print(f"Plot saved to {plot_filename}")
 
-
 def analyze_schedule_performance(policy_id, setting_id, source_domain, target_domain,
                                schedule_types=['burst', 'oscillating', 'step'],
                                results_dir='../../data/results/'):
@@ -1416,7 +1415,7 @@ def plot_dataset_composition(source_domains, target_domains, drift_scheduler, n_
         strategy = drift_scheduler.strategy  # Access strategy attribute
 
         # Initialize drift object with drift_rate=0.0
-        drift = PACSDomainDrift(source_domains=source_domains, target_domains=target_domains, drift_rate=0.0)
+        drift = DomainDrift(source_domains=source_domains, target_domains=target_domains, drift_rate=0.0)
 
         # Apply initial drift to get the starting subset
         initial_subset = drift.apply(dataset)
@@ -1717,41 +1716,394 @@ def plot_accuracy_and_composition(schedule_info, policies_per_schedule, source_d
     plt.close(fig)
     print(f"Saved plot to {output_path}")
 
+def simulate_and_save_composition(schedule_type, source_domain, dataset, seed, n_rounds=400, output_dir='../../data/results/', desired_size=1024):
+    """
+    Simulates the dataset composition over time and saves it to a JSON file.
+    
+    Args:
+        schedule_type (str): Type of drift schedule.
+        source_domain (str): Initial source domain.
+        dataset: Full dataset (e.g., PACS dataset with (img, label, domain) tuples).
+        n_rounds (int): Number of time steps to simulate.
+        seed (int): Random seed for reproducibility.
+        output_dir (str): Directory to save the JSON file.
+        desired_size (int): Desired size of the dataset subset.
+    """
+    all_domains = ['photo', 'sketch', 'art_painting', 'cartoon']
+    source_domains = [source_domain]
+    target_domains = [d for d in all_domains if d not in source_domains]
+    
+    drift_scheduler = DriftScheduler(schedule_type)
+    data_handler = PACSDataHandler()
+    data_handler.dataset = dataset
+    drift = DomainDrift(
+        data_handler=data_handler,
+        source_domains=source_domains,
+        target_domains=source_domains,
+        drift_rate=0.0,
+        desired_size=desired_size
+    )
+    target_domains_real = source_domains
+    
+    np.random.seed(seed)
+    
+    compositions = []
+    for t in range(n_rounds):
+        drift_rate, current_target_domains = drift_scheduler.get_drift_params(t)
+        if len(current_target_domains) > 0:
+            target_domains_real = current_target_domains
+        drift.set_target_domains(target_domains_real)
+        drift.drift_rate = drift_rate
+        current_subset = drift.apply()
+        
+        current_indices = current_subset.indices
+        domain_counts = {domain: 0 for domain in all_domains}
+        for idx in current_indices:
+            domain = dataset[idx][2]
+            if domain in domain_counts:
+                domain_counts[domain] += 1
+        compositions.append(domain_counts)
+    
+    output_file = os.path.join(output_dir, f'composition_{schedule_type}_{source_domain}_seed_{seed}.json')
+    os.makedirs(output_dir, exist_ok=True)
+    print(f"Saving dataset composition to {output_file}")
+    with open(output_file, 'w') as f:
+        json.dump(compositions, f)
+
+def plot_composition_on_ax(ax, schedule_type, source_domain, n_rounds, composition_dir):
+    """
+    Plots the averaged dataset composition over time from precomputed JSON files.
+    
+    Args:
+        ax: Matplotlib axis to plot on.
+        schedule_type (str): Type of drift schedule.
+        source_domain (str): Initial source domain.
+        n_rounds (int): Number of time steps.
+        composition_dir (str): Directory containing the precomputed composition JSON files.
+    """
+    pattern = os.path.join(composition_dir, f'composition_{schedule_type}_{source_domain}_seed_*.json')
+    json_files = glob.glob(pattern)
+    if not json_files:
+        raise ValueError(f"No composition files found for {schedule_type} and {source_domain}")
+    
+    all_compositions = []
+    for file_path in json_files:
+        with open(file_path, 'r') as f:
+            compositions = json.load(f)
+        all_compositions.append(compositions)
+    
+    all_domains = list(all_compositions[0][0].keys())
+    proportions_over_time = {domain: [] for domain in all_domains}
+    
+    for t in range(n_rounds):
+        domain_counts_sum = {domain: 0 for domain in all_domains}
+        total_samples_sum = 0
+        for compositions in all_compositions:
+            if t < len(compositions):
+                for domain in all_domains:
+                    domain_counts_sum[domain] += compositions[t][domain]
+                total_samples_sum += sum(compositions[t].values())
+        
+        num_seeds = len(all_compositions)
+        for domain in all_domains:
+            avg_count = domain_counts_sum[domain] / num_seeds
+            avg_total = total_samples_sum / num_seeds
+            proportion = avg_count / avg_total if avg_total > 0 else 0
+            proportions_over_time[domain].append(proportion)
+    
+    df = pd.DataFrame(proportions_over_time, index=list(range(n_rounds)))
+    df.plot.area(ax=ax, stacked=True, alpha=0.7)
+    ax.set_ylim(0, 1)
+    ax.set_xlim(0, n_rounds)
+    ax.grid(True, linestyle='--', alpha=0.5)
+    # ax.set_title(f'Dataset Composition\nSchedule: {schedule_type}\nSource: {source_domain}')
+    ax.set_xlabel('Time Step')
+    ax.set_ylabel('Proportion')
+
+def compare_schedules(schedule_types_and_sources, policy_setting_pairs_per_schedule, 
+                      model_name='PACSCNN_4', img_size=128, results_dir='../../data/results/', 
+                      composition_dir='../../data/compositions/', T=None, n_rounds=399, 
+                      all_domains=['photo', 'sketch', 'art_painting', 'cartoon']):
+    """
+    Compare different drift schedules and source domains in a 3x4 grid:
+    - Top row: Accuracy over time per schedule
+    - Middle row: Dataset composition over time per schedule
+    - Bottom row: Average resource usage over time per schedule
+    
+    Args:
+        schedule_types_and_sources: List of (schedule_type, source_domain) tuples
+        policy_setting_pairs_per_schedule: List of lists of (policy_id, setting) tuples
+        model_name (str): Model identifier
+        img_size (int): Image size
+        results_dir (str): Directory with result JSON files
+        composition_dir (str): Directory with precomputed composition JSON files
+        T (int, optional): Max time steps to plot
+        n_rounds (int): Number of rounds for composition
+        all_domains (list): List of all possible domains
+    """
+    if len(schedule_types_and_sources) != 4:
+        raise ValueError("Exactly 4 schedule types and sources must be provided")
+    if len(policy_setting_pairs_per_schedule) != 4:
+        raise ValueError("Exactly 4 lists of policy-setting pairs must be provided")
+    
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+    
+    # Collect all unique policy-setting pairs for consistent coloring
+    all_policy_setting_pairs = set()
+    for pairs in policy_setting_pairs_per_schedule:
+        all_policy_setting_pairs.update(pairs)
+    all_policy_setting_pairs = sorted(list(all_policy_setting_pairs))
+    colors = plt.cm.rainbow(np.linspace(0, 1, len(all_policy_setting_pairs)))
+    color_map = {pair: color for pair, color in zip(all_policy_setting_pairs, colors)}
+    
+    # Create 3x4 grid
+    fig, axes = plt.subplots(3, 4, figsize=(16, 12), sharex=True, sharey='row')
+    
+    for col_idx, (schedule_type, source_domain) in enumerate(schedule_types_and_sources):
+        ax_acc = axes[0, col_idx]
+        ax_comp = axes[1, col_idx]
+        ax_res = axes[2, col_idx]
+        
+        # Middle row: Dataset composition
+        plot_composition_on_ax(ax_comp, schedule_type, source_domain, n_rounds if T is None else T, composition_dir)
+        
+        # Get policy-setting pairs for this schedule
+        policy_setting_pairs = policy_setting_pairs_per_schedule[col_idx]
+        
+        # Top and bottom rows: Accuracy and average resource usage
+        for (policy_id, setting) in policy_setting_pairs:
+            color = color_map[(policy_id, setting)]
+            pattern = re.compile(
+                rf'^policy_{policy_id}_setting_{setting}_schedule_{re.escape(schedule_type)}'
+                rf'_src_{re.escape(source_domain)}_model_{model_name}'
+                rf'_img_{str(img_size)}_seed_\d+\.json$'
+            )
+            matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
+            if not matching_files:
+                continue
+            
+            combined_data = defaultdict(lambda: {'accuracies': [], 'decisions': []})
+            for file_path in matching_files:
+                epochs, accs, _, decisions, _ = read_drift_data(file_path)
+                for idx, epoch in enumerate(epochs):
+                    combined_data[epoch]['accuracies'].append(accs[idx])
+                    combined_data[epoch]['decisions'].append(decisions[idx])
+            
+            epochs = sorted(combined_data.keys())
+            if T is not None:
+                epochs = [e for e in epochs if e <= T]
+            if not epochs:
+                continue
+            
+            # Compute averages
+            avg_accuracies = [np.mean(combined_data[e]['accuracies']) for e in epochs]
+            avg_decisions = [np.mean(combined_data[e]['decisions']) for e in epochs]
+            cumulative_updates = np.cumsum(avg_decisions)
+            
+            # Top row: Plot accuracy
+            ax_acc.plot(epochs, avg_accuracies, color=color, 
+                       label=f'P{policy_id}')
+            
+            # Bottom row: Plot average resource usage (cumulative_updates / t, omit t=0)
+            if epochs[0] == 0:
+                avg_update_rate = [cumulative_updates[i] / epochs[i] 
+                                 for i in range(1, len(epochs)) if epochs[i] > 0]
+                plot_epochs = epochs[1:]
+            else:
+                avg_update_rate = [cumulative_updates[i] / epochs[i] 
+                                 for i in range(len(epochs))]
+                plot_epochs = epochs
+            ax_res.plot(plot_epochs, avg_update_rate, color=color, 
+                       label=f'P{policy_id} S{setting}')
+        
+        # Customize axes
+        # ax_acc.set_title(f'Accuracy')
+        ax_acc.set_ylabel('Accuracy (%)')
+        ax_comp.set_ylabel('Proportion')
+        ax_res.set_ylabel('Avg Update Rate')
+        ax_res.set_xlabel('Time')
+        ax_res.set_ylim(0, 0.2)
+        ax_acc.grid(True)
+        ax_res.grid(True)
+        
+        # Add legend to the last column
+        if col_idx == 3:
+            handles = [plt.Line2D([0], [0], color=color_map[pair], label=f'P{pair[0]} S{pair[1]}') 
+                       for pair in all_policy_setting_pairs]
+            ax_acc.legend(handles=handles, loc='lower right')
+            ax_res.legend(handles=handles, loc='upper right')
+    
+    # Adjust layout and save
+    fig.tight_layout()
+    output_path = os.path.join(
+        '../../data/plots/',
+        f'schedule_comparison_{"_".join([src for _, src in schedule_types_and_sources])}_{model_name}_img_size_{img_size}.png'
+    )
+    fig.savefig(output_path, dpi=300, bbox_inches='tight')
+    print(f"Saved plot to {output_path}")
+    plt.close(fig)
+
+def compare_policy_setting_pairs(policy_setting_pairs, schedule_type, source_domains, 
+                               model_name='PACSCNN_4', img_size=128, 
+                               results_dir='../../data/results/', T=None):
+    """
+    Compares average accuracy across source domains for given (policy, setting) pairs and schedule type.
+
+    Args:
+        policy_setting_pairs (list): List of tuples [(policy_id, setting_id), ...] to compare.
+        schedule_type (str): Type of drift schedule (e.g., 'domain_change_burst_2').
+        source_domains (list): List of source domain names to analyze.
+        model_name (str): Model architecture name (default: 'PACSCNN_4').
+        img_size (int): Image size (default: 128).
+        results_dir (str): Directory containing result JSON files (default: '../../data/results/').
+        T (int, optional): Upper limit of time steps to consider. If None, uses all time steps.
+    """
+    print(f"Comparing policy-setting pairs for Schedule: {schedule_type}, Domains: {source_domains}")
+    
+    # Initialize data storage
+    results = defaultdict(list)
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+
+    for policy_id, setting_id in policy_setting_pairs:
+        for source_domain in source_domains:
+            # Define file pattern for this policy, setting, and source domain
+            pattern = re.compile(
+                rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
+                rf'_src_{re.escape(source_domain)}_model_{model_name}'
+                rf'_img_{str(img_size)}_seed_\d+\.json$'
+            )
+            matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
+            
+            if not matching_files:
+                print(f"No files found for Policy {policy_id}, Setting {setting_id}, "
+                      f"Schedule {schedule_type}, Source {source_domain}, Img Size {img_size}")
+                continue
+                
+            # Aggregate accuracy data across seeds
+            all_accuracies = []
+            for file_path in matching_files:
+                epochs, accs, _, _, _ = read_drift_data(file_path)
+                if not epochs:
+                    continue
+                if T is not None:
+                    accs = accs[:T+1]
+                all_accuracies.extend(accs)
+            
+            if all_accuracies:
+                mean_accuracy = np.mean(all_accuracies)
+                std_accuracy = np.std(all_accuracies)
+                results[(policy_id, setting_id)].append({
+                    'source_domain': source_domain,
+                    'mean_accuracy': mean_accuracy,
+                    'std_accuracy': std_accuracy
+                })
+
+    # Calculate average accuracy across domains for each (policy, setting) pair
+    summary = {}
+    for policy_id, setting_id in policy_setting_pairs:
+        pair_data = results.get((policy_id, setting_id), [])
+        if pair_data:
+            mean_accs = [d['mean_accuracy'] for d in pair_data]
+            avg_accuracy = np.mean(mean_accs)
+            std_accuracy = np.std(mean_accs)
+            summary[(policy_id, setting_id)] = {
+                'avg_accuracy': avg_accuracy,
+                'std_accuracy': std_accuracy,
+                'domains': [d['source_domain'] for d in pair_data]
+            }
+
+    # Display results
+    print("\nAccuracy Summary Across Domains:")
+    print("-" * 50)
+    for (policy_id, setting_id), data in summary.items():
+        print(f"Policy {policy_id}, Setting {setting_id}:")
+        print(f"  Domains: {', '.join(data['domains'])}")
+        print(f"  Average Accuracy: {data['avg_accuracy']:.2f}% ± {data['std_accuracy']:.2f}%")
+        print("-" * 50)
+
+    return summary
+
 if __name__ == "__main__":
     source_domains = ['cartoon', 'photo', 'sketch', 'art_painting']
     policy_ids = [0, 1, 2, 6]
     # policy_ids = [0,]
-    schedule_array = ['domain_change_burst_0', 'domain_change_burst_1',
-                      ]
+    schedule_array = ['constant_drift_domain_change_0', 'constant_drift_domain_change_1', 'constant_drift_domain_change_2']
     model_names = ['PACSCNN_4',]
     setting_used = 62
-    policy_setting_pairs = [(2, setting_used), (1, setting_used), (3, setting_used), (6, setting_used)]
     img_size = 128
     src_domain = 'photo'
     plot_name = f'{model_names[0]}_{src_domain}_img_size_{img_size}.png'
     plot_name = os.path.join('../../data/plots/', plot_name)
 
-    # 76, 78 look good
-    policy_setting_pairs = [(1, 60), (2, 60), (6, 76)]
-    for source_domain in source_domains:
-        for schedule_type in schedule_array:
-            for model_name in model_names:
-                compare_policies(
-                    policy_setting_pairs=policy_setting_pairs,
-                    schedule_type=schedule_type,
-                    source_domain=source_domain,
-                    model_name=model_name,
-                    img_size=img_size,
-                    T=199  # Match your n_rounds - 1 from the JSON
-                )
+    # Main figure plot
+    schedule_types_and_sources = [
+        ("domain_change_burst_1", "art_painting"),
+        ("step_1", "sketch"),
+        ("constant_drift_domain_change_1", "sketch"),
+        ("RV_domain_change_burst_0", "art_painting"),
+    ]
+    policy_setting_pairs_per_schedule = [
+        [(1, 60), (2, 60), (6, 76)],
+        [(1, 60), (2, 60), (6, 76)],
+        [(1, 60), (2, 60), (6, 75)],
+        [(1, 60), (2, 60), (6, 75)]
+    ]
+    data_handler = PACSDataHandler()
+    full_dataset = data_handler.dataset
+    
+    for schedule_type, source_domain in [("RV_domain_change_burst_1", "art_painting"), ("RV_domain_change_burst_2", "art_painting"), ("constant_drift_domain_change_1", "sketch")]:
+        for seed in range(10):
+            simulate_and_save_composition(
+                schedule_type=schedule_type,
+                source_domain=source_domain,
+                dataset=full_dataset,
+                seed=seed,
+                n_rounds=400,
+                output_dir='../../data/compositions/',
+                desired_size=1024
+            )
+    
+    
+    compare_schedules(
+        schedule_types_and_sources,
+        policy_setting_pairs_per_schedule,
+        composition_dir='../../data/compositions/',
+        n_rounds=250,
+        T=250
+    )
+    # Create a list of 4 DriftScheduler instances
+    # drift_schedulers = [
+    #     DriftScheduler(schedule_type=schedule_type)
+    #     for schedule_type in schedule_types
+    # ]
+    # policy_setting_pairs = [(1, 60), (2, 60), (6, 76)]
+    # compare_policy_setting_pairs(
+    #     policy_setting_pairs=policy_setting_pairs,
+    #     schedule_type='sine_wave_domain_change_0',
+    #     source_domains=['art_painting', 'photo', 'sketch', 'cartoon'],
+    #     )
+    # # compare_schedules()
+    # # 76, 78 look good
+    # policy_setting_pairs = [(1, 60), (2, 60), (6, 75)]
+    # for source_domain in source_domains:
+    #     for schedule_type in schedule_array:
+    #         for model_name in model_names:
+    #             compare_policies(
+    #                 policy_setting_pairs=policy_setting_pairs,
+    #                 schedule_type=schedule_type,
+    #                 source_domain=source_domain,
+    #                 model_name=model_name,
+    #                 img_size=img_size,
+    #                 T=399  # Match your n_rounds - 1 from the JSON
+    #             )
                 # compare_settings(
-                #     policy_id=6,
-                #     setting_ids=[76, 77, 78],
+                #     policy_id=1,
+                #     setting_ids=[60,],
                 #     schedule_type=schedule_type,
                 #     source_domain=source_domain,
                 #     model_name=model_name,
                 #     img_size=img_size,
-                #     T=199  # Match your n_rounds - 1 from the JSON
+                #     T=399  # Match your n_rounds - 1 from the JSON
                 # )
         
         # '''

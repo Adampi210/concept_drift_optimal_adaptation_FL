@@ -1,0 +1,23 @@
+Device: cuda
+CUDA Version: 12.1
+cuDNN Version: 8902
+PyTorch Version: 2.3.0
+
+Model used: PACSCNN_4
+Initial dataset creation
+Initial dataset creation
+Initial loss: 0.4194853901863098
+<__main__.Policy object at 0x14777df73f80>
+0.4194853901863098
+Traceback (most recent call last):
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 900, in <module>
+    main()
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 880, in main
+    evaluate_policy_under_drift(
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 664, in evaluate_policy_under_drift
+    drift_rate, target_domains = drift_scheduler.get_drift_params(t)
+                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 446, in get_drift_params
+    self.initial_delay = np.random.randint(self.initial_delay_limits[0], self.initial_delay_limits[1] + 1)
+                                           ^^^^^^^^^^^^^^^^^^^^^^^^^
+AttributeError: 'DriftScheduler' object has no attribute 'initial_delay_limits'

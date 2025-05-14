@@ -276,30 +276,30 @@ class DriftScheduler:
             'strategy': 'replace'
         },
         "RV_domain_change_burst_0": lambda: {
-            'burst_interval': np.random.uniform(30, 70),
-            'burst_duration': np.random.uniform(2, 8),
+            'burst_interval_limits': (30, 70),
+            'burst_duration_limits': (2, 8),
             'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.1, 0.3),
-            'target_domains': ['sketch', 'art_painting', 'cartoon'],
-            'initial_delay': np.random.uniform(30, 70),
+            'burst_rate': np.random.uniform(0.2, 0.4),
+            'target_domains': ['photo', 'cartoon', 'sketch'],
+            'initial_delay_limits': (30, 70),
             'strategy': 'replace'
         },
         "RV_domain_change_burst_1": lambda: {
-            'burst_interval': np.random.uniform(40, 80),
-            'burst_duration': np.random.uniform(3, 6),
+            'burst_interval_limits': (40, 80),
+            'burst_duration_limits': (3, 6),
             'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.2, 0.4),
+            'burst_rate': (0.2, 0.4),
             'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': np.random.uniform(40, 80),
+            'initial_delay_limits': (40, 80),
             'strategy': 'replace'
         },
         "RV_domain_change_burst_2": lambda: {
-            'burst_interval': np.random.uniform(50, 90),
-            'burst_duration': np.random.uniform(2, 6),
+            'burst_interval_limits': (50, 90),
+            'burst_duration_limits': (2, 6),
             'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.3, 0.5),
-            'target_domains': ['sketch', 'art_painting', 'cartoon'],
-            'initial_delay': np.random.uniform(50, 90),
+            'burst_rate': (0.3, 0.5),
+            'target_domains': ['cartoon', 'photo', 'sketch'],
+            'initial_delay_limits': (50, 90),
             'strategy': 'replace'
         },
         "step_0": lambda: {
@@ -312,12 +312,6 @@ class DriftScheduler:
             'step_points': [60, 120, 180],
             'step_rates': [0.004, 0.006, 0.008, 0.01],
             'step_domains': ['sketch', 'cartoon', 'art_painting', 'photo', 'sketch'],
-            'strategy': 'replace'
-        },
-        "step_2": lambda: {
-            'step_points': [40, 80, 120, 160],
-            'step_rates': [0.004, 0.008, 0.016, 0.032],
-            'step_domains': ['art_painting', 'photo', 'sketch', 'cartoon', 'art_painting', 'photo'],
             'strategy': 'replace'
         },
         "constant_drift_domain_change_0": lambda: {
@@ -356,6 +350,26 @@ class DriftScheduler:
             'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
             'strategy': 'replace'
         },
+        "intermittent_shifts": lambda: {
+            'min_interval': 2,
+            'max_interval': 10,
+            'burst_duration_range': (5, 15),
+            'drift_range': (0.3, 0.6),
+            'low_drift_start': 30,
+            'low_drift_end': 40,
+            'low_drift_rate': 0.2,
+            'target_domains': ['sketch', 'cartoon', 'art_painting', 'photo'],
+            'strategy': 'replace'
+        },
+        "quiet_then_low_0": lambda: {
+            'burst_interval': 60,
+            'burst_duration': 30,
+            'base_rate': 0.0,
+            'burst_rate': 0.016,
+            'target_domains':  ['photo', 'cartoon', 'sketch'],
+            'initial_delay': 50,
+            'strategy': 'replace'
+        },
     }
 
     def __init__(self, schedule_type, **kwargs):
@@ -372,11 +386,34 @@ class DriftScheduler:
             self.current_target_domain = self.target_domains[0]
             self.domain_index = 0
             self.first_burst_completed = False
+        # Generate burst periods for intermittent_shifts
+        if self.schedule_type == "intermittent_shifts":
+            max_t = 1000  # Maximum time horizon, adjust if needed
+            self.burst_periods = []
+            current_t = 0
+            while current_t < max_t:
+                interval = np.random.randint(self.min_interval, self.max_interval + 1)
+                current_t += interval
+                if current_t >= max_t:
+                    break
+                duration = np.random.randint(self.burst_duration_range[0], self.burst_duration_range[1] + 1)
+                burst_start = current_t
+                burst_end = min(current_t + duration, max_t)
+                drift_rate = np.random.uniform(self.drift_range[0], self.drift_range[1])
+                domain_index = len(self.burst_periods) % len(self.target_domains)
+                target_domain = self.target_domains[domain_index]
+                self.burst_periods.append({
+                    'start': burst_start,
+                    'end': burst_end,
+                    'drift_rate': drift_rate,
+                    'target_domain': target_domain
+                })
+                current_t = burst_end
 
     def get_drift_params(self, t):
         """Returns (drift_rate, target_domains) for the given time t."""
         self.current_step = t
-        if self.schedule_type.startswith("domain_change_burst"):
+        if self.schedule_type.startswith("domain_change_burst") or self.schedule_type.startswith("quiet_then_low"):
             if t < self.initial_delay:
                 drift_rate = self.base_rate
                 target_domains = []
@@ -391,6 +428,43 @@ class DriftScheduler:
                 else:
                     drift_rate = self.base_rate
                     target_domains = []
+        elif self.schedule_type == "intermittent_shifts":
+            for burst in self.burst_periods:
+                if burst['start'] <= t < burst['end']:
+                    drift_rate = burst['drift_rate']
+                    target_domains = [burst['target_domain']]
+                    break
+            else:
+                if self.low_drift_start <= t < self.low_drift_end:
+                    drift_rate = self.low_drift_rate
+                    target_domains = [self.target_domains[0]]
+                else:
+                    drift_rate = 0.0
+                    target_domains = []
+        elif self.schedule_type.startswith("RV_domain_change_burst"):
+            self.initial_delay = np.random.randint(self.initial_delay_limits[0], self.initial_delay_limits[1] + 1)
+            self.burst_interval = np.random.randint(self.burst_interval_limits[0], self.burst_interval_limits[1] + 1)
+            self.burst_duration = np.random.randint(self.burst_duration_limits[0], self.burst_duration_limits[1] + 1)
+            self.modify_burst = False
+            if t < self.initial_delay:
+                drift_rate = self.base_rate
+                target_domains = []
+            else:
+                adjusted_t = t - self.initial_delay
+                cycle_position = adjusted_t % self.burst_interval
+                if cycle_position == 0 and adjusted_t >= 0:
+                    self.select_new_target_domain()
+                    self.modify_burst = True
+                if cycle_position < self.burst_duration:
+                    drift_rate = self.burst_rate
+                    target_domains = [self.current_target_domain]
+                else:
+                    drift_rate = self.base_rate
+                    target_domains = []
+                    if self.modify_burst:
+                        self.burst_interval = np.random.randint(self.limits_interval[0], self.limits_interval[1] + 1)
+                        self.burst_duration = np.random.randint(self.limits_duration[0], self.limits_duration[1] + 1)
+                        self.modify_burst = False
         elif self.schedule_type.startswith("step"):
             if t < self.step_points[0]:
                 drift_rate = 0.0
@@ -444,6 +518,15 @@ class DriftScheduler:
                 'step_points': self.step_points,
                 'step_rates': self.step_rates,
                 'step_domains': self.step_domains
+            })
+        elif 'burst_interval_limits' in self.__dict__:
+            params.update({
+                'burst_interval_limits': self.burst_interval_limits,
+                'burst_duration_limits': self.burst_duration_limits,
+                'base_rate': self.base_rate,
+                'burst_rate': self.burst_rate,
+                'initial_delay_limits': self.initial_delay_limits,
+                'target_domains': self.target_domains
             })
         elif 'domain_change_interval' in self.__dict__:
             params.update({
@@ -518,14 +601,14 @@ def evaluate_policy_under_drift(
     holdout_data_handler.dataset = holdout_subset
     set_seed(seed)
     # Define drift objects
-    train_drift = PACSDomainDrift(
+    train_drift = DomainDrift(
         train_data_handler,
         source_domains=source_domains,
         target_domains=source_domains,
         drift_rate=0,  # Initially no drift
         desired_size=DSET_SIZE
     )
-    holdout_drift = PACSDomainDrift(
+    holdout_drift = DomainDrift(
         train_data_handler,
         source_domains=source_domains,
         target_domains=source_domains,
