@@ -152,7 +152,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         print("Holdout dataset:")
         accuracy = print_debug_info(agent_holdout, i, avg_loss, accuracy_fn)
         accuracy_array.append(accuracy)
-        if accuracy > 75:
+        if accuracy > 90:
             print(f"Early stopping at epoch {i+1} with accuracy {accuracy:.2f}%")
             break
     
