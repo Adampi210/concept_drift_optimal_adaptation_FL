@@ -279,7 +279,7 @@ class DriftScheduler:
             'burst_interval_limits': (30, 70),
             'burst_duration_limits': (2, 8),
             'base_rate': 0.0,
-            'burst_rate': np.random.uniform(0.2, 0.4),
+            'burst_rate': (0.2, 0.4),
             'target_domains': ['photo', 'cartoon', 'sketch'],
             'initial_delay_limits': (30, 70),
             'strategy': 'replace'
@@ -386,6 +386,13 @@ class DriftScheduler:
             self.current_target_domain = self.target_domains[0]
             self.domain_index = 0
             self.first_burst_completed = False
+        
+        if self.schedule_type.startswith("RV_domain_change_burst"):
+            self.modify_burst = False
+            self.initial_delay = np.random.randint(self.initial_delay_limits[0], self.initial_delay_limits[1] + 1)
+            self.burst_interval = np.random.randint(self.burst_interval_limits[0], self.burst_interval_limits[1] + 1)
+            self.burst_duration = np.random.randint(self.burst_duration_limits[0], self.burst_duration_limits[1] + 1)
+        
         # Generate burst periods for intermittent_shifts
         if self.schedule_type == "intermittent_shifts":
             max_t = 1000  # Maximum time horizon, adjust if needed
@@ -442,10 +449,6 @@ class DriftScheduler:
                     drift_rate = 0.0
                     target_domains = []
         elif self.schedule_type.startswith("RV_domain_change_burst"):
-            self.initial_delay = np.random.randint(self.initial_delay_limits[0], self.initial_delay_limits[1] + 1)
-            self.burst_interval = np.random.randint(self.burst_interval_limits[0], self.burst_interval_limits[1] + 1)
-            self.burst_duration = np.random.randint(self.burst_duration_limits[0], self.burst_duration_limits[1] + 1)
-            self.modify_burst = False
             if t < self.initial_delay:
                 drift_rate = self.base_rate
                 target_domains = []
@@ -456,14 +459,14 @@ class DriftScheduler:
                     self.select_new_target_domain()
                     self.modify_burst = True
                 if cycle_position < self.burst_duration:
-                    drift_rate = self.burst_rate
+                    drift_rate = random.uniform(self.burst_rate[0], self.burst_rate[1])
                     target_domains = [self.current_target_domain]
                 else:
                     drift_rate = self.base_rate
                     target_domains = []
                     if self.modify_burst:
-                        self.burst_interval = np.random.randint(self.limits_interval[0], self.limits_interval[1] + 1)
-                        self.burst_duration = np.random.randint(self.limits_duration[0], self.limits_duration[1] + 1)
+                        self.burst_interval = np.random.randint(self.burst_interval_limits[0], self.burst_interval_limits[1] + 1)
+                        self.burst_duration = np.random.randint(self.burst_duration_limits[0], self.burst_duration_limits[1] + 1)
                         self.modify_burst = False
         elif self.schedule_type.startswith("step"):
             if t < self.step_points[0]:

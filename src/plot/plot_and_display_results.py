@@ -2051,14 +2051,14 @@ if __name__ == "__main__":
     data_handler = PACSDataHandler()
     full_dataset = data_handler.dataset
     
-    for schedule_type, source_domain in [("RV_domain_change_burst_1", "art_painting"), ("RV_domain_change_burst_2", "art_painting"), ("constant_drift_domain_change_1", "sketch")]:
+    for schedule_type, source_domain in [("RV_domain_change_burst_0", "art_painting"), ("RV_domain_change_burst_1", "art_painting"), ("RV_domain_change_burst_2", "art_painting"), ("constant_drift_domain_change_1", "sketch")]:
         for seed in range(10):
             simulate_and_save_composition(
                 schedule_type=schedule_type,
                 source_domain=source_domain,
                 dataset=full_dataset,
                 seed=seed,
-                n_rounds=400,
+                n_rounds=250,
                 output_dir='../../data/compositions/',
                 desired_size=1024
             )

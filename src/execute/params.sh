@@ -7,7 +7,7 @@ ALL_SRC_DOMAINS=("photo" "art_painting" "cartoon" "sketch")
 ALL_MODEL_NAMES=("PACSCNN_4")
 
 # Policies to iterate over
-POLICIES=(1 2 6)
+POLICIES=(6)
 
 # Setting IDs to iterate over
 SETTING_IDS=(60 75 76) 

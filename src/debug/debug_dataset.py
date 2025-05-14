@@ -68,7 +68,7 @@ def print_domain_counts(dataset):
 # Initialize data handler and domain drift
 cluster = 'gautschi'
 # root_dir = f'/scratch/{cluster}/apiasecz/data/DigitsDG/digits_dg/'
-root_dir = f'/scratch/{cluster}/apiasecz/data/OfficeHome/OfficeHomeDataset_10072016/'
+root_dir = f'/scratch/{cluster}/apiasecz/data/OfficeHome/OfficeHomeDataset_10072016/' # ROOT DIRECTORY -> have to change this to the path where the corresponding dataset is stored
 data_handler = OfficeHomeDataHandler(root_dir, transform=transform_train)
 print(f"Domains: {data_handler.domains}")
 
