@@ -78,7 +78,9 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    full_dataset = DigitsDGDataHandler(transform=transform).dataset
+    cluster = 'gilbreth'
+    root_dir = f'/scratch/{cluster}/apiasecz/data/DigitsDG/digits_dg/'
+    full_dataset = DigitsDGDataHandler(root_dir=root_dir, transform=transform).dataset
     dataset_size = len(full_dataset)
     indices = np.arange(dataset_size)
     np.random.shuffle(indices)  # Randomize indices
@@ -92,9 +94,9 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
     train_subset = Subset(full_dataset, train_indices)
     holdout_subset = Subset(full_dataset, holdout_indices)
     
-    train_data_handler = DigitsDGDataHandler()
+    train_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     train_data_handler.dataset = train_subset
-    holdout_data_handler = DigitsDGDataHandler()
+    holdout_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     holdout_data_handler.dataset = holdout_subset
     
     train_drift = DomainDrift(
@@ -193,7 +195,7 @@ def main():
     parser.add_argument('--optimizer', type=str, default='sgd', choices=['adam', 'sgd'], help='Optimizer')
     parser.add_argument('--model_save_dir', type=str, default='../../../../models/concept_drift_models/', help='Model save directory')
     parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Results save directory')
-    parser.add_argument('--img_size', type=int, default=128, help='Image size')
+    parser.add_argument('--img_size', type=int, default=32, help='Image size')
     parser.add_argument('--num_seeds', type=int, default=3, help='Number of seeds')
     args = parser.parse_args()
 
