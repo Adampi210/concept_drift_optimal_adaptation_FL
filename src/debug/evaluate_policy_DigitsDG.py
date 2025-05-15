@@ -19,75 +19,10 @@ print(f"CUDA Version: {torch.version.cuda}")
 print(f"cuDNN Version: {torch.backends.cudnn.version()}")
 print(f"PyTorch Version: {torch.__version__}\n")
 
-# Define Models
-class PACSCNN_1(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN_1, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.pool = nn.AdaptiveAvgPool2d((7, 7))
-        self.fc1 = nn.Sequential(
-            nn.Linear(32 * 7 * 7, 256),
-            nn.ReLU(),
-            nn.Linear(256, 64),
-            nn.ReLU(),
-        )
-        self.fc2 = nn.Linear(64, num_classes)
-        self.apply(self.init_weights)
-
-    @torch.no_grad()
-    def init_weights(self, m):
-        if isinstance(m, (nn.Linear, nn.Conv2d)):
-            torch.nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
-            if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.pool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        return x
-
-class PACSCNN_2(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN_2, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=1, stride=2),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=1, stride=2),
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=1, stride=2),
-        )
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Dropout(p=0.5),
-            nn.Linear(256, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
-
-class PACSCNN_3(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN_3, self).__init__()
+# Define model used
+class DigitsDGCNN(BaseModelArchitecture):
+    def __init__(self, num_classes=10):
+        super(DigitsDGCNN, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, padding=1),
             nn.BatchNorm2d(64),
@@ -117,62 +52,6 @@ class PACSCNN_3(BaseModelArchitecture):
         x = self.features(x)
         x = self.classifier(x)
         return x
-
-class PACSCNN_4(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN_4, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            ResidualBlock(64, 64, stride=1),
-            ResidualBlock(64, 64, stride=1),
-            ResidualBlock(64, 128, stride=2),
-            ResidualBlock(128, 128, stride=1),
-            ResidualBlock(128, 256, stride=2),
-            ResidualBlock(256, 256, stride=1),
-            ResidualBlock(256, 512, stride=2),
-            ResidualBlock(512, 512, stride=1),
-        )
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Dropout(p=0.5),
-            nn.Linear(512, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
-
-class ResidualBlock(nn.Module):
-    def __init__(self, in_channels, out_channels, stride=1):
-        super(ResidualBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, stride=stride, padding=1)
-        self.bn1 = nn.BatchNorm2d(out_channels)
-        self.relu = nn.ReLU(inplace=True)
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, stride=1, padding=1)
-        self.bn2 = nn.BatchNorm2d(out_channels)
-        if stride != 1 or in_channels != out_channels:
-            self.shortcut = nn.Sequential(
-                nn.Conv2d(in_channels, out_channels, kernel_size=1, stride=stride),
-                nn.BatchNorm2d(out_channels)
-            )
-        else:
-            self.shortcut = nn.Identity()
-
-    def forward(self, x):
-        identity = self.shortcut(x)
-        out = self.conv1(x)
-        out = self.bn1(out)
-        out = self.relu(out)
-        out = self.conv2(out)
-        out = self.bn2(out)
-        out += identity
-        out = self.relu(out)
-        return out
-
 # Utility Functions
 def set_seed(seed):
     random.seed(seed)
@@ -235,7 +114,7 @@ class DriftScheduler:
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.4,
-            'target_domains': ['sketch', 'cartoon', 'art_painting'],
+            'target_domains': ['svhn', 'mnist_m', 'syn'],
             'initial_delay': 55,
             'strategy': 'replace'
         },
@@ -244,7 +123,7 @@ class DriftScheduler:
             'burst_duration': 3,
             'base_rate': 0.0,
             'burst_rate': 0.4,
-            'target_domains': ['photo', 'cartoon', 'sketch'],
+            'target_domains': ['mnist', 'svhn', 'syn'],
             'initial_delay': 45,
             'strategy': 'replace'
         },
@@ -253,7 +132,7 @@ class DriftScheduler:
             'burst_duration': 2,
             'base_rate': 0.0,
             'burst_rate': 0.5,
-            'target_domains': ['sketch', 'cartoon'],
+            'target_domains': ['svhn', 'mnist_m'],
             'initial_delay': 25,
             'strategy': 'replace'
         },
@@ -262,7 +141,7 @@ class DriftScheduler:
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 1.0,
-            'target_domains': ['cartoon', 'photo', 'sketch'],
+            'target_domains': ['syn', 'mnist_m', 'mnist'],
             'initial_delay': 55,
             'strategy': 'replace'
         },
@@ -271,7 +150,7 @@ class DriftScheduler:
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 1.0,
-            'target_domains': ['cartoon'],
+            'target_domains': ['svhn'],
             'initial_delay': 205,
             'strategy': 'replace'
         },
@@ -280,7 +159,7 @@ class DriftScheduler:
             'burst_duration': np.random.uniform(2, 8),
             'base_rate': 0.0,
             'burst_rate': np.random.uniform(0.1, 0.3),
-            'target_domains': ['sketch', 'art_painting', 'cartoon'],
+            'target_domains': ['svhn', 'mnist_m', 'syn'],
             'initial_delay': np.random.uniform(30, 70),
             'strategy': 'replace'
         },
@@ -289,7 +168,7 @@ class DriftScheduler:
             'burst_duration': np.random.uniform(3, 6),
             'base_rate': 0.0,
             'burst_rate': np.random.uniform(0.2, 0.4),
-            'target_domains': ['sketch', 'cartoon', 'art_painting'],
+            'target_domains': ['mnist', 'svhn', 'syn'],
             'initial_delay': np.random.uniform(40, 80),
             'strategy': 'replace'
         },
@@ -298,38 +177,38 @@ class DriftScheduler:
             'burst_duration': np.random.uniform(2, 6),
             'base_rate': 0.0,
             'burst_rate': np.random.uniform(0.3, 0.5),
-            'target_domains': ['sketch', 'art_painting', 'cartoon'],
+            'target_domains': ['svhn', 'syn', 'mnist_m'],
             'initial_delay': np.random.uniform(50, 90),
             'strategy': 'replace'
         },
         "step_0": lambda: {
             'step_points': [50, 100, 150],
             'step_rates': [0.01, 0.03, 0.05, 0.07],
-            'step_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'step_domains': ['svhn', 'syn', 'mnist_m', 'mnist'],
             'strategy': 'replace'
         },
         "step_1": lambda: {
             'step_points': [40, 80, 120, 160],
             'step_rates': [0.02, 0.04, 0.06, 0.08, 0.1],
-            'step_domains': ['sketch', 'cartoon', 'art_painting', 'photo', 'sketch'],
+            'step_domains': ['svhn', 'mnist_m', 'syn', 'mnist', 'svhn'],
             'strategy': 'replace'
         },
         "step_2": lambda: {
             'step_points': [30, 60, 90, 120, 150],
             'step_rates': [0.005, 0.01, 0.015, 0.02, 0.025, 0.03],
-            'step_domains': ['art_painting', 'photo', 'sketch', 'cartoon', 'art_painting', 'photo'],
+            'step_domains': ['syn', 'mnist', 'svhn', 'mnist_m', 'syn', 'mnist'],
             'strategy': 'replace'
         },
         "constant_drift_domain_change": lambda: {
             'drift_rate': 0.05,
             'domain_change_interval': 50,
-            'target_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'target_domains': ['svhn', 'syn', 'mnist_m', 'mnist'],
             'strategy': 'replace'
         },
         "sine_wave_domain_change": lambda: {
             'amplitude': 0.1,
             'period': 50,
-            'target_domains': ['sketch', 'art_painting', 'cartoon', 'photo'],
+            'target_domains': ['svhn', 'syn', 'mnist_m', 'mnist'],
             'strategy': 'replace'
         },
     }
@@ -467,7 +346,9 @@ def evaluate_policy_under_drift(
     policy = Policy(alpha=learning_rate, L_i=L_i, K_p=K_p, K_d=K_d)
     
     # Define datasets for training+infrence and holdout for testing
-    full_dataset = PACSDataHandler(transform=transform).dataset
+    cluster = 'gilbreth'
+    root_dir = f'/scratch/{cluster}/apiasecz/data/DigitsDG/digits_dg/'
+    full_dataset = DigitsDGDataHandler(root_dir=root_dir, transform=transform).dataset
     dataset_size = len(full_dataset)
     indices = np.arange(dataset_size)
     np.random.shuffle(indices)  # Randomize indices
@@ -482,9 +363,9 @@ def evaluate_policy_under_drift(
     holdout_subset = Subset(full_dataset, holdout_indices)
     
     # Define data hanldlers
-    train_data_handler = PACSDataHandler()
+    train_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     train_data_handler.dataset = train_subset
-    holdout_data_handler = PACSDataHandler()
+    holdout_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     holdout_data_handler.dataset = holdout_subset
 
     # Define drift objects
@@ -718,25 +599,22 @@ DSET_SIZE = 1024
 # Main function 
 def main():
     # Get the command line arguments
-    parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
+    parser = argparse.ArgumentParser(description="DomainDG CNN Evaluation with Dynamic Drift")
     parser.add_argument('--schedule_type', type=str, default='domain_change_burst_0',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')
     parser.add_argument('--seed', type=int, default=0)
-    parser.add_argument('--src_domains', type=str, nargs='+', default=['photo',])
+    parser.add_argument('--src_domains', type=str, nargs='+', default=['mnist',])
     parser.add_argument('--n_rounds', type=int, default=200)
     parser.add_argument('--policy_id', type=int, default=2)
     parser.add_argument('--setting_id', type=int, default=0)
-    parser.add_argument('--model_name', type=str, default='PACSCNN_4', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
+    parser.add_argument('--model_name', type=str, default='DigitsDGCNN', choices=['DigitsDGCNN',], help='Model architecture to use')
     parser.add_argument('--img_size', type=int, default=128, help='Size to resize images to (img_size x img_size)')
     args = parser.parse_args()
     
     # Model selection
     model_architectures = {
-        'PACSCNN_1': PACSCNN_1,
-        'PACSCNN_2': PACSCNN_2,
-        'PACSCNN_3': PACSCNN_3,
-        'PACSCNN_4': PACSCNN_4,
+        'DigitsDGCNN': DigitsDGCNN,
     }
     print(f'Model used: {args.model_name}')
     model_path = f"../../../../models/concept_drift_models/{args.model_name}_{'_'.join(args.src_domains)}_img_{args.img_size}_seed_{args.seed}.pth"

@@ -66,7 +66,7 @@ def save_model(model, save_path):
 def print_debug_info(agent, num_epochs, loss, accuracy_fn):
     accuracy = agent.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False) * 100
     print(f"After {num_epochs} epochs: Loss = {loss:.4f}, Accuracy = {accuracy:.2f}%")
-    domain_counts = {domain: agent.len_domain_samples(domain) for domain in ['photo', 'sketch', 'art_painting', 'cartoon']}
+    domain_counts = {domain: agent.len_domain_samples(domain) for domain in ['svhn', 'syn', 'mnist', 'mnist_m']}
     print(f"Domain counts in current dataset: {domain_counts}")
     return accuracy
 
@@ -154,7 +154,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         print("Holdout dataset:")
         accuracy = print_debug_info(agent_holdout, i, avg_loss, accuracy_fn)
         accuracy_array.append(accuracy)
-        if accuracy > 90:
+        if accuracy > 75:
             print(f"Early stopping at epoch {i+1} with accuracy {accuracy:.2f}%")
             break
     
