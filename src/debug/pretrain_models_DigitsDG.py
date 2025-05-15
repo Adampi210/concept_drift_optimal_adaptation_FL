@@ -66,7 +66,7 @@ def save_model(model, save_path):
 def print_debug_info(agent, num_epochs, loss, accuracy_fn):
     accuracy = agent.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False) * 100
     print(f"After {num_epochs} epochs: Loss = {loss:.4f}, Accuracy = {accuracy:.2f}%")
-    domain_counts = {domain: agent.len_domain_samples(domain) for domain in ['photo', 'sketch', 'art_painting', 'cartoon']}
+    domain_counts = {domain: agent.len_domain_samples(domain) for domain in ['svhn', 'syn', 'mnist', 'mnist_m']}
     print(f"Domain counts in current dataset: {domain_counts}")
     return accuracy
 
@@ -78,7 +78,9 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    full_dataset = DigitsDGDataHandler(transform=transform).dataset
+    cluster = 'gilbreth'
+    root_dir = f'/scratch/{cluster}/apiasecz/data/DigitsDG/digits_dg/'
+    full_dataset = DigitsDGDataHandler(root_dir=root_dir, transform=transform).dataset
     dataset_size = len(full_dataset)
     indices = np.arange(dataset_size)
     np.random.shuffle(indices)  # Randomize indices
@@ -92,9 +94,9 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
     train_subset = Subset(full_dataset, train_indices)
     holdout_subset = Subset(full_dataset, holdout_indices)
     
-    train_data_handler = DigitsDGDataHandler()
+    train_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     train_data_handler.dataset = train_subset
-    holdout_data_handler = DigitsDGDataHandler()
+    holdout_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     holdout_data_handler.dataset = holdout_subset
     
     train_drift = DomainDrift(
@@ -152,7 +154,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         print("Holdout dataset:")
         accuracy = print_debug_info(agent_holdout, i, avg_loss, accuracy_fn)
         accuracy_array.append(accuracy)
-        if accuracy > 90:
+        if accuracy > 75:
             print(f"Early stopping at epoch {i+1} with accuracy {accuracy:.2f}%")
             break
     
@@ -193,7 +195,7 @@ def main():
     parser.add_argument('--optimizer', type=str, default='sgd', choices=['adam', 'sgd'], help='Optimizer')
     parser.add_argument('--model_save_dir', type=str, default='../../../../models/concept_drift_models/', help='Model save directory')
     parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Results save directory')
-    parser.add_argument('--img_size', type=int, default=128, help='Image size')
+    parser.add_argument('--img_size', type=int, default=32, help='Image size')
     parser.add_argument('--num_seeds', type=int, default=3, help='Number of seeds')
     args = parser.parse_args()
 
