@@ -193,6 +193,10 @@ class Policy:
         self.K_p = K_p
         self.K_d = K_d
         self.loss_initial = None
+        self.consecutive_increases = 0
+        self.loss_window = []  # For local consecutive increases
+        self.tokens = 0.0      # Budget term
+        self.loss_best = float('inf')
         
     def set_initial_loss(self, loss_initial):
         self.loss_initial = loss_initial
@@ -206,12 +210,35 @@ class Policy:
             interval = int(1 / pi_bar)
             return int(current_time % interval == 0)
         elif decision_id == 3:
-            if current_time >= 55 and current_time <= 61 \
-                or current_time >= 105 and current_time <= 112 \
-                or current_time >= 155 and current_time <= 162:
+            w = 40  # Window size
+            m = 3   # Consecutive increases
+            self.loss_window.append(loss_curr)
+            if len(self.loss_window) > w:
+                self.loss_window.pop(0)
+            # Check for m consecutive increases ending at the current time
+            increases = 0
+            for i in range(len(self.loss_window) - 1, 0, -1):  # Start from end, move backward
+                if self.loss_window[i] > self.loss_window[i - 1]:
+                    increases += 1
+                else:
+                    break  # Stop at the first non-increase
+            if increases >= m and self.tokens >= 1.0:
+                self.tokens -= 1.0
                 return 1
-            else:
-                return 0
+            self.tokens += pi_bar
+            return 0
+        elif decision_id == 4:
+            delta = 0.1  # 10% threshold
+            w = 40
+            max_loss = max(self.loss_window) if self.loss_window else loss_curr
+            if loss_curr > max_loss * (1 + delta) and self.tokens >= 1.0:
+                self.tokens -= 1.0
+                return 1
+            self.tokens += pi_bar
+            self.loss_window.append(loss_curr)
+            if len(self.loss_window) > w:
+                self.loss_window.pop(0)
+            return 0
         elif decision_id == 6:
             if self.loss_initial is None:
                 raise ValueError("Initial loss not set for Policy 6")
@@ -277,29 +304,29 @@ class DriftScheduler:
         },
         "RV_domain_change_burst_0": lambda: {
             'burst_interval_limits': (30, 70),
-            'burst_duration_limits': (2, 8),
+            'burst_duration_limits': (4, 7),
             'base_rate': 0.0,
-            'burst_rate': (0.2, 0.4),
-            'target_domains': ['photo', 'cartoon', 'sketch'],
-            'initial_delay_limits': (30, 70),
+            'burst_rate': (0.2, 0.5),
+            'target_domains': ['sketch', 'photo', 'cartoon'],
+            'initial_delay_limits': (30, 60),
             'strategy': 'replace'
         },
         "RV_domain_change_burst_1": lambda: {
-            'burst_interval_limits': (40, 80),
+            'burst_interval_limits': (90, 130),
             'burst_duration_limits': (3, 6),
             'base_rate': 0.0,
-            'burst_rate': (0.2, 0.4),
-            'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay_limits': (40, 80),
+            'burst_rate': (0.3, 0.6),
+            'target_domains':  ['photo', 'cartoon', 'sketch'],
+            'initial_delay_limits': (30, 60),
             'strategy': 'replace'
         },
         "RV_domain_change_burst_2": lambda: {
             'burst_interval_limits': (50, 90),
-            'burst_duration_limits': (2, 6),
+            'burst_duration_limits': (2, 5),
             'base_rate': 0.0,
-            'burst_rate': (0.3, 0.5),
+            'burst_rate': (0.4, 0.6),
             'target_domains': ['cartoon', 'photo', 'sketch'],
-            'initial_delay_limits': (50, 90),
+            'initial_delay_limits': (50, 80),
             'strategy': 'replace'
         },
         "step_0": lambda: {
@@ -363,9 +390,18 @@ class DriftScheduler:
         },
         "quiet_then_low_0": lambda: {
             'burst_interval': 60,
+            'burst_duration': 20,
+            'base_rate': 0.0,
+            'burst_rate': 0.024,
+            'target_domains':  ['photo', 'cartoon', 'sketch'],
+            'initial_delay': 60,
+            'strategy': 'replace'
+        },
+        "quiet_then_low_1": lambda: {
+            'burst_interval': 70,
             'burst_duration': 30,
             'base_rate': 0.0,
-            'burst_rate': 0.016,
+            'burst_rate': 0.032,
             'target_domains':  ['photo', 'cartoon', 'sketch'],
             'initial_delay': 50,
             'strategy': 'replace'
@@ -694,6 +730,7 @@ def evaluate_policy_under_drift(
             loss_best=loss_best
         )
         # Update the model if decision is made
+        print(f'Loss historical diff: {loss_curr - loss_best}; Loss Difference: {loss_curr - loss_prev}, Decision: {decision}')
         if decision:
             update_loss = agent_train.update_steps(
                 num_updates=n_steps, 
@@ -836,8 +873,8 @@ settings = {
         74: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
         75: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
         76: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.75, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.25, 'K_d': 0.05, 'lr': 0.01, 'n_steps':5},
         79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
     }
 DSET_SIZE = 1024
@@ -851,7 +888,7 @@ def main():
                         help='Type of drift rate schedule')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--src_domains', type=str, nargs='+', default=['photo',])
-    parser.add_argument('--n_rounds', type=int, default=500)
+    parser.add_argument('--n_rounds', type=int, default=250)
     parser.add_argument('--policy_id', type=int, default=2)
     parser.add_argument('--setting_id', type=int, default=0)
     parser.add_argument('--model_name', type=str, default='PACSCNN_4', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')

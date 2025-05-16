@@ -114,7 +114,7 @@ class DriftScheduler:
             'burst_duration': 5,
             'base_rate': 0.0,
             'burst_rate': 0.4,
-            'target_domains': ['svhn', 'mnist_m', 'syn'],
+            'target_domains': ['svhn', 'syn', 'mnist_m'],
             'initial_delay': 55,
             'strategy': 'replace'
         },
@@ -132,8 +132,8 @@ class DriftScheduler:
             'burst_duration': 2,
             'base_rate': 0.0,
             'burst_rate': 0.5,
-            'target_domains': ['svhn', 'mnist_m'],
-            'initial_delay': 25,
+            'target_domains': ['svhn', 'syn', 'mnist_m'],
+            'initial_delay': 5,
             'strategy': 'replace'
         },
         "domain_change_burst_3": lambda: {
@@ -323,16 +323,16 @@ def evaluate_policy_under_drift(
     seed,
     drift_scheduler,
     n_rounds,
-    learning_rate=0.01,
+    learning_rate=0.05,
     policy_id=0,
     setting_id=0,
-    batch_size=128,
+    batch_size=256,
     pi_bar=0.1,
     V=1,
     L_i=1.0,
     K_p=1.0,
     K_d=1.0,
-    n_steps=1
+    n_steps=5
 ):
     # Set the seed and define transform
     set_seed(seed)
@@ -524,9 +524,9 @@ def evaluate_policy_under_drift(
     
     
 # Hyperparameters and Constants
-cluster_used = 'gautschi'
+cluster_used = 'gilbreth'
 settings = {
-        0: {'pi_bar': 0.03, 'V': 65, 'L_i': 1.0},
+        0: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
         1: {'pi_bar': 0.05, 'V': 65, 'L_i': 1.0},
         2: {'pi_bar': 0.1, 'V': 65, 'L_i': 1.0},
         3: {'pi_bar': 0.15, 'V': 65, 'L_i': 1.0},
@@ -584,7 +584,7 @@ settings = {
         55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5},
         56: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 0.5},
         57: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 0.5},
-        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':10},
         61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':2},
         62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':3},
         63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
@@ -609,7 +609,7 @@ def main():
     parser.add_argument('--policy_id', type=int, default=2)
     parser.add_argument('--setting_id', type=int, default=0)
     parser.add_argument('--model_name', type=str, default='DigitsDGCNN', choices=['DigitsDGCNN',], help='Model architecture to use')
-    parser.add_argument('--img_size', type=int, default=128, help='Size to resize images to (img_size x img_size)')
+    parser.add_argument('--img_size', type=int, default=32, help='Size to resize images to (img_size x img_size)')
     args = parser.parse_args()
     
     # Model selection

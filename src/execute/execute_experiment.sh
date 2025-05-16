@@ -13,7 +13,7 @@ IMG_SIZE="$7"       # Image size
 
 # ========== USER CONFIGURATION ==========
 # Path to the Python experiment script
-experiment_filename='evaluate_policy.py'
+experiment_filename='evaluate_policy_DigitsDG.py'
 
 # Directory to store log files
 log_dir="../../logs"

@@ -78,7 +78,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    cluster = 'gilbreth'
+    cluster = 'gautschi'
     root_dir = f'/scratch/{cluster}/apiasecz/data/DigitsDG/digits_dg/'
     full_dataset = DigitsDGDataHandler(root_dir=root_dir, transform=transform).dataset
     dataset_size = len(full_dataset)

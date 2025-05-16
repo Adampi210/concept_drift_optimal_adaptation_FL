@@ -1,0 +1,78 @@
+Device: cuda
+CUDA Version: 12.1
+cuDNN Version: 8902
+PyTorch Version: 2.3.0
+
+Model used: PACSCNN_4
+Traceback (most recent call last):
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/huggingface_hub/utils/_http.py", line 406, in hf_raise_for_status
+    response.raise_for_status()
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/requests/models.py", line 1024, in raise_for_status
+    raise HTTPError(http_error_msg, response=self)
+requests.exceptions.HTTPError: 429 Client Error: Too Many Requests for url: https://huggingface.co/api/datasets/flwrlabs/pacs/paths-info/394113073258ead631f617d2e13bb377c0715c4b
+
+The above exception was the direct cause of the following exception:
+
+Traceback (most recent call last):
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 938, in <module>
+    main()
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 918, in main
+    evaluate_policy_under_drift(
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 638, in evaluate_policy_under_drift
+    holdout_data_handler = PACSDataHandler()
+                           ^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/data_operations/data_handler.py", line 299, in __init__
+    self.load_data()
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/data_operations/data_handler.py", line 318, in load_data
+    partition = fds.load_partition(0)
+                ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/flwr_datasets/federated_dataset.py", line 176, in load_partition
+    self._prepare_dataset()
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/flwr_datasets/federated_dataset.py", line 313, in _prepare_dataset
+    self._dataset = datasets.load_dataset(
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/load.py", line 2132, in load_dataset
+    builder_instance = load_dataset_builder(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/load.py", line 1890, in load_dataset_builder
+    builder_instance: DatasetBuilder = builder_cls(
+                                       ^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/builder.py", line 342, in __init__
+    self.config, self.config_id = self._create_builder_config(
+                                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/builder.py", line 597, in _create_builder_config
+    builder_config._resolve_data_files(
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/builder.py", line 206, in _resolve_data_files
+    self.data_files = self.data_files.resolve(base_path, download_config)
+                      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/data_files.py", line 818, in resolve
+    out[key] = data_files_patterns_list.resolve(base_path, download_config)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/data_files.py", line 771, in resolve
+    resolve_pattern(
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/datasets/data_files.py", line 388, in resolve_pattern
+    for filepath, info in fs.glob(pattern, detail=True, **glob_kwargs).items()
+                          ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/huggingface_hub/hf_file_system.py", line 409, in glob
+    return super().glob(path, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/fsspec/spec.py", line 611, in glob
+    allpaths = self.find(root, maxdepth=depth, withdirs=True, detail=True, **kwargs)
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/huggingface_hub/hf_file_system.py", line 422, in find
+    return super().find(
+           ^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/fsspec/spec.py", line 502, in find
+    out[path] = self.info(path)
+                ^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/huggingface_hub/hf_file_system.py", line 532, in info
+    paths_info = self._api.get_paths_info(
+                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/huggingface_hub/utils/_validators.py", line 114, in _inner_fn
+    return fn(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/huggingface_hub/hf_api.py", line 3311, in get_paths_info
+    hf_raise_for_status(response)
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/huggingface_hub/utils/_http.py", line 477, in hf_raise_for_status
+    raise _format(HfHubHTTPError, str(e), response) from e
+huggingface_hub.errors.HfHubHTTPError: 429 Client Error: Too Many Requests for url: https://huggingface.co/api/datasets/flwrlabs/pacs/paths-info/394113073258ead631f617d2e13bb377c0715c4b
