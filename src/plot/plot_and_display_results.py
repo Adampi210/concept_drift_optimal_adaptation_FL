@@ -1007,14 +1007,17 @@ def compare_policy_setting_pairs(policy_setting_pairs, schedule_type, source_dom
                     'step_1': 'Step',
                     'quiet_then_low_1': 'Wave', 
                     'RV_domain_change_burst_1': 'Spikes'}
-    print(f"Comparing policy-setting pairs for Schedule: {schedule_legend[schedule_type]}, Domains: {source_domains}")
+    
+    schedule_used = schedule_legend.get(schedule_type, schedule_type)
+    print(f"Comparing policy-setting pairs for Schedule: {schedule_used}, Domains: {source_domains}")
     
     # Initialize data storage
     results = defaultdict(list)
     all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
-
     for policy_id, setting_id in policy_setting_pairs:
         for source_domain in source_domains:
+            if 'sketch' in source_domain:
+                continue
             # Define file pattern for this policy, setting, and source domain
             pattern = re.compile(
                 rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
@@ -2111,7 +2114,7 @@ if __name__ == "__main__":
     # Main figure plot
     
     # print('PACS Results')
-    # compare_policy_setting_pairs([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='domain_change_burst_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
+    compare_policy_setting_pairs([(6, 70), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='constant_drift_domain_change_0', source_domains=['art_painting', 'photo', 'cartoon'])
     # compare_policy_setting_pairs([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='step_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
     # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='quiet_then_low_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
     # compare_policy_setting_pairs([(6, 77), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='RV_domain_change_burst_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
@@ -2124,6 +2127,8 @@ if __name__ == "__main__":
     #                              model_name='DigitsDGCNN', img_size=32, T=250)
     # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='RV_domain_change_burst_1', source_domains=['svhn', 'syn', 'mnist_m', 'mnist'], 
     #                             model_name='DigitsDGCNN', img_size=32, T=250)
+    compare_policy_setting_pairs([(6, 77), (1, 77), (2, 77)], schedule_type='domain_change_burst_1', source_domains=['RealWorld', 'Product', 'Art'], 
+                                  model_name='OfficeHomeNet', img_size=224, T=250)
     policy_setting_pairs_per_schedule = [
         [(6, 76), (2, 60), (1, 60), (3, 60), (4, 60)],
         [(6, 76), (2, 60), (1, 60), (3, 60), (4, 60)],
@@ -2154,13 +2159,13 @@ if __name__ == "__main__":
     #             desired_size=1024
     #         )
     
-    compare_schedules(
-        schedule_types_and_sources,
-        policy_setting_pairs_per_schedule,
-        composition_dir='../../data/compositions/',
-        n_rounds=250,
-        T=250
-    )
+    # compare_schedules(
+    #     schedule_types_and_sources,
+    #     policy_setting_pairs_per_schedule,
+    #     composition_dir='../../data/compositions/',
+    #     n_rounds=250,
+    #     T=250
+    # )
     
     # Create a list of 4 DriftScheduler instances
     # drift_schedulers = [
@@ -2175,19 +2180,60 @@ if __name__ == "__main__":
     #     )
     # # 76, 78 look good
     # source_domains = ['art_painting', 'cartoon', 'photo', 'sketch']
-    # policy_setting_pairs = [(1, 60), (2, 60), (3, 60), (4, 60), (6, 75)]
-    # schedule_array = ['quiet_then_low_0', 'quiet_then_low_1']
-    # for source_domain in source_domains:
-    #     for schedule_type in schedule_array:
-    #         for model_name in model_names:
-    #             compare_policies(
-    #                 policy_setting_pairs=policy_setting_pairs,
-    #                 schedule_type=schedule_type,
-    #                 source_domain=source_domain,
-    #                 model_name=model_name,
-    #                 img_size=img_size,
-    #                 T=250  # Match your n_rounds - 1 from the JSON
-    #             )
+    policy_setting_pairs = [(1, 77), (2, 77), (6, 77)]
+    compare_policies(
+        policy_setting_pairs=policy_setting_pairs,
+        schedule_type='domain_change_burst_1',
+        source_domain='RealWorld',
+        model_name='OfficeHomeNet',
+        img_size=224,
+        T=250  # Match your n_rounds - 1 from the JSON
+    )
+    compare_policies(
+        policy_setting_pairs=policy_setting_pairs,
+        schedule_type='domain_change_burst_1',
+        source_domain='RealWorld',
+        model_name='OfficeHomeNet',
+        img_size=224,
+        T=250  # Match your n_rounds - 1 from the JSON
+    )
+    compare_policies(
+        policy_setting_pairs=policy_setting_pairs,
+        schedule_type='domain_change_burst_1',
+        source_domain='Clipart',
+        model_name='OfficeHomeNet',
+        img_size=224,
+        T=250  # Match your n_rounds - 1 from the JSON
+    )
+    compare_policies(
+        policy_setting_pairs=policy_setting_pairs,
+        schedule_type='domain_change_burst_1',
+        source_domain='Art',
+        model_name='OfficeHomeNet',
+        img_size=224,
+        T=250  # Match your n_rounds - 1 from the JSON
+    )
+    compare_policies(
+        policy_setting_pairs=policy_setting_pairs,
+        schedule_type='domain_change_burst_1',
+        source_domain='Product',
+        model_name='OfficeHomeNet',
+        img_size=224,
+        T=250  # Match your n_rounds - 1 from the JSON
+    )
+    policy_setting_pairs = [(1, 60), (2, 60), (6, 70)]
+    schedule_array = ['sine_wave_domain_change_0', 'sine_wave_domain_change_1', 'sine_wave_domain_change_2']
+    for source_domain in source_domains:
+        for schedule_type in schedule_array:
+            for model_name in model_names:
+                compare_policies(
+                    policy_setting_pairs=policy_setting_pairs,
+                    schedule_type=schedule_type,
+                    source_domain=source_domain,
+                    model_name=model_name,
+                    img_size=img_size,
+                    T=250  # Match your n_rounds - 1 from the JSON
+                )
     #             compare_settings(
     #                 policy_id=6,
     #                 setting_ids=[60, 75,],

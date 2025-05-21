@@ -12,14 +12,14 @@ import time
 from torchvision.models import resnet18
 from torchvision import transforms
 from fl_toolkit import *
-start_time = time.time()
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 print(f"CUDA Version: {torch.version.cuda}")
 print(f"cuDNN Version: {torch.backends.cudnn.version()}")
 print(f"PyTorch Version: {torch.__version__}\n")
 
-# Define model used
+# Define Models
 class DigitsDGCNN(BaseModelArchitecture):
     def __init__(self, num_classes=10):
         super(DigitsDGCNN, self).__init__()
@@ -52,6 +52,8 @@ class DigitsDGCNN(BaseModelArchitecture):
         x = self.features(x)
         x = self.classifier(x)
         return x
+
+
 # Utility Functions
 def set_seed(seed):
     random.seed(seed)
@@ -285,6 +287,28 @@ class DriftScheduler:
             'initial_delay': 50,
             'strategy': 'replace'
         },
+        "decaying_spikes": lambda: {
+            'initial_burst_interval': 30,   # Initial time between starts of spikes
+            'interval_increment_per_spike': 10, # How much the interval increases after each spike
+            'max_burst_interval': 120,      # Maximum interval between spikes
+            'burst_duration': 3,            # Duration of each spike
+            'base_rate': 0.0,               # Drift rate between spikes
+            'burst_rate': 0.35,             # Drift rate during a spike
+            'target_domains': ['svhn', 'mnist', 'syn'], # Domains to cycle through for spikes
+            'initial_delay': 20,            # Delay before the first spike can occur
+            'strategy': 'replace'
+        },
+
+        "seasonal_flux": lambda: {
+            'cycle_period': 150,            # Duration of a full seasonal cycle (e.g., 150 rounds)
+            'max_amplitude_drift_rate': 0.016, # Max drift rate during peak transition between domains
+            'base_drift_rate': 0.001,       # A very slow underlying constant drift (can be 0)
+            'domain_A': 'mnist',            # First primary domain in the cycle
+            'domain_B': 'svhn',           # Second primary domain in the cycle
+            'initial_phase_offset_t': 0,    # Optional: shifts the start of the sine wave
+            'initial_delay': 10,            # Overall initial delay for the schedule
+            'strategy': 'replace'
+        },
     }
 
     def __init__(self, schedule_type, **kwargs):
@@ -307,6 +331,13 @@ class DriftScheduler:
             self.initial_delay = np.random.randint(self.initial_delay_limits[0], self.initial_delay_limits[1] + 1)
             self.burst_interval = np.random.randint(self.burst_interval_limits[0], self.burst_interval_limits[1] + 1)
             self.burst_duration = np.random.randint(self.burst_duration_limits[0], self.burst_duration_limits[1] + 1)
+        
+        if self.schedule_type == "decaying_spikes":
+            # State for decaying_spikes
+            self.next_spike_start_time_ds = self.initial_delay
+            self.current_spike_end_time_ds = -1 # Tracks if currently in a spike, and when it ends
+            self.current_interval_ds = self.initial_burst_interval
+
         
         # Generate burst periods for intermittent_shifts
         if self.schedule_type == "intermittent_shifts":
@@ -404,10 +435,74 @@ class DriftScheduler:
             drift_rate = self.amplitude * (1 - np.cos(2 * np.pi * t / self.period)) / 2
             domain_index = (t // self.period) % len(self.target_domains)
             target_domains = [self.target_domains[domain_index]]
+        elif self.schedule_type == "decaying_spikes":
+            drift_rate = self.base_rate
+            target_domains_list = [] # Default to no specific target / no drift beyond base_rate
+
+            # Check if a current spike has just ended
+            if self.current_spike_end_time_ds != -1 and t >= self.current_spike_end_time_ds:
+                # Spike ended. Schedule the next one.
+                self.current_interval_ds = min(self.max_burst_interval,
+                                            self.current_interval_ds + self.interval_increment_per_spike)
+                self.next_spike_start_time_ds = self.current_spike_end_time_ds + self.current_interval_ds
+                self.current_spike_end_time_ds = -1 # Reset: not in a spike anymore
+
+            # Check if it's time to start a new spike
+            if self.current_spike_end_time_ds == -1 and t >= self.next_spike_start_time_ds:
+                self.current_spike_end_time_ds = self.next_spike_start_time_ds + self.burst_duration
+                self.select_new_target_domain() # Selects/cycles the target domain for this new spike
+
+            # If currently within a spike's duration
+            if self.current_spike_end_time_ds != -1 and self.next_spike_start_time_ds <= t < self.current_spike_end_time_ds:
+                drift_rate = self.burst_rate
+                target_domains_list = [self.current_target_domain]
+            
+            return drift_rate, target_domains_list
+
+        elif self.schedule_type == "seasonal_flux":
+            if t >= self.initial_delay:
+                current_total_drift_rate = self.base_drift_rate
+                time_in_cycle = t - self.initial_delay + self.initial_phase_offset_t
+                
+                # seasonal_factor ranges from -1 to 1.
+                # Positive favors domain_B, Negative favors domain_A.
+                seasonal_factor = np.sin(2 * np.pi * time_in_cycle / self.cycle_period)
+                
+                # Intensity of the seasonal shift, |seasonal_factor| * max_amplitude_drift_rate
+                seasonal_shift_intensity = abs(seasonal_factor) * self.max_amplitude_drift_rate
+                current_total_drift_rate += seasonal_shift_intensity
+
+                if current_total_drift_rate > 0: # Only assign target if there's actual drift
+                    if seasonal_factor > 0.001: # Threshold to avoid issues at zero crossing
+                        target_domains_list = [self.domain_B] # Drifting towards B
+                    elif seasonal_factor < -0.001:
+                        target_domains_list = [self.domain_A] # Drifting towards A
+                    else:
+                        # Near zero-crossing, could drift towards a mix or a default,
+                        # or just rely on base_drift_rate if it has its own target.
+                        # For simplicity, if very close to zero, let base_drift_rate dominate
+                        # without a strong seasonal component, or pick one, e.g., A.
+                        # If base_drift_rate is 0 and seasonal is at zero-crossing, drift rate is 0.
+                        if self.base_drift_rate == 0: # if no base drift, and at zero-crossing, no target.
+                            current_total_drift_rate = 0 # effectively no drift
+                        else: # if there's base drift, it applies (target might need to be defined for base drift)
+                            target_domains_list = [self.domain_A] # Default or could be another logic for base drift target
+            else:
+                current_total_drift_rate = 0
+                target_domains_list = []
+            print(target_domains_list)
+            # Ensure drift rate is not negative if base_drift_rate somehow caused it (should not happen here)
+            current_total_drift_rate = max(0, current_total_drift_rate)
+            if current_total_drift_rate == 0:
+                target_domains_list = []
+            print(target_domains_list)
+            return current_total_drift_rate, target_domains_list
         else:
             raise ValueError(f"Unsupported schedule type: {self.schedule_type}")
+        
         return drift_rate, target_domains
 
+        
     def select_new_target_domain(self):
         """Selects the next target domain for burst schedules."""
         if 'target_domains' not in self.__dict__:
@@ -469,19 +564,20 @@ def evaluate_policy_under_drift(
     seed,
     drift_scheduler,
     n_rounds,
-    learning_rate=0.05,
+    learning_rate=0.01,
     policy_id=0,
     setting_id=0,
-    batch_size=256,
+    batch_size=128,
     pi_bar=0.1,
     V=1,
     L_i=1.0,
     K_p=1.0,
     K_d=1.0,
-    n_steps=5
+    n_steps=1
 ):
     # Set the seed and define transform
-    set_seed(seed)
+    common_seed = 0
+    set_seed(common_seed)
     transform = transforms.Compose([
         transforms.Resize((img_size, img_size)),
         transforms.ToTensor(),
@@ -503,13 +599,14 @@ def evaluate_policy_under_drift(
     train_size = int(0.8 * dataset_size)
     train_indices = indices[:train_size]
     holdout_indices = indices[train_size:]
-    
-    # Define data hanldlers
+
+    # Create subsets
     train_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     train_data_handler.set_subset(train_indices)
     holdout_data_handler = DigitsDGDataHandler(root_dir=root_dir, transform=transform)
     holdout_data_handler.set_subset(holdout_indices)
-
+    
+    set_seed(seed)
     # Define drift objects
     train_drift = DomainDrift(
         train_data_handler,
@@ -561,7 +658,6 @@ def evaluate_policy_under_drift(
     policy.set_initial_loss(loss_array[0])
     results = []
     time_arr = []
-    print(f"Setup time: {time.time() - start_time}")
     
     print(f"Initial loss: {loss_array[0]}")
     print(policy)
@@ -574,6 +670,7 @@ def evaluate_policy_under_drift(
         drift_rate, target_domains = drift_scheduler.get_drift_params(t)
         
         agent_train.set_drift_rate(drift_rate)
+        print(drift_rate, target_domains)
         if drift_rate > 0:
             agent_train.set_target_domains(target_domains)
         agent_train.apply_drift()
@@ -602,6 +699,7 @@ def evaluate_policy_under_drift(
             loss_best=loss_best
         )
         # Update the model if decision is made
+        print(f'Loss historical diff: {loss_curr - loss_best}; Loss Difference: {loss_curr - loss_prev}, Decision: {decision}')
         if decision:
             update_loss = agent_train.update_steps(
                 num_updates=n_steps, 
@@ -667,18 +765,18 @@ def evaluate_policy_under_drift(
     
     
 # Hyperparameters and Constants
-cluster_used = 'gilbreth'
+cluster_used = 'gautschi'
 settings = {
-        0: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
-        1: {'pi_bar': 0.05, 'V': 65, 'L_i': 1.0},
-        2: {'pi_bar': 0.1, 'V': 65, 'L_i': 1.0},
-        3: {'pi_bar': 0.15, 'V': 65, 'L_i': 1.0},
-        4: {'pi_bar': 0.2, 'V': 65, 'L_i': 1.0},
-        5: {'pi_bar': 0.25, 'V': 65, 'L_i': 1.0},
-        6: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
-        7: {'pi_bar': 0.5, 'V': 1, 'L_i': 1.0},
-        8: {'pi_bar': 0.7, 'V': 10, 'L_i': 1.0},
-        9: {'pi_bar': 0.9, 'V': 100, 'L_i': 1.0},
+        0: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        1: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.1, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        2: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.1, 'K_d': 1.0, 'lr': 0.01, 'n_steps':1},
+        3: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.1, 'K_d': 0.5, 'lr': 0.01, 'n_steps':1},
+        4: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 1.0, 'lr': 0.01, 'n_steps':1},
+        5: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':1},
+        6: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.1, 'K_d': 0.1, 'lr': 0.01, 'n_steps':1},
+        7: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        8: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        9: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
         10: {'pi_bar': 0.1, 'V': 1, 'L_i': 10.0},
         11: {'pi_bar': 0.1, 'V': 10, 'L_i': 10.0},
         12: {'pi_bar': 0.1, 'V': 100, 'L_i': 10.0},
@@ -709,16 +807,16 @@ settings = {
         37: {'pi_bar': 0.1, 'V': 10, 'L_i': 0},
         38: {'pi_bar': 0.1, 'V': 1, 'L_i': 0},
         39: {'pi_bar': 0.1, 'V': 0.5, 'L_i': 0},
-        40: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
-        41: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 2.0},
-        42: {'pi_bar': 0.1, 'V': 1, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
-        43: {'pi_bar': 0.1, 'V': 1, 'L_i': 0, 'K_p': 2.0, 'K_d': 2.0},
-        44: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0},
-        45: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 2.0, 'K_d': 2.0},
-        46: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 5.0, 'K_d': 5.0},
-        47: {'pi_bar': 0.1, 'V': 0.1, 'L_i': 0, 'K_p': 10.0, 'K_d': 10.0},
-        48: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.5},
-        49: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0},
+        40: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        41: {'pi_bar': 0.03, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        42: {'pi_bar': 0.05, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        43: {'pi_bar': 0.07, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        44: {'pi_bar': 0.15, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        45: {'pi_bar': 0.20, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        46: {'pi_bar': 0.30, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        47: {'pi_bar': 0.30, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        48: {'pi_bar': 0.30, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
+        49: {'pi_bar': 0.35, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
         50: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 2.0},
         51: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 2.0},
         52: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 1.0},
@@ -749,12 +847,13 @@ settings = {
         79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 0.1, 'lr': 0.05, 'n_steps':1},
     
     }
+
 DSET_SIZE = 1024
 
 # Main function 
 def main():
     # Get the command line arguments
-    parser = argparse.ArgumentParser(description="DomainDG CNN Evaluation with Dynamic Drift")
+    parser = argparse.ArgumentParser(description="DigitsDG CNN Evaluation with Dynamic Drift")
     parser.add_argument('--schedule_type', type=str, default='domain_change_burst_1',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')

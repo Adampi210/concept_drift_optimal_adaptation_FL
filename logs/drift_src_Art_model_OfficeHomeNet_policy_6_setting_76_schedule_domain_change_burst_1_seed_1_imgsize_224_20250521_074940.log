@@ -1,0 +1,796 @@
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torchvision/models/_utils.py:208: UserWarning: The parameter 'pretrained' is deprecated since 0.13 and may be removed in the future, please use 'weights' instead.
+  warnings.warn(
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torchvision/models/_utils.py:223: UserWarning: Arguments other than a weight enum or `None` for 'weights' are deprecated since 0.13 and may be removed in the future. The current behavior is equivalent to passing `weights=ResNet18_Weights.IMAGENET1K_V1`. You can also use `weights=ResNet18_Weights.DEFAULT` to get the most up-to-date weights.
+  warnings.warn(msg)
+Device: cuda
+CUDA Version: 12.1
+cuDNN Version: 8902
+PyTorch Version: 2.3.0
+
+Model used: OfficeHomeNet
+15588
+Initial dataset creation
+Initial dataset creation
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with a cudnnException: CUDNN_BACKEND_EXECUTION_PLAN_DESCRIPTOR: cudnnFinalize Descriptor Failed cudnn_status: CUDNN_STATUS_NOT_SUPPORTED (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:919.)
+  return F.conv2d(input, weight, bias, self.stride,
+Initial loss: 0.36556848883628845
+<__main__.Policy object at 0x14a8435bd6d0>
+0.36556848883628845
+Loss historical diff: 0.07232724130153656; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.3817
+Round 1 took 9.700591325759888s, results:
+{'t': 0, 'current_accuracy': 0.923828125, 'current_loss': 0.437895730137825, 'train_loss': 0.3816584885120392, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 0.0; Loss Difference: 0.0, Decision: 0
+Round 2 took 6.162956476211548s, results:
+{'t': 1, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903545498848, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 0.0; Loss Difference: 0.0, Decision: 0
+Round 3 took 5.83699369430542s, results:
+{'t': 2, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 1.4901161193847656e-08; Loss Difference: 0.0, Decision: 0
+Round 4 took 5.920527935028076s, results:
+{'t': 3, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903545498848, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 0.0; Loss Difference: 0.0, Decision: 0
+Round 5 took 5.842261075973511s, results:
+{'t': 4, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.2351741790771484e-08; Loss Difference: 0.0, Decision: 0
+Round 6 took 5.754816055297852s, results:
+{'t': 5, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903545498848, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 0.0; Loss Difference: 0.0, Decision: 0
+Round 7 took 5.754665851593018s, results:
+{'t': 6, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 7.450580596923828e-09; Loss Difference: 0.0, Decision: 0
+Round 8 took 5.7380430698394775s, results:
+{'t': 7, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 3.725290298461914e-08; Loss Difference: 0.0, Decision: 0
+Round 9 took 5.747713565826416s, results:
+{'t': 8, 'current_accuracy': 0.9453125, 'current_loss': 0.249290369451046, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 0.0; Loss Difference: 0.0, Decision: 0
+Round 10 took 5.87516188621521s, results:
+{'t': 9, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903172969818, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.2351741790771484e-08; Loss Difference: 0.0, Decision: 0
+Round 11 took 5.8807127475738525s, results:
+{'t': 10, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.2351741790771484e-08; Loss Difference: 0.0, Decision: 0
+Round 12 took 5.878467082977295s, results:
+{'t': 11, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.2351741790771484e-08; Loss Difference: 0.0, Decision: 0
+Round 13 took 5.844799757003784s, results:
+{'t': 12, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.2351741790771484e-08; Loss Difference: 0.0, Decision: 0
+Round 14 took 5.832761526107788s, results:
+{'t': 13, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 5.21540641784668e-08; Loss Difference: 0.0, Decision: 0
+Round 15 took 5.788029193878174s, results:
+{'t': 14, 'current_accuracy': 0.9453125, 'current_loss': 0.249290369451046, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 1.4901161193847656e-08; Loss Difference: 0.0, Decision: 0
+Round 16 took 5.707564353942871s, results:
+{'t': 15, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.9802322387695312e-08; Loss Difference: 0.0, Decision: 0
+Round 17 took 5.753678560256958s, results:
+{'t': 16, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903470993042, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 7.450580596923828e-09; Loss Difference: 0.0, Decision: 0
+Round 18 took 5.841197967529297s, results:
+{'t': 17, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903247475624, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 0.0; Loss Difference: 0.0, Decision: 0
+Round 19 took 5.758324384689331s, results:
+{'t': 18, 'current_accuracy': 0.9453125, 'current_loss': 0.24929030984640121, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 0.0; Loss Difference: 0.0, Decision: 0
+Round 20 took 5.756497144699097s, results:
+{'t': 19, 'current_accuracy': 0.9453125, 'current_loss': 0.24929030239582062, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 3.725290298461914e-08; Loss Difference: 0.0, Decision: 0
+Round 21 took 5.770905494689941s, results:
+{'t': 20, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.9802322387695312e-08; Loss Difference: 0.0, Decision: 0
+Round 22 took 5.758189678192139s, results:
+{'t': 21, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 4.470348358154297e-08; Loss Difference: 0.0, Decision: 0
+Round 23 took 5.7595624923706055s, results:
+{'t': 22, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903470993042, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.9802322387695312e-08; Loss Difference: 0.0, Decision: 0
+Round 24 took 5.8316850662231445s, results:
+{'t': 23, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 3.725290298461914e-08; Loss Difference: 0.0, Decision: 0
+Round 25 took 5.7503557205200195s, results:
+{'t': 24, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 5.21540641784668e-08; Loss Difference: 0.0, Decision: 0
+Round 26 took 5.86196231842041s, results:
+{'t': 25, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903545498848, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 7.450580596923828e-09; Loss Difference: 0.0, Decision: 0
+Round 27 took 5.800561904907227s, results:
+{'t': 26, 'current_accuracy': 0.9453125, 'current_loss': 0.24929030984640121, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 1.4901161193847656e-08; Loss Difference: 0.0, Decision: 0
+Round 28 took 5.853502511978149s, results:
+{'t': 27, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903172969818, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.9802322387695312e-08; Loss Difference: 0.0, Decision: 0
+Round 29 took 5.827964782714844s, results:
+{'t': 28, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.9802322387695312e-08; Loss Difference: 0.0, Decision: 0
+Round 30 took 5.969740629196167s, results:
+{'t': 29, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 3.725290298461914e-08; Loss Difference: 0.0, Decision: 0
+Round 31 took 5.792113780975342s, results:
+{'t': 30, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.9802322387695312e-08; Loss Difference: 0.0, Decision: 0
+Round 32 took 5.792280673980713s, results:
+{'t': 31, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 5.21540641784668e-08; Loss Difference: 0.0, Decision: 0
+Round 33 took 5.909884929656982s, results:
+{'t': 32, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903545498848, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 5.21540641784668e-08; Loss Difference: 0.0, Decision: 0
+Round 34 took 5.911208868026733s, results:
+{'t': 33, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903545498848, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 5.960464477539063e-08; Loss Difference: 0.0, Decision: 0
+Round 35 took 5.818066358566284s, results:
+{'t': 34, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903620004654, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 4.470348358154297e-08; Loss Difference: 0.0, Decision: 0
+Round 36 took 5.808285474777222s, results:
+{'t': 35, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903470993042, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 4.470348358154297e-08; Loss Difference: 0.0, Decision: 0
+Round 37 took 6.091900110244751s, results:
+{'t': 36, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903470993042, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 2.9802322387695312e-08; Loss Difference: 0.0, Decision: 0
+Round 38 took 5.858305215835571s, results:
+{'t': 37, 'current_accuracy': 0.9453125, 'current_loss': 0.249290332198143, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 3.725290298461914e-08; Loss Difference: 0.0, Decision: 0
+Round 39 took 5.782737970352173s, results:
+{'t': 38, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 4.470348358154297e-08; Loss Difference: 0.0, Decision: 0
+Round 40 took 6.059669733047485s, results:
+{'t': 39, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903470993042, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 4.470348358154297e-08; Loss Difference: 0.0, Decision: 0
+Round 41 took 5.837641477584839s, results:
+{'t': 40, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903470993042, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 6.705522537231445e-08; Loss Difference: 0.0, Decision: 0
+Round 42 took 6.64703106880188s, results:
+{'t': 41, 'current_accuracy': 0.9453125, 'current_loss': 0.249290369451046, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 3.725290298461914e-08; Loss Difference: 0.0, Decision: 0
+Round 43 took 5.9024763107299805s, results:
+{'t': 42, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 4.470348358154297e-08; Loss Difference: 0.0, Decision: 0
+Round 44 took 5.937650680541992s, results:
+{'t': 43, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903470993042, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 3.725290298461914e-08; Loss Difference: 0.0, Decision: 0
+Round 45 took 5.88400936126709s, results:
+{'t': 44, 'current_accuracy': 0.9453125, 'current_loss': 0.2492903396487236, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Art']}
+Loss historical diff: 1.3973688930273056; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 1.7611
+Round 46 took 8.537645101547241s, results:
+{'t': 45, 'current_accuracy': 0.736328125, 'current_loss': 1.6466591954231262, 'train_loss': 1.7610785961151123, 'decision': 1, 'drift_rate': 0.4, 'target_domains': ['Clipart']}
+Loss historical diff: 1.4362759441137314; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 2.2270
+Round 47 took 6.074980020523071s, results:
+{'t': 46, 'current_accuracy': 0.61328125, 'current_loss': 1.685566246509552, 'train_loss': 2.2270354986190797, 'decision': 1, 'drift_rate': 0.4, 'target_domains': ['Clipart']}
+Loss historical diff: 1.4479272812604904; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 1.9052
+Round 48 took 5.235198020935059s, results:
+{'t': 47, 'current_accuracy': 0.57421875, 'current_loss': 1.697217583656311, 'train_loss': 1.9051752090454102, 'decision': 1, 'drift_rate': 0.4, 'target_domains': ['Clipart']}
+Loss historical diff: 1.2017061561346054; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 1.2293
+Round 49 took 5.351814270019531s, results:
+{'t': 48, 'current_accuracy': 0.64453125, 'current_loss': 1.450996458530426, 'train_loss': 1.229323720932007, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.9184574335813522; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.9208
+Round 50 took 5.16851544380188s, results:
+{'t': 49, 'current_accuracy': 0.712890625, 'current_loss': 1.1677477359771729, 'train_loss': 0.920827305316925, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.777169719338417; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.7421
+Round 51 took 5.125463008880615s, results:
+{'t': 50, 'current_accuracy': 0.75390625, 'current_loss': 1.0264600217342377, 'train_loss': 0.7420934677124024, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6548187881708145; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.6155
+Round 52 took 5.463610887527466s, results:
+{'t': 51, 'current_accuracy': 0.767578125, 'current_loss': 0.9041090905666351, 'train_loss': 0.6154927730560302, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094474345445633; Loss Difference: 0.0, Decision: 0
+Round 53 took 3.464404344558716s, results:
+{'t': 52, 'current_accuracy': 0.787109375, 'current_loss': 0.8587377369403839, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094474345445633; Loss Difference: 0.0, Decision: 0
+Round 54 took 3.289626121520996s, results:
+{'t': 53, 'current_accuracy': 0.787109375, 'current_loss': 0.8587377369403839, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094474941492081; Loss Difference: 0.0, Decision: 0
+Round 55 took 3.360247850418091s, results:
+{'t': 54, 'current_accuracy': 0.787109375, 'current_loss': 0.8587377965450287, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094474643468857; Loss Difference: 0.0, Decision: 0
+Round 56 took 3.115440845489502s, results:
+{'t': 55, 'current_accuracy': 0.787109375, 'current_loss': 0.8587377667427063, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094474643468857; Loss Difference: 0.0, Decision: 0
+Round 57 took 3.180844306945801s, results:
+{'t': 56, 'current_accuracy': 0.787109375, 'current_loss': 0.8587377667427063, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094474643468857; Loss Difference: 0.0, Decision: 0
+Round 58 took 3.136324882507324s, results:
+{'t': 57, 'current_accuracy': 0.787109375, 'current_loss': 0.8587377667427063, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094475239515305; Loss Difference: 0.0, Decision: 0
+Round 59 took 3.149937629699707s, results:
+{'t': 58, 'current_accuracy': 0.787109375, 'current_loss': 0.8587378263473511, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.6094474643468857; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.4754
+Round 60 took 5.0776207447052s, results:
+{'t': 59, 'current_accuracy': 0.787109375, 'current_loss': 0.8587377667427063, 'train_loss': 0.47540003657341, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390105098485947; Loss Difference: 0.0, Decision: 0
+Round 61 took 3.3147757053375244s, results:
+{'t': 60, 'current_accuracy': 0.8203125, 'current_loss': 0.7883008122444153, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104800462723; Loss Difference: 0.0, Decision: 0
+Round 62 took 3.2573506832122803s, results:
+{'t': 61, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007824420929, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104800462723; Loss Difference: 0.0, Decision: 0
+Round 63 took 3.2008583545684814s, results:
+{'t': 62, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007824420929, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104800462723; Loss Difference: 0.0, Decision: 0
+Round 64 took 3.1153416633605957s, results:
+{'t': 63, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007824420929, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104204416275; Loss Difference: 0.0, Decision: 0
+Round 65 took 3.147538423538208s, results:
+{'t': 64, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007228374481, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104502439499; Loss Difference: 0.0, Decision: 0
+Round 66 took 3.2023539543151855s, results:
+{'t': 65, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007526397705, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390103906393051; Loss Difference: 0.0, Decision: 0
+Round 67 took 3.2374632358551025s, results:
+{'t': 66, 'current_accuracy': 0.8203125, 'current_loss': 0.7883006930351257, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104502439499; Loss Difference: 0.0, Decision: 0
+Round 68 took 3.1776976585388184s, results:
+{'t': 67, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007526397705, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390105098485947; Loss Difference: 0.0, Decision: 0
+Round 69 took 3.109408378601074s, results:
+{'t': 68, 'current_accuracy': 0.8203125, 'current_loss': 0.7883008122444153, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390105098485947; Loss Difference: 0.0, Decision: 0
+Round 70 took 3.226806163787842s, results:
+{'t': 69, 'current_accuracy': 0.8203125, 'current_loss': 0.7883008122444153, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.539010539650917; Loss Difference: 0.0, Decision: 0
+Round 71 took 3.2021896839141846s, results:
+{'t': 70, 'current_accuracy': 0.8203125, 'current_loss': 0.7883008420467377, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104800462723; Loss Difference: 0.0, Decision: 0
+Round 72 took 3.1467978954315186s, results:
+{'t': 71, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007824420929, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104502439499; Loss Difference: 0.0, Decision: 0
+Round 73 took 3.2038891315460205s, results:
+{'t': 72, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007526397705, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.539010539650917; Loss Difference: 0.0, Decision: 0
+Round 74 took 3.1678969860076904s, results:
+{'t': 73, 'current_accuracy': 0.8203125, 'current_loss': 0.7883008420467377, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104502439499; Loss Difference: 0.0, Decision: 0
+Round 75 took 3.3263418674468994s, results:
+{'t': 74, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007526397705, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104800462723; Loss Difference: 0.0, Decision: 0
+Round 76 took 3.207697868347168s, results:
+{'t': 75, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007824420929, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5390104204416275; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.3958
+Round 77 took 5.045247554779053s, results:
+{'t': 76, 'current_accuracy': 0.8203125, 'current_loss': 0.7883007228374481, 'train_loss': 0.39575178623199464, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.522306278347969; Loss Difference: 0.0, Decision: 0
+Round 78 took 3.232149124145508s, results:
+{'t': 77, 'current_accuracy': 0.818359375, 'current_loss': 0.7715965807437897, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063975572586; Loss Difference: 0.0, Decision: 0
+Round 79 took 3.166332721710205s, results:
+{'t': 78, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966999530792, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063081502914; Loss Difference: 0.0, Decision: 0
+Round 80 took 3.132838249206543s, results:
+{'t': 79, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966105461121, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063379526138; Loss Difference: 0.0, Decision: 0
+Round 81 took 3.128308057785034s, results:
+{'t': 80, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966403484344, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063081502914; Loss Difference: 0.0, Decision: 0
+Round 82 took 3.314584255218506s, results:
+{'t': 81, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966105461121, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.522306278347969; Loss Difference: 0.0, Decision: 0
+Round 83 took 3.2956674098968506s, results:
+{'t': 82, 'current_accuracy': 0.818359375, 'current_loss': 0.7715965807437897, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063677549362; Loss Difference: 0.0, Decision: 0
+Round 84 took 3.2393112182617188s, results:
+{'t': 83, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966701507568, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063677549362; Loss Difference: 0.0, Decision: 0
+Round 85 took 3.2250826358795166s, results:
+{'t': 84, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966701507568, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063379526138; Loss Difference: 0.0, Decision: 0
+Round 86 took 3.2096047401428223s, results:
+{'t': 85, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966403484344, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063379526138; Loss Difference: 0.0, Decision: 0
+Round 87 took 3.222259044647217s, results:
+{'t': 86, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966403484344, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.5223063677549362; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.3445
+Round 88 took 5.141193151473999s, results:
+{'t': 87, 'current_accuracy': 0.818359375, 'current_loss': 0.7715966701507568, 'train_loss': 0.3445058286190033, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796901643276215; Loss Difference: 0.0, Decision: 0
+Round 89 took 3.1667141914367676s, results:
+{'t': 88, 'current_accuracy': 0.830078125, 'current_loss': 0.7472593188285828, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796904623508453; Loss Difference: 0.0, Decision: 0
+Round 90 took 3.233227014541626s, results:
+{'t': 89, 'current_accuracy': 0.830078125, 'current_loss': 0.7472593486309052, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.497968927025795; Loss Difference: 0.0, Decision: 0
+Round 91 took 3.2212839126586914s, results:
+{'t': 90, 'current_accuracy': 0.830078125, 'current_loss': 0.7472592294216156, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796901643276215; Loss Difference: 0.0, Decision: 0
+Round 92 took 3.427750825881958s, results:
+{'t': 91, 'current_accuracy': 0.830078125, 'current_loss': 0.7472593188285828, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796898663043976; Loss Difference: 0.0, Decision: 0
+Round 93 took 3.059471607208252s, results:
+{'t': 92, 'current_accuracy': 0.830078125, 'current_loss': 0.7472592890262604, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796898663043976; Loss Difference: 0.0, Decision: 0
+Round 94 took 3.2424259185791016s, results:
+{'t': 93, 'current_accuracy': 0.830078125, 'current_loss': 0.7472592890262604, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4979691058397293; Loss Difference: 0.0, Decision: 0
+Round 95 took 3.1209073066711426s, results:
+{'t': 94, 'current_accuracy': 0.830078125, 'current_loss': 0.7472594082355499, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796904623508453; Loss Difference: 0.0, Decision: 0
+Round 96 took 3.245054006576538s, results:
+{'t': 95, 'current_accuracy': 0.830078125, 'current_loss': 0.7472593486309052, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796901643276215; Loss Difference: 0.0, Decision: 0
+Round 97 took 3.2581496238708496s, results:
+{'t': 96, 'current_accuracy': 0.830078125, 'current_loss': 0.7472593188285828, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796895682811737; Loss Difference: 0.0, Decision: 0
+Round 98 took 3.2746567726135254s, results:
+{'t': 97, 'current_accuracy': 0.830078125, 'current_loss': 0.747259259223938, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796904623508453; Loss Difference: 0.0, Decision: 0
+Round 99 took 3.1715633869171143s, results:
+{'t': 98, 'current_accuracy': 0.830078125, 'current_loss': 0.7472593486309052, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.49796898663043976; Loss Difference: 0.0, Decision: 0
+Round 100 took 3.119192600250244s, results:
+{'t': 99, 'current_accuracy': 0.830078125, 'current_loss': 0.7472592890262604, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4979690760374069; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.3226
+Round 101 took 5.209842681884766s, results:
+{'t': 100, 'current_accuracy': 0.830078125, 'current_loss': 0.7472593784332275, 'train_loss': 0.3226135492324829, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.492092564702034; Loss Difference: 0.0, Decision: 0
+Round 102 took 3.1303963661193848s, results:
+{'t': 101, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828670978546, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.492092564702034; Loss Difference: 0.0, Decision: 0
+Round 103 took 3.187236785888672s, results:
+{'t': 102, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828670978546, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.492092564702034; Loss Difference: 0.0, Decision: 0
+Round 104 took 3.1160943508148193s, results:
+{'t': 103, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828670978546, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.492092564702034; Loss Difference: 0.0, Decision: 0
+Round 105 took 3.152081251144409s, results:
+{'t': 104, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828670978546, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.492092564702034; Loss Difference: 0.0, Decision: 0
+Round 106 took 3.5360333919525146s, results:
+{'t': 105, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828670978546, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4920925945043564; Loss Difference: 0.0, Decision: 0
+Round 107 took 3.097238063812256s, results:
+{'t': 106, 'current_accuracy': 0.82421875, 'current_loss': 0.741382896900177, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4920925050973892; Loss Difference: 0.0, Decision: 0
+Round 108 took 3.192760705947876s, results:
+{'t': 107, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828074932098, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4920925348997116; Loss Difference: 0.0, Decision: 0
+Round 109 took 3.1011431217193604s, results:
+{'t': 108, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828372955322, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4920925050973892; Loss Difference: 0.0, Decision: 0
+Round 110 took 3.140498161315918s, results:
+{'t': 109, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828074932098, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.492092564702034; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.2379
+Round 111 took 4.898591995239258s, results:
+{'t': 110, 'current_accuracy': 0.82421875, 'current_loss': 0.7413828670978546, 'train_loss': 0.23787626028060913, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.47251828014850616; Loss Difference: 0.0, Decision: 0
+Round 112 took 3.1805009841918945s, results:
+{'t': 111, 'current_accuracy': 0.833984375, 'current_loss': 0.7218085825443268, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.47251830995082855; Loss Difference: 0.0, Decision: 0
+Round 113 took 3.2188827991485596s, results:
+{'t': 112, 'current_accuracy': 0.833984375, 'current_loss': 0.7218086123466492, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4725183695554733; Loss Difference: 0.0, Decision: 0
+Round 114 took 3.22538685798645s, results:
+{'t': 113, 'current_accuracy': 0.833984375, 'current_loss': 0.721808671951294, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.47251833975315094; Loss Difference: 0.0, Decision: 0
+Round 115 took 3.1894071102142334s, results:
+{'t': 114, 'current_accuracy': 0.833984375, 'current_loss': 0.7218086421489716, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.47251833975315094; Loss Difference: 0.0, Decision: 0
+Round 116 took 3.1678059101104736s, results:
+{'t': 115, 'current_accuracy': 0.833984375, 'current_loss': 0.7218086421489716, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4725183695554733; Loss Difference: 0.0, Decision: 0
+Round 117 took 3.224817991256714s, results:
+{'t': 116, 'current_accuracy': 0.833984375, 'current_loss': 0.721808671951294, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4725182503461838; Loss Difference: 0.0, Decision: 0
+Round 118 took 3.1703076362609863s, results:
+{'t': 117, 'current_accuracy': 0.833984375, 'current_loss': 0.7218085527420044, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4725183993577957; Loss Difference: 0.0, Decision: 0
+Round 119 took 3.149888038635254s, results:
+{'t': 118, 'current_accuracy': 0.833984375, 'current_loss': 0.7218087017536163, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.47251833975315094; Loss Difference: 0.0, Decision: 0
+Round 120 took 3.095924139022827s, results:
+{'t': 119, 'current_accuracy': 0.833984375, 'current_loss': 0.7218086421489716, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.47251833975315094; Loss Difference: 0.0, Decision: 0
+Round 121 took 3.109668731689453s, results:
+{'t': 120, 'current_accuracy': 0.833984375, 'current_loss': 0.7218086421489716, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.47251833975315094; Loss Difference: 0.0, Decision: 0
+Round 122 took 3.124690294265747s, results:
+{'t': 121, 'current_accuracy': 0.833984375, 'current_loss': 0.7218086421489716, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4725182503461838; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.2206
+Round 123 took 5.051786422729492s, results:
+{'t': 122, 'current_accuracy': 0.833984375, 'current_loss': 0.7218085527420044, 'train_loss': 0.22057015895843507, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4391659051179886; Loss Difference: 0.0, Decision: 0
+Round 124 took 3.0930094718933105s, results:
+{'t': 123, 'current_accuracy': 0.84765625, 'current_loss': 0.6884562075138092, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916596472263336; Loss Difference: 0.0, Decision: 0
+Round 125 took 3.1480019092559814s, results:
+{'t': 124, 'current_accuracy': 0.84765625, 'current_loss': 0.688456267118454, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916596472263336; Loss Difference: 0.0, Decision: 0
+Round 126 took 3.1414411067962646s, results:
+{'t': 125, 'current_accuracy': 0.84765625, 'current_loss': 0.688456267118454, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4391658753156662; Loss Difference: 0.0, Decision: 0
+Round 127 took 3.1150307655334473s, results:
+{'t': 126, 'current_accuracy': 0.84765625, 'current_loss': 0.6884561777114868, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4391658753156662; Loss Difference: 0.0, Decision: 0
+Round 128 took 3.200772285461426s, results:
+{'t': 127, 'current_accuracy': 0.84765625, 'current_loss': 0.6884561777114868, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4391659051179886; Loss Difference: 0.0, Decision: 0
+Round 129 took 3.3557679653167725s, results:
+{'t': 128, 'current_accuracy': 0.84765625, 'current_loss': 0.6884562075138092, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.439165934920311; Loss Difference: 0.0, Decision: 0
+Round 130 took 3.148747205734253s, results:
+{'t': 129, 'current_accuracy': 0.84765625, 'current_loss': 0.6884562373161316, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916596472263336; Loss Difference: 0.0, Decision: 0
+Round 131 took 3.2175066471099854s, results:
+{'t': 130, 'current_accuracy': 0.84765625, 'current_loss': 0.688456267118454, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4391659051179886; Loss Difference: 0.0, Decision: 0
+Round 132 took 3.2137300968170166s, results:
+{'t': 131, 'current_accuracy': 0.84765625, 'current_loss': 0.6884562075138092, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916599452495575; Loss Difference: 0.0, Decision: 0
+Round 133 took 3.181022882461548s, results:
+{'t': 132, 'current_accuracy': 0.84765625, 'current_loss': 0.6884562969207764, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916596472263336; Loss Difference: 0.0, Decision: 0
+Round 134 took 3.219111442565918s, results:
+{'t': 133, 'current_accuracy': 0.84765625, 'current_loss': 0.688456267118454, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916599452495575; Loss Difference: 0.0, Decision: 0
+Round 135 took 3.242811918258667s, results:
+{'t': 134, 'current_accuracy': 0.84765625, 'current_loss': 0.6884562969207764, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916596472263336; Loss Difference: 0.0, Decision: 0
+Round 136 took 3.2454817295074463s, results:
+{'t': 135, 'current_accuracy': 0.84765625, 'current_loss': 0.688456267118454, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.43916602432727814; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.1859
+Round 137 took 5.006490230560303s, results:
+{'t': 136, 'current_accuracy': 0.84765625, 'current_loss': 0.6884563267230988, 'train_loss': 0.185863921046257, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494422525167465; Loss Difference: 0.0, Decision: 0
+Round 138 took 3.187229871749878s, results:
+{'t': 137, 'current_accuracy': 0.841796875, 'current_loss': 0.6987325549125671, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.44944222271442413; Loss Difference: 0.0, Decision: 0
+Round 139 took 3.1846611499786377s, results:
+{'t': 138, 'current_accuracy': 0.841796875, 'current_loss': 0.6987325251102448, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494423121213913; Loss Difference: 0.0, Decision: 0
+Round 140 took 3.2455661296844482s, results:
+{'t': 139, 'current_accuracy': 0.841796875, 'current_loss': 0.6987326145172119, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494423121213913; Loss Difference: 0.0, Decision: 0
+Round 141 took 3.266324281692505s, results:
+{'t': 140, 'current_accuracy': 0.841796875, 'current_loss': 0.6987326145172119, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494423121213913; Loss Difference: 0.0, Decision: 0
+Round 142 took 3.1114206314086914s, results:
+{'t': 141, 'current_accuracy': 0.841796875, 'current_loss': 0.6987326145172119, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494422823190689; Loss Difference: 0.0, Decision: 0
+Round 143 took 3.140044689178467s, results:
+{'t': 142, 'current_accuracy': 0.841796875, 'current_loss': 0.6987325847148895, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494423121213913; Loss Difference: 0.0, Decision: 0
+Round 144 took 3.1317338943481445s, results:
+{'t': 143, 'current_accuracy': 0.841796875, 'current_loss': 0.6987326145172119, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494422823190689; Loss Difference: 0.0, Decision: 0
+Round 145 took 3.1311721801757812s, results:
+{'t': 144, 'current_accuracy': 0.841796875, 'current_loss': 0.6987325847148895, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4494423121213913; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.1663
+Round 146 took 5.055938959121704s, results:
+{'t': 145, 'current_accuracy': 0.841796875, 'current_loss': 0.6987326145172119, 'train_loss': 0.16628013253211976, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083151638507843; Loss Difference: 0.0, Decision: 0
+Round 147 took 3.130622386932373s, results:
+{'t': 146, 'current_accuracy': 0.837890625, 'current_loss': 0.670121818780899, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4208315759897232; Loss Difference: 0.0, Decision: 0
+Round 148 took 3.2029411792755127s, results:
+{'t': 147, 'current_accuracy': 0.837890625, 'current_loss': 0.6701218783855438, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083151638507843; Loss Difference: 0.0, Decision: 0
+Round 149 took 3.2142679691314697s, results:
+{'t': 148, 'current_accuracy': 0.837890625, 'current_loss': 0.670121818780899, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4208315461874008; Loss Difference: 0.0, Decision: 0
+Round 150 took 3.077289581298828s, results:
+{'t': 149, 'current_accuracy': 0.837890625, 'current_loss': 0.6701218485832214, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083142697811127; Loss Difference: 0.0, Decision: 0
+Round 151 took 3.1647536754608154s, results:
+{'t': 150, 'current_accuracy': 0.837890625, 'current_loss': 0.6701217293739319, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083148658275604; Loss Difference: 0.0, Decision: 0
+Round 152 took 3.1574862003326416s, results:
+{'t': 151, 'current_accuracy': 0.837890625, 'current_loss': 0.6701217889785767, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083151638507843; Loss Difference: 0.0, Decision: 0
+Round 153 took 3.118095636367798s, results:
+{'t': 152, 'current_accuracy': 0.837890625, 'current_loss': 0.670121818780899, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083145678043365; Loss Difference: 0.0, Decision: 0
+Round 154 took 3.278409481048584s, results:
+{'t': 153, 'current_accuracy': 0.837890625, 'current_loss': 0.6701217591762543, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083148658275604; Loss Difference: 0.0, Decision: 0
+Round 155 took 3.1821367740631104s, results:
+{'t': 154, 'current_accuracy': 0.837890625, 'current_loss': 0.6701217889785767, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083151638507843; Loss Difference: 0.0, Decision: 0
+Round 156 took 3.234839677810669s, results:
+{'t': 155, 'current_accuracy': 0.837890625, 'current_loss': 0.670121818780899, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42083145678043365; Loss Difference: 0.0, Decision: 0
+Round 157 took 3.1495137214660645s, results:
+{'t': 156, 'current_accuracy': 0.837890625, 'current_loss': 0.6701217591762543, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4208315461874008; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.1531
+Round 158 took 5.036868333816528s, results:
+{'t': 157, 'current_accuracy': 0.837890625, 'current_loss': 0.6701218485832214, 'train_loss': 0.1530577391386032, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4248053580522537; Loss Difference: 0.0, Decision: 0
+Round 159 took 3.2231314182281494s, results:
+{'t': 158, 'current_accuracy': 0.845703125, 'current_loss': 0.6740956604480743, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42480529844760895; Loss Difference: 0.0, Decision: 0
+Round 160 took 3.2845332622528076s, results:
+{'t': 159, 'current_accuracy': 0.845703125, 'current_loss': 0.6740956008434296, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4248054772615433; Loss Difference: 0.0, Decision: 0
+Round 161 took 3.1669363975524902s, results:
+{'t': 160, 'current_accuracy': 0.845703125, 'current_loss': 0.6740957796573639, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4248054474592209; Loss Difference: 0.0, Decision: 0
+Round 162 took 3.127431869506836s, results:
+{'t': 161, 'current_accuracy': 0.845703125, 'current_loss': 0.6740957498550415, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.4248054474592209; Loss Difference: 0.0, Decision: 0
+Round 163 took 3.1134753227233887s, results:
+{'t': 162, 'current_accuracy': 0.845703125, 'current_loss': 0.6740957498550415, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42480529844760895; Loss Difference: 0.0, Decision: 0
+Round 164 took 3.253464460372925s, results:
+{'t': 163, 'current_accuracy': 0.845703125, 'current_loss': 0.6740956008434296, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 0.42480532824993134; Loss Difference: 0.0, Decision: 0
+Round 165 took 3.174675941467285s, results:
+{'t': 164, 'current_accuracy': 0.845703125, 'current_loss': 0.674095630645752, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['Clipart']}
+Loss historical diff: 1.1035519689321518; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.8227
+Round 166 took 11.885727882385254s, results:
+{'t': 165, 'current_accuracy': 0.70703125, 'current_loss': 1.3528422713279724, 'train_loss': 0.8227225542068481, 'decision': 1, 'drift_rate': 0.4, 'target_domains': ['RealWorld']}
+Loss historical diff: 1.1881375163793564; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 1.0578
+Round 167 took 19.8724422454834s, results:
+{'t': 166, 'current_accuracy': 0.66796875, 'current_loss': 1.437427818775177, 'train_loss': 1.0578131318092345, 'decision': 1, 'drift_rate': 0.4, 'target_domains': ['RealWorld']}
+Loss historical diff: 1.055457517504692; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.8749
+Round 168 took 23.06720280647278s, results:
+{'t': 167, 'current_accuracy': 0.701171875, 'current_loss': 1.3047478199005127, 'train_loss': 0.8749301195144653, 'decision': 1, 'drift_rate': 0.4, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.7475011795759201; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.6050
+Round 169 took 23.080125093460083s, results:
+{'t': 168, 'current_accuracy': 0.77734375, 'current_loss': 0.9967914819717407, 'train_loss': 0.6049919247627258, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062620133161545; Loss Difference: 0.0, Decision: 0
+Round 170 took 15.366355657577515s, results:
+{'t': 169, 'current_accuracy': 0.796875, 'current_loss': 0.8555523157119751, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619835138321; Loss Difference: 0.0, Decision: 0
+Round 171 took 13.913742780685425s, results:
+{'t': 170, 'current_accuracy': 0.796875, 'current_loss': 0.8555522859096527, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619835138321; Loss Difference: 0.0, Decision: 0
+Round 172 took 14.669883012771606s, results:
+{'t': 171, 'current_accuracy': 0.796875, 'current_loss': 0.8555522859096527, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619835138321; Loss Difference: 0.0, Decision: 0
+Round 173 took 14.41653299331665s, results:
+{'t': 172, 'current_accuracy': 0.796875, 'current_loss': 0.8555522859096527, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619239091873; Loss Difference: 0.0, Decision: 0
+Round 174 took 14.50040078163147s, results:
+{'t': 173, 'current_accuracy': 0.796875, 'current_loss': 0.8555522263050079, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619835138321; Loss Difference: 0.0, Decision: 0
+Round 175 took 14.297054529190063s, results:
+{'t': 174, 'current_accuracy': 0.796875, 'current_loss': 0.8555522859096527, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062618941068649; Loss Difference: 0.0, Decision: 0
+Round 176 took 14.052865743637085s, results:
+{'t': 175, 'current_accuracy': 0.796875, 'current_loss': 0.8555521965026855, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062620133161545; Loss Difference: 0.0, Decision: 0
+Round 177 took 13.863123416900635s, results:
+{'t': 176, 'current_accuracy': 0.796875, 'current_loss': 0.8555523157119751, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062618941068649; Loss Difference: 0.0, Decision: 0
+Round 178 took 14.196468591690063s, results:
+{'t': 177, 'current_accuracy': 0.796875, 'current_loss': 0.8555521965026855, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062618941068649; Loss Difference: 0.0, Decision: 0
+Round 179 took 14.322150707244873s, results:
+{'t': 178, 'current_accuracy': 0.796875, 'current_loss': 0.8555521965026855, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619239091873; Loss Difference: 0.0, Decision: 0
+Round 180 took 14.960537910461426s, results:
+{'t': 179, 'current_accuracy': 0.796875, 'current_loss': 0.8555522263050079, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619835138321; Loss Difference: 0.0, Decision: 0
+Round 181 took 14.342659950256348s, results:
+{'t': 180, 'current_accuracy': 0.796875, 'current_loss': 0.8555522859096527, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619537115097; Loss Difference: 0.0, Decision: 0
+Round 182 took 14.297374486923218s, results:
+{'t': 181, 'current_accuracy': 0.796875, 'current_loss': 0.8555522561073303, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062618941068649; Loss Difference: 0.0, Decision: 0
+Round 183 took 14.238849639892578s, results:
+{'t': 182, 'current_accuracy': 0.796875, 'current_loss': 0.8555521965026855, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062618046998978; Loss Difference: 0.0, Decision: 0
+Round 184 took 14.562506437301636s, results:
+{'t': 183, 'current_accuracy': 0.796875, 'current_loss': 0.8555521070957184, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062620133161545; Loss Difference: 0.0, Decision: 0
+Round 185 took 14.53432321548462s, results:
+{'t': 184, 'current_accuracy': 0.796875, 'current_loss': 0.8555523157119751, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062618046998978; Loss Difference: 0.0, Decision: 0
+Round 186 took 15.32189393043518s, results:
+{'t': 185, 'current_accuracy': 0.796875, 'current_loss': 0.8555521070957184, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619835138321; Loss Difference: 0.0, Decision: 0
+Round 187 took 14.6969153881073s, results:
+{'t': 186, 'current_accuracy': 0.796875, 'current_loss': 0.8555522859096527, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062618941068649; Loss Difference: 0.0, Decision: 0
+Round 188 took 14.709824562072754s, results:
+{'t': 187, 'current_accuracy': 0.796875, 'current_loss': 0.8555521965026855, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619537115097; Loss Difference: 0.0, Decision: 0
+Round 189 took 15.120946407318115s, results:
+{'t': 188, 'current_accuracy': 0.796875, 'current_loss': 0.8555522561073303, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.6062619537115097; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.4712
+Round 190 took 22.328391075134277s, results:
+{'t': 189, 'current_accuracy': 0.796875, 'current_loss': 0.8555522561073303, 'train_loss': 0.47122895121574404, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313346832990646; Loss Difference: 0.0, Decision: 0
+Round 191 took 14.41559910774231s, results:
+{'t': 190, 'current_accuracy': 0.8203125, 'current_loss': 0.7806249856948853, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313346534967422; Loss Difference: 0.0, Decision: 0
+Round 192 took 14.069293737411499s, results:
+{'t': 191, 'current_accuracy': 0.8203125, 'current_loss': 0.7806249558925629, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313344448804855; Loss Difference: 0.0, Decision: 0
+Round 193 took 14.169680118560791s, results:
+{'t': 192, 'current_accuracy': 0.8203125, 'current_loss': 0.7806247472763062, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345640897751; Loss Difference: 0.0, Decision: 0
+Round 194 took 13.713508129119873s, results:
+{'t': 193, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248664855957, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345640897751; Loss Difference: 0.0, Decision: 0
+Round 195 took 14.216612100601196s, results:
+{'t': 194, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248664855957, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313346236944199; Loss Difference: 0.0, Decision: 0
+Round 196 took 14.330933570861816s, results:
+{'t': 195, 'current_accuracy': 0.8203125, 'current_loss': 0.7806249260902405, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345938920975; Loss Difference: 0.0, Decision: 0
+Round 197 took 13.869405269622803s, results:
+{'t': 196, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248962879181, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345342874527; Loss Difference: 0.0, Decision: 0
+Round 198 took 14.37151837348938s, results:
+{'t': 197, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248366832733, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313346534967422; Loss Difference: 0.0, Decision: 0
+Round 199 took 14.723531484603882s, results:
+{'t': 198, 'current_accuracy': 0.8203125, 'current_loss': 0.7806249558925629, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345640897751; Loss Difference: 0.0, Decision: 0
+Round 200 took 14.406099557876587s, results:
+{'t': 199, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248664855957, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345938920975; Loss Difference: 0.0, Decision: 0
+Round 201 took 14.230568647384644s, results:
+{'t': 200, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248962879181, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345640897751; Loss Difference: 0.0, Decision: 0
+Round 202 took 14.616012811660767s, results:
+{'t': 201, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248664855957, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345044851303; Loss Difference: 0.0, Decision: 0
+Round 203 took 14.48530888557434s, results:
+{'t': 202, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248068809509, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345342874527; Loss Difference: 0.0, Decision: 0
+Round 204 took 14.296395540237427s, results:
+{'t': 203, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248366832733, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345342874527; Loss Difference: 0.0, Decision: 0
+Round 205 took 13.923228979110718s, results:
+{'t': 204, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248366832733, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313345938920975; Loss Difference: 0.0, Decision: 0
+Round 206 took 14.59863805770874s, results:
+{'t': 205, 'current_accuracy': 0.8203125, 'current_loss': 0.7806248962879181, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.5313346236944199; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.3732
+Round 207 took 22.184741973876953s, results:
+{'t': 206, 'current_accuracy': 0.8203125, 'current_loss': 0.7806249260902405, 'train_loss': 0.3731646955013275, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365687787532806; Loss Difference: 0.0, Decision: 0
+Round 208 took 13.896815061569214s, results:
+{'t': 207, 'current_accuracy': 0.841796875, 'current_loss': 0.7229471802711487, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365702688694; Loss Difference: 0.0, Decision: 0
+Round 209 took 15.17264986038208s, results:
+{'t': 208, 'current_accuracy': 0.841796875, 'current_loss': 0.7229473292827606, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365690767765045; Loss Difference: 0.0, Decision: 0
+Round 210 took 14.923048257827759s, results:
+{'t': 209, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472100734711, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4736569672822952; Loss Difference: 0.0, Decision: 0
+Round 211 took 14.352924108505249s, results:
+{'t': 210, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472696781158, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365690767765045; Loss Difference: 0.0, Decision: 0
+Round 212 took 14.588635683059692s, results:
+{'t': 211, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472100734711, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4736568480730057; Loss Difference: 0.0, Decision: 0
+Round 213 took 14.096891403198242s, results:
+{'t': 212, 'current_accuracy': 0.841796875, 'current_loss': 0.7229471504688263, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365693747997284; Loss Difference: 0.0, Decision: 0
+Round 214 took 14.238801002502441s, results:
+{'t': 213, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472398757935, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365693747997284; Loss Difference: 0.0, Decision: 0
+Round 215 took 14.135184049606323s, results:
+{'t': 214, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472398757935, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365693747997284; Loss Difference: 0.0, Decision: 0
+Round 216 took 14.208325147628784s, results:
+{'t': 215, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472398757935, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4736569672822952; Loss Difference: 0.0, Decision: 0
+Round 217 took 15.05602502822876s, results:
+{'t': 216, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472696781158, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365693747997284; Loss Difference: 0.0, Decision: 0
+Round 218 took 14.096597909927368s, results:
+{'t': 217, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472398757935, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365693747997284; Loss Difference: 0.0, Decision: 0
+Round 219 took 13.734961748123169s, results:
+{'t': 218, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472398757935, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365693747997284; Loss Difference: 0.0, Decision: 0
+Round 220 took 14.361132621765137s, results:
+{'t': 219, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472398757935, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4736568480730057; Loss Difference: 0.0, Decision: 0
+Round 221 took 13.853706359863281s, results:
+{'t': 220, 'current_accuracy': 0.841796875, 'current_loss': 0.7229471504688263, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.47365690767765045; Loss Difference: 0.0, Decision: 0
+Round 222 took 14.498638391494751s, results:
+{'t': 221, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472100734711, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4736569672822952; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.3026
+Round 223 took 22.247495651245117s, results:
+{'t': 222, 'current_accuracy': 0.841796875, 'current_loss': 0.7229472696781158, 'train_loss': 0.30260987877845763, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570771932602; Loss Difference: 0.0, Decision: 0
+Round 224 took 14.305692911148071s, results:
+{'t': 223, 'current_accuracy': 0.8515625, 'current_loss': 0.6889473795890808, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.43965698778629303; Loss Difference: 0.0, Decision: 0
+Round 225 took 14.495809555053711s, results:
+{'t': 224, 'current_accuracy': 0.8515625, 'current_loss': 0.6889472901821136, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396571069955826; Loss Difference: 0.0, Decision: 0
+Round 226 took 14.113818168640137s, results:
+{'t': 225, 'current_accuracy': 0.8515625, 'current_loss': 0.6889474093914032, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570175886154; Loss Difference: 0.0, Decision: 0
+Round 227 took 14.971472263336182s, results:
+{'t': 226, 'current_accuracy': 0.8515625, 'current_loss': 0.688947319984436, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570771932602; Loss Difference: 0.0, Decision: 0
+Round 228 took 14.205854415893555s, results:
+{'t': 227, 'current_accuracy': 0.8515625, 'current_loss': 0.6889473795890808, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570771932602; Loss Difference: 0.0, Decision: 0
+Round 229 took 14.292965650558472s, results:
+{'t': 228, 'current_accuracy': 0.8515625, 'current_loss': 0.6889473795890808, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.43965713679790497; Loss Difference: 0.0, Decision: 0
+Round 230 took 14.038166284561157s, results:
+{'t': 229, 'current_accuracy': 0.8515625, 'current_loss': 0.6889474391937256, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.43965713679790497; Loss Difference: 0.0, Decision: 0
+Round 231 took 14.71411943435669s, results:
+{'t': 230, 'current_accuracy': 0.8515625, 'current_loss': 0.6889474391937256, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.43965713679790497; Loss Difference: 0.0, Decision: 0
+Round 232 took 14.023623704910278s, results:
+{'t': 231, 'current_accuracy': 0.8515625, 'current_loss': 0.6889474391937256, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570473909378; Loss Difference: 0.0, Decision: 0
+Round 233 took 14.299985885620117s, results:
+{'t': 232, 'current_accuracy': 0.8515625, 'current_loss': 0.6889473497867584, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570771932602; Loss Difference: 0.0, Decision: 0
+Round 234 took 14.180597305297852s, results:
+{'t': 233, 'current_accuracy': 0.8515625, 'current_loss': 0.6889473795890808, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570771932602; Loss Difference: 0.0, Decision: 0
+Round 235 took 14.371254205703735s, results:
+{'t': 234, 'current_accuracy': 0.8515625, 'current_loss': 0.6889473795890808, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396570473909378; Loss Difference: 0.0, Decision: 0
+Round 236 took 14.596971035003662s, results:
+{'t': 235, 'current_accuracy': 0.8515625, 'current_loss': 0.6889473497867584, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4396571069955826; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.2390
+Round 237 took 23.35701632499695s, results:
+{'t': 236, 'current_accuracy': 0.8515625, 'current_loss': 0.6889474093914032, 'train_loss': 0.23895518779754638, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179924577474594; Loss Difference: 0.0, Decision: 0
+Round 238 took 14.963218688964844s, results:
+{'t': 237, 'current_accuracy': 0.85546875, 'current_loss': 0.66728276014328, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179924875497818; Loss Difference: 0.0, Decision: 0
+Round 239 took 14.602846384048462s, results:
+{'t': 238, 'current_accuracy': 0.85546875, 'current_loss': 0.6672827899456024, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179925173521042; Loss Difference: 0.0, Decision: 0
+Round 240 took 14.639878749847412s, results:
+{'t': 239, 'current_accuracy': 0.85546875, 'current_loss': 0.6672828197479248, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179925471544266; Loss Difference: 0.0, Decision: 0
+Round 241 took 14.292583465576172s, results:
+{'t': 240, 'current_accuracy': 0.85546875, 'current_loss': 0.6672828495502472, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179925471544266; Loss Difference: 0.0, Decision: 0
+Round 242 took 14.754040241241455s, results:
+{'t': 241, 'current_accuracy': 0.85546875, 'current_loss': 0.6672828495502472, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179924577474594; Loss Difference: 0.0, Decision: 0
+Round 243 took 15.134879112243652s, results:
+{'t': 242, 'current_accuracy': 0.85546875, 'current_loss': 0.66728276014328, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179924875497818; Loss Difference: 0.0, Decision: 0
+Round 244 took 15.003992080688477s, results:
+{'t': 243, 'current_accuracy': 0.85546875, 'current_loss': 0.6672827899456024, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179925173521042; Loss Difference: 0.0, Decision: 0
+Round 245 took 14.887050151824951s, results:
+{'t': 244, 'current_accuracy': 0.85546875, 'current_loss': 0.6672828197479248, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179924577474594; Loss Difference: 0.0, Decision: 0
+Round 246 took 14.590187072753906s, results:
+{'t': 245, 'current_accuracy': 0.85546875, 'current_loss': 0.66728276014328, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179924577474594; Loss Difference: 0.0, Decision: 0
+Round 247 took 14.191605567932129s, results:
+{'t': 246, 'current_accuracy': 0.85546875, 'current_loss': 0.66728276014328, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179925173521042; Loss Difference: 0.0, Decision: 0
+Round 248 took 14.06111478805542s, results:
+{'t': 247, 'current_accuracy': 0.85546875, 'current_loss': 0.6672828197479248, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4179925173521042; Loss Difference: 0.0, Decision: 1
+Average loss over 5 updates: 0.2020
+Round 249 took 22.541216373443604s, results:
+{'t': 248, 'current_accuracy': 0.85546875, 'current_loss': 0.6672828197479248, 'train_loss': 0.20200208723545074, 'decision': 1, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Loss historical diff: 0.4064406305551529; Loss Difference: 0.0, Decision: 0
+Round 250 took 14.113673448562622s, results:
+{'t': 249, 'current_accuracy': 0.8515625, 'current_loss': 0.6557309329509735, 'train_loss': None, 'decision': 0, 'drift_rate': 0.0, 'target_domains': ['RealWorld']}
+Average time per round: 7.8914089136123655
+Total time: 1972.8522284030914
