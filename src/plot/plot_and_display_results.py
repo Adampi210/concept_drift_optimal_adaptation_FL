@@ -73,6 +73,22 @@ def read_drift_data(drift_path):
     except Exception as e:
         print(f"Error reading drift file {drift_path}: {e}")
         return [], [], [], [], [] #, [], []
+  
+def print_kp_kd(drift_path):
+    """
+    Prints the kp and kd values from the drift policy JSON file.
+
+    Args:
+        drift_path (str): Path to the drift policy JSON file.
+    """
+    try:
+        with open(drift_path, 'r') as f:
+            data = json.load(f)
+        kp = data['parameters']['K_p']
+        kd = data['parameters']['K_d']
+        print(f"kp: {kp}, kd: {kd}")
+    except Exception as e:
+        print(f"Error reading kp and kd from drift file {drift_path}: {e}")
     
 def map_drift_to_main(policy_files, main_files, model_name='PACSCNN'):
     """
@@ -1016,21 +1032,19 @@ def compare_policy_setting_pairs(policy_setting_pairs, schedule_type, source_dom
     all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
     for policy_id, setting_id in policy_setting_pairs:
         for source_domain in source_domains:
-            if 'sketch' in source_domain:
-                continue
             # Define file pattern for this policy, setting, and source domain
             pattern = re.compile(
                 rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
                 rf'_src_{re.escape(source_domain)}_model_{model_name}'
                 rf'_img_{str(img_size)}_seed_\d+\.json$'
             )
-            matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
-            
+            matching_files = sorted([f for f in all_json_files if pattern.match(os.path.basename(f))])[:3]
             if not matching_files:
                 print(f"No files found for Policy {policy_id}, Setting {setting_id}, "
                       f"Schedule {schedule_type}, Source {source_domain}, Img Size {img_size}")
                 continue
-                
+            if policy_id == 6:
+                print_kp_kd(matching_files[0])
             # Aggregate accuracy and decision data across seeds
             all_accuracies = []
             all_decisions = []
@@ -2114,21 +2128,48 @@ if __name__ == "__main__":
     # Main figure plot
     
     # print('PACS Results')
-    compare_policy_setting_pairs([(6, 70), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='constant_drift_domain_change_0', source_domains=['art_painting', 'photo', 'cartoon'])
+    # compare_policy_setting_pairs([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='domain_change_burst_1', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
     # compare_policy_setting_pairs([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='step_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
     # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='quiet_then_low_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
     # compare_policy_setting_pairs([(6, 77), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='RV_domain_change_burst_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
+    
     # print('DigitsDG Results')
-    # compare_policy_setting_pairs([(6, 78), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='domain_change_burst_1', source_domains=['svhn', 'syn', 'mnist_m', 'mnist'], 
+    # compare_policy_setting_pairs([(6, 78), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='domain_change_burst_1', source_domains=['svhn', 'mnist_m', 'mnist'], 
     #                              model_name='DigitsDGCNN', img_size=32, T=250)
-    # compare_policy_setting_pairs([(6, 72), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='step_1', source_domains=['svhn', 'syn', 'mnist_m', 'mnist'], 
-    #                              model_name='DigitsDGCNN', img_size=32, T=250)
-    # compare_policy_setting_pairs([(6, 72), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='quiet_then_low_1', source_domains=['svhn', 'syn', 'mnist_m', 'mnist'], 
-    #                              model_name='DigitsDGCNN', img_size=32, T=250)
-    # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='RV_domain_change_burst_1', source_domains=['svhn', 'syn', 'mnist_m', 'mnist'], 
+    # compare_policy_setting_pairs([(6, 72), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='step_1', source_domains=['svhn', 'mnist_m', 'mnist'], 
     #                             model_name='DigitsDGCNN', img_size=32, T=250)
-    compare_policy_setting_pairs([(6, 77), (1, 77), (2, 77)], schedule_type='domain_change_burst_1', source_domains=['RealWorld', 'Product', 'Art'], 
-                                  model_name='OfficeHomeNet', img_size=224, T=250)
+    # compare_policy_setting_pairs([(6, 72), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='quiet_then_low_1', source_domains=['svhn', 'mnist_m', 'mnist'], 
+    #                             model_name='DigitsDGCNN', img_size=32, T=250)
+    # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='RV_domain_change_burst_1', source_domains=['svhn', 'mnist_m', 'mnist'], 
+    #                             model_name='DigitsDGCNN', img_size=32, T=250)
+
+    # compare_policy_setting_pairs([(6, 79), (1, 77), (2, 77), (3, 77), (4, 77)], schedule_type='domain_change_burst_1', source_domains=['RealWorld', 'Product', 'Art'], 
+    #                               model_name='OfficeHomeNet', img_size=224, T=250)
+    # compare_policy_setting_pairs([(6, 79), (1, 77), (2, 77), (3, 77), (4, 77)], schedule_type='step_1', source_domains=['RealWorld', 'Product', 'Art'], 
+    #                               model_name='OfficeHomeNet', img_size=224, T=250)
+    # compare_policy_setting_pairs([(6, 79), (1, 77), (2, 77), (3, 77), (4, 77)], schedule_type='quiet_then_low_1', source_domains=['RealWorld', 'Product', 'Art'], 
+    #                               model_name='OfficeHomeNet', img_size=224, T=250)
+    # compare_policy_setting_pairs([(6, 79), (1, 77), (2, 77), (3, 77), (4, 77)], schedule_type='RV_domain_change_burst_1', source_domains=['RealWorld', 'Product', 'Art'], 
+    #                               model_name='OfficeHomeNet', img_size=224, T=250)
+    # print('PACS Results')
+    # compare_policy_setting_pairs([(6, 78), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='constant_drift_domain_change_0', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
+    # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='decaying_spikes', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
+    # compare_policy_setting_pairs([(6, 77), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='seasonal_flux', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
+    # print('DigitsDG Results')
+    # compare_policy_setting_pairs([(6, 77), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='constant_drift_domain_change_0', source_domains=['svhn', 'mnist_m', 'mnist'], 
+    #                              model_name='DigitsDGCNN', img_size=32, T=250)
+    # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='decaying_spikes', source_domains=['svhn', 'mnist_m', 'mnist'], 
+    #                             model_name='DigitsDGCNN', img_size=32, T=250)
+    # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='seasonal_flux', source_domains=['svhn', 'mnist_m', 'mnist'], 
+    #                             model_name='DigitsDGCNN', img_size=32, T=250)
+    # setting_tested = 47
+    # compare_policy_setting_pairs([(6, setting_tested), (1, setting_tested), (2, setting_tested), (3, setting_tested), (4, setting_tested)], schedule_type='domain_change_burst_1', source_domains=['svhn', 'mnist_m', 'mnist'], 
+    #                                 model_name='DigitsDGCNN', img_size=32, T=250)
+    setting_tested = 47
+    compare_policy_setting_pairs([(6, setting_tested), (1, setting_tested), (2, setting_tested), (3, setting_tested), (4, setting_tested)], schedule_type='domain_change_burst_1', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
+    
+    
+    exit()
     policy_setting_pairs_per_schedule = [
         [(6, 76), (2, 60), (1, 60), (3, 60), (4, 60)],
         [(6, 76), (2, 60), (1, 60), (3, 60), (4, 60)],
@@ -2141,6 +2182,7 @@ if __name__ == "__main__":
         ("quiet_then_low_1", "art_painting"),
         ("RV_domain_change_burst_1", "sketch"),
     ]
+    exit()
     # data_handler = PACSDataHandler()
     # full_dataset = data_handler.dataset
     # plot_composition_combinations = [("RV_domain_change_burst_0", source_domain) for source_domain in source_domains]
@@ -2180,49 +2222,49 @@ if __name__ == "__main__":
     #     )
     # # 76, 78 look good
     # source_domains = ['art_painting', 'cartoon', 'photo', 'sketch']
-    policy_setting_pairs = [(1, 77), (2, 77), (6, 77)]
-    compare_policies(
-        policy_setting_pairs=policy_setting_pairs,
-        schedule_type='domain_change_burst_1',
-        source_domain='RealWorld',
-        model_name='OfficeHomeNet',
-        img_size=224,
-        T=250  # Match your n_rounds - 1 from the JSON
-    )
-    compare_policies(
-        policy_setting_pairs=policy_setting_pairs,
-        schedule_type='domain_change_burst_1',
-        source_domain='RealWorld',
-        model_name='OfficeHomeNet',
-        img_size=224,
-        T=250  # Match your n_rounds - 1 from the JSON
-    )
-    compare_policies(
-        policy_setting_pairs=policy_setting_pairs,
-        schedule_type='domain_change_burst_1',
-        source_domain='Clipart',
-        model_name='OfficeHomeNet',
-        img_size=224,
-        T=250  # Match your n_rounds - 1 from the JSON
-    )
-    compare_policies(
-        policy_setting_pairs=policy_setting_pairs,
-        schedule_type='domain_change_burst_1',
-        source_domain='Art',
-        model_name='OfficeHomeNet',
-        img_size=224,
-        T=250  # Match your n_rounds - 1 from the JSON
-    )
-    compare_policies(
-        policy_setting_pairs=policy_setting_pairs,
-        schedule_type='domain_change_burst_1',
-        source_domain='Product',
-        model_name='OfficeHomeNet',
-        img_size=224,
-        T=250  # Match your n_rounds - 1 from the JSON
-    )
-    policy_setting_pairs = [(1, 60), (2, 60), (6, 70)]
-    schedule_array = ['sine_wave_domain_change_0', 'sine_wave_domain_change_1', 'sine_wave_domain_change_2']
+    # policy_setting_pairs = [(1, 77), (2, 77), (6, 77)]
+    # compare_policies(
+    #     policy_setting_pairs=policy_setting_pairs,
+    #     schedule_type='domain_change_burst_1',
+    #     source_domain='RealWorld',
+    #     model_name='OfficeHomeNet',
+    #     img_size=224,
+    #     T=250  # Match your n_rounds - 1 from the JSON
+    # )
+    # compare_policies(
+    #     policy_setting_pairs=policy_setting_pairs,
+    #     schedule_type='domain_change_burst_1',
+    #     source_domain='RealWorld',
+    #     model_name='OfficeHomeNet',
+    #     img_size=224,
+    #     T=250  # Match your n_rounds - 1 from the JSON
+    # )
+    # compare_policies(
+    #     policy_setting_pairs=policy_setting_pairs,
+    #     schedule_type='domain_change_burst_1',
+    #     source_domain='Clipart',
+    #     model_name='OfficeHomeNet',
+    #     img_size=224,
+    #     T=250  # Match your n_rounds - 1 from the JSON
+    # )
+    # compare_policies(
+    #     policy_setting_pairs=policy_setting_pairs,
+    #     schedule_type='domain_change_burst_1',
+    #     source_domain='Art',
+    #     model_name='OfficeHomeNet',
+    #     img_size=224,
+    #     T=250  # Match your n_rounds - 1 from the JSON
+    # )
+    # compare_policies(
+    #     policy_setting_pairs=policy_setting_pairs,
+    #     schedule_type='domain_change_burst_1',
+    #     source_domain='Product',
+    #     model_name='OfficeHomeNet',
+    #     img_size=224,
+    #     T=250  # Match your n_rounds - 1 from the JSON
+    # )
+    policy_setting_pairs = [(1, 60), (2, 60), (3, 60), (4, 60), (6, 78)]
+    schedule_array = ['constant_drift_domain_change_0',]
     for source_domain in source_domains:
         for schedule_type in schedule_array:
             for model_name in model_names:

@@ -158,7 +158,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         accuracy = print_debug_info(agent_holdout, i, avg_loss, accuracy_fn)
         print(f"Holdout accuracy: {accuracy:.2f}%")
         accuracy_array.append(accuracy)
-        if accuracy > 70:
+        if accuracy > 90:
             print(f"Early stopping at epoch {i+1} with accuracy {accuracy:.2f}%")
             break
     torch.save(agent_train.model.get_params(), model_path)
@@ -192,7 +192,7 @@ def main():
                         help='Models to train')
     parser.add_argument('--domains', type=str, nargs='+', default=['RealWorld', 'Clipart', 'Product', 'Art'],
                         help='Domains to train on')
-    parser.add_argument('--num_epochs', type=int, default=200, help='Number of update steps')
+    parser.add_argument('--num_epochs', type=int, default=100, help='Number of update steps')
     parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
     parser.add_argument('--learning_rate', type=float, default=0.05, help='Learning rate')
     parser.add_argument('--optimizer', type=str, default='sgd', choices=['adam', 'sgd'], help='Optimizer')

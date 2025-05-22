@@ -7,18 +7,18 @@ ALL_SRC_DOMAINS=("photo" "art_painting" "cartoon" "sketch")
 ALL_MODEL_NAMES=("PACSCNN_4")
 
 # Policies to iterate over
-POLICIES=(1 2 3 4)
+POLICIES=(6)
 
 # Setting IDs to iterate over
-SETTING_IDS=(40 41 42 43 44 45 46) 
+SETTING_IDS=(78 79) 
 
 # Image sizes to test different models
 IMG_SIZES=(128)
 
 # Schedules to iterate over
 SCHEDULES=(
-    "domain_change_burst_1" "quiet_then_low_1" "step_1" "RV_domain_change_burst_1" 
+    "constant_drift_domain_change_0"
 )
  
 # Array of seeds for reproducibility
-seeds=(0 1 2)
+seeds=(0)

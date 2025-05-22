@@ -111,13 +111,10 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
     holdout_indices = indices[train_size:]
 
     # Create subsets
-    train_subset = Subset(full_dataset, train_indices)
-    holdout_subset = Subset(full_dataset, holdout_indices)
-    
     train_data_handler = PACSDataHandler()
-    train_data_handler.dataset = train_subset
+    train_data_handler.set_subset(train_indices)
     holdout_data_handler = PACSDataHandler()
-    holdout_data_handler.dataset = holdout_subset
+    holdout_data_handler.set_subset(holdout_indices)
     
     train_drift = DomainDrift(
         train_data_handler,
@@ -217,7 +214,7 @@ def main():
     parser.add_argument('--model_save_dir', type=str, default='../../../../models/concept_drift_models/', help='Model save directory')
     parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Results save directory')
     parser.add_argument('--img_size', type=int, default=128, help='Image size')
-    parser.add_argument('--num_seeds', type=int, default=10, help='Number of seeds')
+    parser.add_argument('--num_seeds', type=int, default=3, help='Number of seeds')
     args = parser.parse_args()
 
     os.makedirs(args.model_save_dir, exist_ok=True)
