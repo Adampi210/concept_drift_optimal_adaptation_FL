@@ -7,17 +7,17 @@ ALL_SRC_DOMAINS=("mnist" "mnist_m" "svhn")
 ALL_MODEL_NAMES=("DigitsDGCNN")
 
 # Policies to iterate over
-POLICIES=(6)
+POLICIES=(5)
 
 # Setting IDs to iterate over
-SETTING_IDS=(40 41 42 43 44 45 46 47) 
+SETTING_IDS=(60 61 62 63 64) 
 
 # Image sizes to test different models
 IMG_SIZES=(32)
 
 # Schedules to iterate over
 SCHEDULES=(
-    "step_1"
+    "burst" "spikes" "step" "constant" "wave" "decaying_spikes" "seasonal_flux"
 )
  
 # Array of seeds for reproducibility

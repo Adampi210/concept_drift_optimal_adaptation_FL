@@ -78,8 +78,8 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
     
-    cluster = 'gautschi'
-    root_dir = f'/scratch/{cluster}/apiasecz/data/DigitsDG/digits_dg/'
+    ### ROOT DIRECTORY with DigitsDG dataset, replce with custom
+    root_dir = f'/scratch/gautschi/apiasecz/data/DigitsDG/digits_dg/'
     full_dataset = DigitsDGDataHandler(root_dir=root_dir, transform=transform).dataset
     dataset_size = len(full_dataset)
     indices = np.arange(dataset_size)
@@ -190,10 +190,10 @@ def main():
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
     parser.add_argument('--learning_rate', type=float, default=0.05, help='Learning rate')
     parser.add_argument('--optimizer', type=str, default='sgd', choices=['adam', 'sgd'], help='Optimizer')
-    parser.add_argument('--model_save_dir', type=str, default='../../../../models/concept_drift_models/', help='Model save directory')
+    parser.add_argument('--model_save_dir', type=str, default='../../models/concept_drift_models/', help='Model save directory')
     parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Results save directory')
     parser.add_argument('--img_size', type=int, default=32, help='Image size')
-    parser.add_argument('--num_seeds', type=int, default=3, help='Number of seeds')
+    parser.add_argument('--num_seeds', type=int, default=1, help='Number of seeds')
     args = parser.parse_args()
 
     os.makedirs(args.model_save_dir, exist_ok=True)

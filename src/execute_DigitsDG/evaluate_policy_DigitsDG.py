@@ -53,7 +53,6 @@ class DigitsDGCNN(BaseModelArchitecture):
         x = self.classifier(x)
         return x
 
-
 # Utility Functions
 def set_seed(seed):
     random.seed(seed)
@@ -120,9 +119,9 @@ class Policy:
             if len(self.loss_window) > w:
                 self.loss_window.pop(0)
             return 0
-        elif decision_id == 6:
+        elif decision_id == 5:
             if self.loss_initial is None:
-                raise ValueError("Initial loss not set for Policy 6")
+                raise ValueError("Initial loss not set for Policy 5")
             e_t = loss_curr - loss_best
             delta_e = loss_curr - loss_prev
             pd_term = self.K_p * e_t + self.K_d * delta_e
@@ -138,16 +137,7 @@ class Policy:
 # Drift Scheduler
 class DriftScheduler:
     SCHEDULE_CONFIGS = {
-        "domain_change_burst_0": lambda: {
-            'burst_interval': 100,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 0.4,
-            'target_domains': ['svhn', 'syn', 'mnist_m'],
-            'initial_delay': 55,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_1": lambda: {
+        "burst": lambda: {
             'burst_interval': 120,
             'burst_duration': 3,
             'base_rate': 0.0,
@@ -156,43 +146,7 @@ class DriftScheduler:
             'initial_delay': 45,
             'strategy': 'replace'
         },
-        "domain_change_burst_2": lambda: {
-            'burst_interval': 100,
-            'burst_duration': 2,
-            'base_rate': 0.0,
-            'burst_rate': 0.5,
-            'target_domains': ['svhn', 'syn'],
-            'initial_delay': 25,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_3": lambda: {
-            'burst_interval': 50,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 1.0,
-            'target_domains': ['syn', 'mnist', 'svhn'],
-            'initial_delay': 55,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_4": lambda: {
-            'burst_interval': 20,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 1.0,
-            'target_domains': ['syn'],
-            'initial_delay': 205,
-            'strategy': 'replace'
-        },
-        "RV_domain_change_burst_0": lambda: {
-            'burst_interval_limits': (30, 70),
-            'burst_duration_limits': (4, 7),
-            'base_rate': 0.0,
-            'burst_rate': (0.2, 0.5),
-            'target_domains': ['svhn', 'mnist', 'syn'],
-            'initial_delay_limits': (30, 60),
-            'strategy': 'replace'
-        },
-        "RV_domain_change_burst_1": lambda: {
+        "spikes": lambda: {
             'burst_interval_limits': (90, 130),
             'burst_duration_limits': (3, 6),
             'base_rate': 0.0,
@@ -201,84 +155,19 @@ class DriftScheduler:
             'initial_delay_limits': (30, 60),
             'strategy': 'replace'
         },
-        "RV_domain_change_burst_2": lambda: {
-            'burst_interval_limits': (50, 90),
-            'burst_duration_limits': (2, 5),
-            'base_rate': 0.0,
-            'burst_rate': (0.4, 0.6),
-            'target_domains': ['syn', 'mnist', 'svhn'],
-            'initial_delay_limits': (50, 80),
-            'strategy': 'replace'
-        },
-        "step_0": lambda: {
-            'step_points': [50, 100, 150],
-            'step_rates': [0.004, 0.008, 0.016],
-            'step_domains': ['svhn', 'mnist', 'syn', 'svhn'],
-            'strategy': 'replace'
-        },
-        "step_1": lambda: {
+        "step": lambda: {
             'step_points': [60, 120, 180],
             'step_rates': [0.004, 0.006, 0.008, 0.01],
             'step_domains': ['svhn', 'syn', 'mnist_m', 'mnist', 'svhn'],
             'strategy': 'replace'
         },
-        "constant_drift_domain_change_0": lambda: {
+        "constant": lambda: {
             'drift_rate': 0.016,
             'domain_change_interval': 50,
             'target_domains': ['svhn', 'mnist', 'syn', 'mnist_m'],
             'strategy': 'replace'
         },
-        "constant_drift_domain_change_1": lambda: {
-            'drift_rate': 0.008,
-            'domain_change_interval': 50,
-            'target_domains': ['svhn', 'mnist', 'syn', 'mnist_m'],
-            'strategy': 'replace'
-        },
-        "constant_drift_domain_change_2": lambda: {
-            'drift_rate': 0.004,
-            'domain_change_interval': 50,
-            'target_domains': ['svhn', 'mnist', 'syn', 'mnist_m'],
-            'strategy': 'replace'
-        },
-        "sine_wave_domain_change_0": lambda: {
-            'amplitude': 0.008,
-            'period': 50,
-            'target_domains': ['svhn', 'mnist', 'syn', 'mnist_m'],
-            'strategy': 'replace'
-        },
-        "sine_wave_domain_change_1": lambda: {
-            'amplitude': 0.016,
-            'period': 50,
-            'target_domains': ['svhn', 'mnist', 'syn', 'mnist_m'],
-            'strategy': 'replace'
-        },
-        "sine_wave_domain_change_2": lambda: {
-            'amplitude': 0.032,
-            'period': 50,
-            'target_domains': ['svhn', 'mnist', 'syn', 'mnist_m'],
-            'strategy': 'replace'
-        },
-        "intermittent_shifts": lambda: {
-            'min_interval': 2,
-            'max_interval': 10,
-            'burst_duration_range': (5, 15),
-            'drift_range': (0.3, 0.6),
-            'low_drift_start': 30,
-            'low_drift_end': 40,
-            'low_drift_rate': 0.2,
-            'target_domains': ['svhn', 'syn', 'mnist_m', 'mnist'],
-            'strategy': 'replace'
-        },
-        "quiet_then_low_0": lambda: {
-            'burst_interval': 60,
-            'burst_duration': 20,
-            'base_rate': 0.0,
-            'burst_rate': 0.024,
-            'target_domains':  ['mnist', 'syn', 'svhn'],
-            'initial_delay': 60,
-            'strategy': 'replace'
-        },
-        "quiet_then_low_1": lambda: {
+        "wave": lambda: {
             'burst_interval': 70,
             'burst_duration': 30,
             'base_rate': 0.0,
@@ -288,25 +177,24 @@ class DriftScheduler:
             'strategy': 'replace'
         },
         "decaying_spikes": lambda: {
-            'initial_burst_interval': 30,   # Initial time between starts of spikes
-            'interval_increment_per_spike': 10, # How much the interval increases after each spike
-            'max_burst_interval': 120,      # Maximum interval between spikes
-            'burst_duration': 3,            # Duration of each spike
-            'base_rate': 0.0,               # Drift rate between spikes
-            'burst_rate': 0.35,             # Drift rate during a spike
-            'target_domains': ['svhn', 'mnist', 'syn'], # Domains to cycle through for spikes
-            'initial_delay': 20,            # Delay before the first spike can occur
+            'initial_burst_interval': 30,
+            'interval_increment_per_spike': 10,
+            'max_burst_interval': 120,
+            'burst_duration': 3,
+            'base_rate': 0.0,
+            'burst_rate': 0.35,
+            'target_domains': ['svhn', 'mnist', 'syn'],
+            'initial_delay': 20,
             'strategy': 'replace'
         },
-
         "seasonal_flux": lambda: {
-            'cycle_period': 150,            # Duration of a full seasonal cycle (e.g., 150 rounds)
-            'max_amplitude_drift_rate': 0.016, # Max drift rate during peak transition between domains
-            'base_drift_rate': 0.001,       # A very slow underlying constant drift (can be 0)
-            'domain_A': 'mnist',            # First primary domain in the cycle
-            'domain_B': 'svhn',           # Second primary domain in the cycle
-            'initial_phase_offset_t': 0,    # Optional: shifts the start of the sine wave
-            'initial_delay': 10,            # Overall initial delay for the schedule
+            'cycle_period': 150,
+            'max_amplitude_drift_rate': 0.016,
+            'base_drift_rate': 0.001,
+            'domain_A': 'mnist',
+            'domain_B': 'svhn',
+            'initial_phase_offset_t': 0,
+            'initial_delay': 10,
             'strategy': 'replace'
         },
     }
@@ -326,47 +214,23 @@ class DriftScheduler:
             self.domain_index = 0
             self.first_burst_completed = False
         
-        if self.schedule_type.startswith("RV_domain_change_burst"):
+        if self.schedule_type.startswith("spikes"):
             self.modify_burst = False
             self.initial_delay = np.random.randint(self.initial_delay_limits[0], self.initial_delay_limits[1] + 1)
             self.burst_interval = np.random.randint(self.burst_interval_limits[0], self.burst_interval_limits[1] + 1)
             self.burst_duration = np.random.randint(self.burst_duration_limits[0], self.burst_duration_limits[1] + 1)
         
         if self.schedule_type == "decaying_spikes":
-            # State for decaying_spikes
             self.next_spike_start_time_ds = self.initial_delay
-            self.current_spike_end_time_ds = -1 # Tracks if currently in a spike, and when it ends
+            self.current_spike_end_time_ds = -1
             self.current_interval_ds = self.initial_burst_interval
 
-        
-        # Generate burst periods for intermittent_shifts
-        if self.schedule_type == "intermittent_shifts":
-            max_t = 1000  # Maximum time horizon, adjust if needed
-            self.burst_periods = []
-            current_t = 0
-            while current_t < max_t:
-                interval = np.random.randint(self.min_interval, self.max_interval + 1)
-                current_t += interval
-                if current_t >= max_t:
-                    break
-                duration = np.random.randint(self.burst_duration_range[0], self.burst_duration_range[1] + 1)
-                burst_start = current_t
-                burst_end = min(current_t + duration, max_t)
-                drift_rate = np.random.uniform(self.drift_range[0], self.drift_range[1])
-                domain_index = len(self.burst_periods) % len(self.target_domains)
-                target_domain = self.target_domains[domain_index]
-                self.burst_periods.append({
-                    'start': burst_start,
-                    'end': burst_end,
-                    'drift_rate': drift_rate,
-                    'target_domain': target_domain
-                })
-                current_t = burst_end
 
+        
     def get_drift_params(self, t):
         """Returns (drift_rate, target_domains) for the given time t."""
         self.current_step = t
-        if self.schedule_type.startswith("domain_change_burst") or self.schedule_type.startswith("quiet_then_low"):
+        if self.schedule_type.startswith("burst") or self.schedule_type.startswith("wave"):
             if t < self.initial_delay:
                 drift_rate = self.base_rate
                 target_domains = []
@@ -381,20 +245,7 @@ class DriftScheduler:
                 else:
                     drift_rate = self.base_rate
                     target_domains = []
-        elif self.schedule_type == "intermittent_shifts":
-            for burst in self.burst_periods:
-                if burst['start'] <= t < burst['end']:
-                    drift_rate = burst['drift_rate']
-                    target_domains = [burst['target_domain']]
-                    break
-            else:
-                if self.low_drift_start <= t < self.low_drift_end:
-                    drift_rate = self.low_drift_rate
-                    target_domains = [self.target_domains[0]]
-                else:
-                    drift_rate = 0.0
-                    target_domains = []
-        elif self.schedule_type.startswith("RV_domain_change_burst"):
+        elif self.schedule_type.startswith("spikes"):
             if t < self.initial_delay:
                 drift_rate = self.base_rate
                 target_domains = []
@@ -427,17 +278,13 @@ class DriftScheduler:
                 else:
                     drift_rate = self.step_rates[-1]
                     target_domains = [self.step_domains[-1]]
-        elif "constant_drift_domain_change" in self.schedule_type:
+        elif "constant" in self.schedule_type:
             drift_rate = self.drift_rate
             domain_index = (t // self.domain_change_interval) % len(self.target_domains)
             target_domains = [self.target_domains[domain_index]]
-        elif "sine_wave_domain_change" in self.schedule_type:
-            drift_rate = self.amplitude * (1 - np.cos(2 * np.pi * t / self.period)) / 2
-            domain_index = (t // self.period) % len(self.target_domains)
-            target_domains = [self.target_domains[domain_index]]
         elif self.schedule_type == "decaying_spikes":
             drift_rate = self.base_rate
-            target_domains_list = [] # Default to no specific target / no drift beyond base_rate
+            target_domains_list = [] 
 
             # Check if a current spike has just ended
             if self.current_spike_end_time_ds != -1 and t >= self.current_spike_end_time_ds:
@@ -463,12 +310,8 @@ class DriftScheduler:
             if t >= self.initial_delay:
                 current_total_drift_rate = self.base_drift_rate
                 time_in_cycle = t - self.initial_delay + self.initial_phase_offset_t
-                
-                # seasonal_factor ranges from -1 to 1.
-                # Positive favors domain_B, Negative favors domain_A.
                 seasonal_factor = np.sin(2 * np.pi * time_in_cycle / self.cycle_period)
                 
-                # Intensity of the seasonal shift, |seasonal_factor| * max_amplitude_drift_rate
                 seasonal_shift_intensity = abs(seasonal_factor) * self.max_amplitude_drift_rate
                 current_total_drift_rate += seasonal_shift_intensity
 
@@ -478,11 +321,6 @@ class DriftScheduler:
                     elif seasonal_factor < -0.001:
                         target_domains_list = [self.domain_A] # Drifting towards A
                     else:
-                        # Near zero-crossing, could drift towards a mix or a default,
-                        # or just rely on base_drift_rate if it has its own target.
-                        # For simplicity, if very close to zero, let base_drift_rate dominate
-                        # without a strong seasonal component, or pick one, e.g., A.
-                        # If base_drift_rate is 0 and seasonal is at zero-crossing, drift rate is 0.
                         if self.base_drift_rate == 0: # if no base drift, and at zero-crossing, no target.
                             current_total_drift_rate = 0 # effectively no drift
                         else: # if there's base drift, it applies (target might need to be defined for base drift)
@@ -490,19 +328,16 @@ class DriftScheduler:
             else:
                 current_total_drift_rate = 0
                 target_domains_list = []
-            print(target_domains_list)
             # Ensure drift rate is not negative if base_drift_rate somehow caused it (should not happen here)
             current_total_drift_rate = max(0, current_total_drift_rate)
             if current_total_drift_rate == 0:
                 target_domains_list = []
-            print(target_domains_list)
             return current_total_drift_rate, target_domains_list
         else:
             raise ValueError(f"Unsupported schedule type: {self.schedule_type}")
         
         return drift_rate, target_domains
 
-        
     def select_new_target_domain(self):
         """Selects the next target domain for burst schedules."""
         if 'target_domains' not in self.__dict__:
@@ -588,8 +423,8 @@ def evaluate_policy_under_drift(
     policy = Policy(alpha=learning_rate, L_i=L_i, K_p=K_p, K_d=K_d)
     
     # Define datasets for training+infrence and holdout for testing
-    cluster = 'gautschi'
-    root_dir = f'/scratch/{cluster}/apiasecz/data/DigitsDG/digits_dg/'
+    ### ROOT DIRECTORY with DigitsDG dataset, replce with custom
+    root_dir = f'/scratch/gautschi/apiasecz/data/DigitsDG/digits_dg/'
     full_dataset = DigitsDGDataHandler(root_dir=root_dir, transform=transform).dataset
     dataset_size = len(full_dataset)
     indices = np.arange(dataset_size)
@@ -765,7 +600,6 @@ def evaluate_policy_under_drift(
     
     
 # Hyperparameters and Constants
-cluster_used = 'gautschi'
 settings = {
         0: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
         1: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.1, 'K_d': 2.0, 'lr': 0.01, 'n_steps':1},
@@ -823,11 +657,11 @@ settings = {
         55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5},
         56: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 0.5},
         57: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 0.5},
-        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
-        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
-        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
-        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
-        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 2.0, 'lr': 0.05, 'n_steps':1},
+        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.5, 'K_d': 0.5, 'lr': 0.05, 'n_steps':1},
+        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.5, 'lr': 0.05, 'n_steps':1},
+        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.1, 'lr': 0.05, 'n_steps':1},
+        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.25, 'lr': 0.05, 'n_steps':1},
+        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.05, 'n_steps':1},
         65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 1.0, 'lr': 0.05, 'n_steps':1},
         66: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 1.0, 'lr': 0.05, 'n_steps':1},
         67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 1.0, 'lr': 0.05, 'n_steps':1},
@@ -852,7 +686,7 @@ DSET_SIZE = 1024
 def main():
     # Get the command line arguments
     parser = argparse.ArgumentParser(description="DigitsDG CNN Evaluation with Dynamic Drift")
-    parser.add_argument('--schedule_type', type=str, default='domain_change_burst_1',
+    parser.add_argument('--schedule_type', type=str, default='burst',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')
     parser.add_argument('--seed', type=int, default=0)
@@ -869,6 +703,7 @@ def main():
         'DigitsDGCNN': DigitsDGCNN,
     }
     print(f'Model used: {args.model_name}')
+    ### MODIFY IF STORED IN A DIFFERENT LOCATION
     model_path = f"../../../../models/concept_drift_models/{args.model_name}_{'_'.join(args.src_domains)}_img_{args.img_size}_seed_{args.seed}.pth"
     
     # Settings selection

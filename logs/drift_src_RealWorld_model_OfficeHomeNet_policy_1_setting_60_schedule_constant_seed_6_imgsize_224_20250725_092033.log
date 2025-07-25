@@ -1,0 +1,18 @@
+Device: cuda
+CUDA Version: 12.1
+cuDNN Version: 8902
+PyTorch Version: 2.3.0
+
+Model used: OfficeHomeNet
+Traceback (most recent call last):
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute_OfficeHome/evaluate_policy_OfficeHome.py", line 737, in <module>
+    main()
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute_OfficeHome/evaluate_policy_OfficeHome.py", line 717, in main
+    evaluate_policy_under_drift(
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute_OfficeHome/evaluate_policy_OfficeHome.py", line 425, in evaluate_policy_under_drift
+    full_dataset = OfficeHomeDataHandler(root_dir=root_dir, transform=transform).dataset
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/data_operations/data_handler.py", line 467, in __init__
+    self.categories = sorted(os.listdir(art_dir))
+                             ^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: 'root_dir/OfficeHomeDataset_10072016/Art'

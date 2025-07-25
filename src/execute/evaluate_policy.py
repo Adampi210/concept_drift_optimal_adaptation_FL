@@ -19,108 +19,10 @@ print(f"CUDA Version: {torch.version.cuda}")
 print(f"cuDNN Version: {torch.backends.cudnn.version()}")
 print(f"PyTorch Version: {torch.__version__}\n")
 
-# Define Models
-class PACSCNN_1(BaseModelArchitecture):
+# Define Model
+class PACSCNN(BaseModelArchitecture):
     def __init__(self, num_classes=7):
-        super(PACSCNN_1, self).__init__()
-        self.conv = nn.Sequential(
-            nn.Conv2d(3, 32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(32, 32, kernel_size=3, stride=1, padding=1),
-            nn.ReLU(),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-        )
-        self.pool = nn.AdaptiveAvgPool2d((7, 7))
-        self.fc1 = nn.Sequential(
-            nn.Linear(32 * 7 * 7, 256),
-            nn.ReLU(),
-            nn.Linear(256, 64),
-            nn.ReLU(),
-        )
-        self.fc2 = nn.Linear(64, num_classes)
-        self.apply(self.init_weights)
-
-    @torch.no_grad()
-    def init_weights(self, m):
-        if isinstance(m, (nn.Linear, nn.Conv2d)):
-            torch.nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
-            if m.bias is not None:
-                torch.nn.init.zeros_(m.bias)
-
-    def forward(self, x):
-        x = self.conv(x)
-        x = self.pool(x)
-        x = x.view(x.size(0), -1)
-        x = self.fc1(x)
-        x = self.fc2(x)
-        return x
-
-class PACSCNN_2(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN_2, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=1, stride=2),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=1, stride=2),
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=1, stride=2),
-        )
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Dropout(p=0.5),
-            nn.Linear(256, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
-
-class PACSCNN_3(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN_3, self).__init__()
-        self.features = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.BatchNorm2d(64),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=1, stride=2),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.BatchNorm2d(128),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=1, stride=2),
-            nn.Conv2d(128, 256, kernel_size=3, padding=1),
-            nn.BatchNorm2d(256),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(256, 256, kernel_size=1, stride=2),
-            nn.Conv2d(256, 512, kernel_size=3, padding=1),
-            nn.BatchNorm2d(512),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(512, 512, kernel_size=1, stride=2),
-        )
-        self.classifier = nn.Sequential(
-            nn.AdaptiveAvgPool2d((1, 1)),
-            nn.Flatten(),
-            nn.Dropout(p=0.5),
-            nn.Linear(512, num_classes)
-        )
-
-    def forward(self, x):
-        x = self.features(x)
-        x = self.classifier(x)
-        return x
-
-class PACSCNN_4(BaseModelArchitecture):
-    def __init__(self, num_classes=7):
-        super(PACSCNN_4, self).__init__()
+        super(PACSCNN, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(64),
@@ -239,9 +141,9 @@ class Policy:
             if len(self.loss_window) > w:
                 self.loss_window.pop(0)
             return 0
-        elif decision_id == 6:
+        elif decision_id == 5:
             if self.loss_initial is None:
-                raise ValueError("Initial loss not set for Policy 6")
+                raise ValueError("Initial loss not set for Policy 5")
             e_t = loss_curr - loss_best
             delta_e = loss_curr - loss_prev
             pd_term = self.K_p * e_t + self.K_d * delta_e
@@ -257,16 +159,7 @@ class Policy:
 # Drift Scheduler
 class DriftScheduler:
     SCHEDULE_CONFIGS = {
-        "domain_change_burst_0": lambda: {
-            'burst_interval': 100,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 0.4,
-            'target_domains': ['sketch', 'cartoon', 'art_painting'],
-            'initial_delay': 55,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_1": lambda: {
+        "burst": lambda: {
             'burst_interval': 120,
             'burst_duration': 3,
             'base_rate': 0.0,
@@ -275,43 +168,7 @@ class DriftScheduler:
             'initial_delay': 45,
             'strategy': 'replace'
         },
-        "domain_change_burst_2": lambda: {
-            'burst_interval': 100,
-            'burst_duration': 2,
-            'base_rate': 0.0,
-            'burst_rate': 0.5,
-            'target_domains': ['sketch', 'cartoon'],
-            'initial_delay': 25,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_3": lambda: {
-            'burst_interval': 50,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 1.0,
-            'target_domains': ['cartoon', 'photo', 'sketch'],
-            'initial_delay': 55,
-            'strategy': 'replace'
-        },
-        "domain_change_burst_4": lambda: {
-            'burst_interval': 20,
-            'burst_duration': 5,
-            'base_rate': 0.0,
-            'burst_rate': 1.0,
-            'target_domains': ['cartoon'],
-            'initial_delay': 205,
-            'strategy': 'replace'
-        },
-        "RV_domain_change_burst_0": lambda: {
-            'burst_interval_limits': (30, 70),
-            'burst_duration_limits': (4, 7),
-            'base_rate': 0.0,
-            'burst_rate': (0.2, 0.5),
-            'target_domains': ['sketch', 'photo', 'cartoon'],
-            'initial_delay_limits': (30, 60),
-            'strategy': 'replace'
-        },
-        "RV_domain_change_burst_1": lambda: {
+        "spikes": lambda: {
             'burst_interval_limits': (90, 130),
             'burst_duration_limits': (3, 6),
             'base_rate': 0.0,
@@ -320,84 +177,19 @@ class DriftScheduler:
             'initial_delay_limits': (30, 60),
             'strategy': 'replace'
         },
-        "RV_domain_change_burst_2": lambda: {
-            'burst_interval_limits': (50, 90),
-            'burst_duration_limits': (2, 5),
-            'base_rate': 0.0,
-            'burst_rate': (0.4, 0.6),
-            'target_domains': ['cartoon', 'photo', 'sketch'],
-            'initial_delay_limits': (50, 80),
-            'strategy': 'replace'
-        },
-        "step_0": lambda: {
-            'step_points': [50, 100, 150],
-            'step_rates': [0.004, 0.008, 0.016],
-            'step_domains': ['sketch', 'photo', 'cartoon', 'sketch'],
-            'strategy': 'replace'
-        },
-        "step_1": lambda: {
+        "step": lambda: {
             'step_points': [60, 120, 180],
             'step_rates': [0.004, 0.006, 0.008, 0.01],
             'step_domains': ['sketch', 'cartoon', 'art_painting', 'photo', 'sketch'],
             'strategy': 'replace'
         },
-        "constant_drift_domain_change_0": lambda: {
+        "constant": lambda: {
             'drift_rate': 0.016,
             'domain_change_interval': 50,
             'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
             'strategy': 'replace'
         },
-        "constant_drift_domain_change_1": lambda: {
-            'drift_rate': 0.008,
-            'domain_change_interval': 50,
-            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
-            'strategy': 'replace'
-        },
-        "constant_drift_domain_change_2": lambda: {
-            'drift_rate': 0.004,
-            'domain_change_interval': 50,
-            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
-            'strategy': 'replace'
-        },
-        "sine_wave_domain_change_0": lambda: {
-            'amplitude': 0.008,
-            'period': 50,
-            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
-            'strategy': 'replace'
-        },
-        "sine_wave_domain_change_1": lambda: {
-            'amplitude': 0.016,
-            'period': 50,
-            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
-            'strategy': 'replace'
-        },
-        "sine_wave_domain_change_2": lambda: {
-            'amplitude': 0.032,
-            'period': 50,
-            'target_domains': ['sketch', 'photo', 'cartoon', 'art_painting'],
-            'strategy': 'replace'
-        },
-        "intermittent_shifts": lambda: {
-            'min_interval': 2,
-            'max_interval': 10,
-            'burst_duration_range': (5, 15),
-            'drift_range': (0.3, 0.6),
-            'low_drift_start': 30,
-            'low_drift_end': 40,
-            'low_drift_rate': 0.2,
-            'target_domains': ['sketch', 'cartoon', 'art_painting', 'photo'],
-            'strategy': 'replace'
-        },
-        "quiet_then_low_0": lambda: {
-            'burst_interval': 60,
-            'burst_duration': 20,
-            'base_rate': 0.0,
-            'burst_rate': 0.024,
-            'target_domains':  ['photo', 'cartoon', 'sketch'],
-            'initial_delay': 60,
-            'strategy': 'replace'
-        },
-        "quiet_then_low_1": lambda: {
+        "wave": lambda: {
             'burst_interval': 70,
             'burst_duration': 30,
             'base_rate': 0.0,
@@ -407,25 +199,24 @@ class DriftScheduler:
             'strategy': 'replace'
         },
         "decaying_spikes": lambda: {
-            'initial_burst_interval': 30,   # Initial time between starts of spikes
-            'interval_increment_per_spike': 10, # How much the interval increases after each spike
-            'max_burst_interval': 120,      # Maximum interval between spikes
-            'burst_duration': 3,            # Duration of each spike
-            'base_rate': 0.0,               # Drift rate between spikes
-            'burst_rate': 0.35,             # Drift rate during a spike
-            'target_domains': ['sketch', 'photo', 'cartoon'], # Domains to cycle through for spikes
-            'initial_delay': 20,            # Delay before the first spike can occur
+            'initial_burst_interval': 30,
+            'interval_increment_per_spike': 10,
+            'max_burst_interval': 120,
+            'burst_duration': 3,
+            'base_rate': 0.0,
+            'burst_rate': 0.35,
+            'target_domains': ['sketch', 'photo', 'cartoon'],
+            'initial_delay': 20,
             'strategy': 'replace'
         },
-
         "seasonal_flux": lambda: {
-            'cycle_period': 150,            # Duration of a full seasonal cycle (e.g., 150 rounds)
-            'max_amplitude_drift_rate': 0.016, # Max drift rate during peak transition between domains
-            'base_drift_rate': 0.001,       # A very slow underlying constant drift (can be 0)
-            'domain_A': 'photo',            # First primary domain in the cycle
-            'domain_B': 'sketch',           # Second primary domain in the cycle
-            'initial_phase_offset_t': 0,    # Optional: shifts the start of the sine wave
-            'initial_delay': 10,            # Overall initial delay for the schedule
+            'cycle_period': 150,
+            'max_amplitude_drift_rate': 0.016,
+            'base_drift_rate': 0.001,
+            'domain_A': 'photo',
+            'domain_B': 'sketch',
+            'initial_phase_offset_t': 0,
+            'initial_delay': 10,
             'strategy': 'replace'
         },
     }
@@ -445,47 +236,23 @@ class DriftScheduler:
             self.domain_index = 0
             self.first_burst_completed = False
         
-        if self.schedule_type.startswith("RV_domain_change_burst"):
+        if self.schedule_type.startswith("spikes"):
             self.modify_burst = False
             self.initial_delay = np.random.randint(self.initial_delay_limits[0], self.initial_delay_limits[1] + 1)
             self.burst_interval = np.random.randint(self.burst_interval_limits[0], self.burst_interval_limits[1] + 1)
             self.burst_duration = np.random.randint(self.burst_duration_limits[0], self.burst_duration_limits[1] + 1)
         
         if self.schedule_type == "decaying_spikes":
-            # State for decaying_spikes
             self.next_spike_start_time_ds = self.initial_delay
-            self.current_spike_end_time_ds = -1 # Tracks if currently in a spike, and when it ends
+            self.current_spike_end_time_ds = -1
             self.current_interval_ds = self.initial_burst_interval
 
-        
-        # Generate burst periods for intermittent_shifts
-        if self.schedule_type == "intermittent_shifts":
-            max_t = 1000  # Maximum time horizon, adjust if needed
-            self.burst_periods = []
-            current_t = 0
-            while current_t < max_t:
-                interval = np.random.randint(self.min_interval, self.max_interval + 1)
-                current_t += interval
-                if current_t >= max_t:
-                    break
-                duration = np.random.randint(self.burst_duration_range[0], self.burst_duration_range[1] + 1)
-                burst_start = current_t
-                burst_end = min(current_t + duration, max_t)
-                drift_rate = np.random.uniform(self.drift_range[0], self.drift_range[1])
-                domain_index = len(self.burst_periods) % len(self.target_domains)
-                target_domain = self.target_domains[domain_index]
-                self.burst_periods.append({
-                    'start': burst_start,
-                    'end': burst_end,
-                    'drift_rate': drift_rate,
-                    'target_domain': target_domain
-                })
-                current_t = burst_end
 
+        
     def get_drift_params(self, t):
         """Returns (drift_rate, target_domains) for the given time t."""
         self.current_step = t
-        if self.schedule_type.startswith("domain_change_burst") or self.schedule_type.startswith("quiet_then_low"):
+        if self.schedule_type.startswith("burst") or self.schedule_type.startswith("wave"):
             if t < self.initial_delay:
                 drift_rate = self.base_rate
                 target_domains = []
@@ -500,20 +267,7 @@ class DriftScheduler:
                 else:
                     drift_rate = self.base_rate
                     target_domains = []
-        elif self.schedule_type == "intermittent_shifts":
-            for burst in self.burst_periods:
-                if burst['start'] <= t < burst['end']:
-                    drift_rate = burst['drift_rate']
-                    target_domains = [burst['target_domain']]
-                    break
-            else:
-                if self.low_drift_start <= t < self.low_drift_end:
-                    drift_rate = self.low_drift_rate
-                    target_domains = [self.target_domains[0]]
-                else:
-                    drift_rate = 0.0
-                    target_domains = []
-        elif self.schedule_type.startswith("RV_domain_change_burst"):
+        elif self.schedule_type.startswith("spikes"):
             if t < self.initial_delay:
                 drift_rate = self.base_rate
                 target_domains = []
@@ -546,17 +300,13 @@ class DriftScheduler:
                 else:
                     drift_rate = self.step_rates[-1]
                     target_domains = [self.step_domains[-1]]
-        elif "constant_drift_domain_change" in self.schedule_type:
+        elif "constant" in self.schedule_type:
             drift_rate = self.drift_rate
             domain_index = (t // self.domain_change_interval) % len(self.target_domains)
             target_domains = [self.target_domains[domain_index]]
-        elif "sine_wave_domain_change" in self.schedule_type:
-            drift_rate = self.amplitude * (1 - np.cos(2 * np.pi * t / self.period)) / 2
-            domain_index = (t // self.period) % len(self.target_domains)
-            target_domains = [self.target_domains[domain_index]]
         elif self.schedule_type == "decaying_spikes":
             drift_rate = self.base_rate
-            target_domains_list = [] # Default to no specific target / no drift beyond base_rate
+            target_domains_list = [] 
 
             # Check if a current spike has just ended
             if self.current_spike_end_time_ds != -1 and t >= self.current_spike_end_time_ds:
@@ -582,12 +332,8 @@ class DriftScheduler:
             if t >= self.initial_delay:
                 current_total_drift_rate = self.base_drift_rate
                 time_in_cycle = t - self.initial_delay + self.initial_phase_offset_t
-                
-                # seasonal_factor ranges from -1 to 1.
-                # Positive favors domain_B, Negative favors domain_A.
                 seasonal_factor = np.sin(2 * np.pi * time_in_cycle / self.cycle_period)
                 
-                # Intensity of the seasonal shift, |seasonal_factor| * max_amplitude_drift_rate
                 seasonal_shift_intensity = abs(seasonal_factor) * self.max_amplitude_drift_rate
                 current_total_drift_rate += seasonal_shift_intensity
 
@@ -597,11 +343,6 @@ class DriftScheduler:
                     elif seasonal_factor < -0.001:
                         target_domains_list = [self.domain_A] # Drifting towards A
                     else:
-                        # Near zero-crossing, could drift towards a mix or a default,
-                        # or just rely on base_drift_rate if it has its own target.
-                        # For simplicity, if very close to zero, let base_drift_rate dominate
-                        # without a strong seasonal component, or pick one, e.g., A.
-                        # If base_drift_rate is 0 and seasonal is at zero-crossing, drift rate is 0.
                         if self.base_drift_rate == 0: # if no base drift, and at zero-crossing, no target.
                             current_total_drift_rate = 0 # effectively no drift
                         else: # if there's base drift, it applies (target might need to be defined for base drift)
@@ -609,19 +350,16 @@ class DriftScheduler:
             else:
                 current_total_drift_rate = 0
                 target_domains_list = []
-            print(target_domains_list)
             # Ensure drift rate is not negative if base_drift_rate somehow caused it (should not happen here)
             current_total_drift_rate = max(0, current_total_drift_rate)
             if current_total_drift_rate == 0:
                 target_domains_list = []
-            print(target_domains_list)
             return current_total_drift_rate, target_domains_list
         else:
             raise ValueError(f"Unsupported schedule type: {self.schedule_type}")
         
         return drift_rate, target_domains
 
-        
     def select_new_target_domain(self):
         """Selects the next target domain for burst schedules."""
         if 'target_domains' not in self.__dict__:
@@ -757,10 +495,6 @@ def evaluate_policy_under_drift(
         device=device
     )
     
-    # print(len(agent_train.domain_drift.current_indices))
-    # print(len(agent_train.current_dataset))
-    # print(len(agent_holdout.domain_drift.current_indices))
-    # print(len(agent_holdout.current_dataset))
         
     # Model, Optimizer
     model = agent_train.get_model()
@@ -787,7 +521,6 @@ def evaluate_policy_under_drift(
         drift_rate, target_domains = drift_scheduler.get_drift_params(t)
         
         agent_train.set_drift_rate(drift_rate)
-        print(drift_rate, target_domains)
         if drift_rate > 0:
             agent_train.set_target_domains(target_domains)
         agent_train.apply_drift()
@@ -882,7 +615,6 @@ def evaluate_policy_under_drift(
     
     
 # Hyperparameters and Constants
-cluster_used = 'gautschi'
 settings = {
         0: {'pi_bar': 0.1, 'V': 65, 'L_i': 1.0},
         1: {'pi_bar': 0.05, 'V': 65, 'L_i': 1.0},
@@ -928,10 +660,10 @@ settings = {
         41: {'pi_bar': 0.03, 'V': 10, 'L_i': 0, 'K_p': 0.13, 'K_d': 0.05, 'lr': 0.01, 'n_steps':5},
         42: {'pi_bar': 0.05, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
         43: {'pi_bar': 0.07, 'V': 10, 'L_i': 0, 'K_p': 0.7, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        44: {'pi_bar': 0.15, 'V': 10, 'L_i': 0, 'K_p': 4.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
-        45: {'pi_bar': 0.20, 'V': 10, 'L_i': 0, 'K_p': 7.0, 'K_d': 2.5, 'lr': 0.01, 'n_steps':5},
-        46: {'pi_bar': 0.25, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 4.0, 'lr': 0.01, 'n_steps':5},
-        47: {'pi_bar': 0.30, 'V': 10, 'L_i': 0, 'K_p': 14.0, 'K_d': 5.5, 'lr': 0.01, 'n_steps':5},
+        44: {'pi_bar': 0.15, 'V': 10, 'L_i': 0, 'K_p': 2.5, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
+        45: {'pi_bar': 0.20, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        46: {'pi_bar': 0.25, 'V': 10, 'L_i': 0, 'K_p': 2.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        47: {'pi_bar': 0.30, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 0.7, 'lr': 0.01, 'n_steps':5},
         50: {'pi_bar': 0.40, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 2.0},
         51: {'pi_bar': 0.45, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 2.0},
         52: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 1.0},
@@ -940,12 +672,12 @@ settings = {
         55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5},
         56: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 0.5},
         57: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 0.5},
-        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 2.0, 'lr': 0.01, 'n_steps':5},
+        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
         61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
-        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.35, 'lr': 0.01, 'n_steps':5},
-        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
+        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.75, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.2, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
+        65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
         66: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.35, 'lr': 0.01, 'n_steps':5},
         67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
         68: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
@@ -967,7 +699,7 @@ DSET_SIZE = 1024
 def main():
     # Get the command line arguments
     parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
-    parser.add_argument('--schedule_type', type=str, default='domain_change_burst_0',
+    parser.add_argument('--schedule_type', type=str, default='burst',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')
     parser.add_argument('--seed', type=int, default=0)
@@ -975,18 +707,16 @@ def main():
     parser.add_argument('--n_rounds', type=int, default=250)
     parser.add_argument('--policy_id', type=int, default=2)
     parser.add_argument('--setting_id', type=int, default=0)
-    parser.add_argument('--model_name', type=str, default='PACSCNN_4', choices=['PACSCNN_1', 'PACSCNN_2', 'PACSCNN_3', 'PACSCNN_4'], help='Model architecture to use')
+    parser.add_argument('--model_name', type=str, default='PACSCNN', choices=['PACSCNN',], help='Model architecture to use')
     parser.add_argument('--img_size', type=int, default=128, help='Size to resize images to (img_size x img_size)')
     args = parser.parse_args()
     
     # Model selection
     model_architectures = {
-        'PACSCNN_1': PACSCNN_1,
-        'PACSCNN_2': PACSCNN_2,
-        'PACSCNN_3': PACSCNN_3,
-        'PACSCNN_4': PACSCNN_4,
+        'PACSCNN': PACSCNN,
     }
     print(f'Model used: {args.model_name}')
+    ### MODIFY IF STORED IN A DIFFERENT LOCATION
     model_path = f"../../../../models/concept_drift_models/{args.model_name}_{'_'.join(args.src_domains)}_img_{args.img_size}_seed_{args.seed}.pth"
     
     # Settings selection

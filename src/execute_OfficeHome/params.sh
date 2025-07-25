@@ -7,17 +7,17 @@ ALL_SRC_DOMAINS=("RealWorld" "Art" "Product" "Clipart")
 ALL_MODEL_NAMES=("OfficeHomeNet")
 
 # Policies to iterate over
-POLICIES=(6)
+POLICIES=(5)
 
 # Setting IDs to iterate over
-SETTING_IDS=(75 76 77 78 79) 
+SETTING_IDS=(79) 
 
 # Image sizes to test different models
 IMG_SIZES=(224)
 
 # Schedules to iterate over
 SCHEDULES=(
-    "domain_change_burst_1" "quiet_then_low_1" "step_1" "RV_domain_change_burst_1"
+    "burst" "spikes" "step" "constant" "wave" "decaying_spikes" "seasonal_flux"
 )
  
 # Array of seeds for reproducibility

@@ -1,0 +1,63 @@
+Using the latest cached version of the dataset since flwrlabs/pacs couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'default' at /home/apiasecz/.cache/huggingface/datasets/flwrlabs___pacs/default/0.0.0/394113073258ead631f617d2e13bb377c0715c4b (last modified on Wed Jan 29 16:59:35 2025).
+Using the latest cached version of the dataset since flwrlabs/pacs couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'default' at /home/apiasecz/.cache/huggingface/datasets/flwrlabs___pacs/default/0.0.0/394113073258ead631f617d2e13bb377c0715c4b (last modified on Wed Jan 29 16:59:35 2025).
+Using the latest cached version of the dataset since flwrlabs/pacs couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'default' at /home/apiasecz/.cache/huggingface/datasets/flwrlabs___pacs/default/0.0.0/394113073258ead631f617d2e13bb377c0715c4b (last modified on Wed Jan 29 16:59:35 2025).
+Device: cuda
+CUDA Version: 12.1
+cuDNN Version: 8902
+PyTorch Version: 2.3.0
+
+Model used: PACSCNN
+Initial dataset creation
+Initial dataset creation
+Initial loss: 27.586103439331055
+<__main__.Policy object at 0x1468ef899a00>
+27.586103439331055
+Loss historical diff: 3.3937578201293945; Loss Difference: 0.0, Decision: 0
+Round 1 took 4.21475887298584s, results:
+{'t': 0, 'current_accuracy': 0.09765625, 'current_loss': 30.97986125946045, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 3.7004899978637695; Loss Difference: 0.0, Decision: 0
+Round 2 took 4.082987546920776s, results:
+{'t': 1, 'current_accuracy': 0.09765625, 'current_loss': 31.286593437194824, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 3.867948532104492; Loss Difference: 0.0, Decision: 0
+Round 3 took 4.222521781921387s, results:
+{'t': 2, 'current_accuracy': 0.09375, 'current_loss': 31.454051971435547, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 4.286019325256348; Loss Difference: 0.0, Decision: 0
+Round 4 took 4.3821330070495605s, results:
+{'t': 3, 'current_accuracy': 0.09375, 'current_loss': 31.872122764587402, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 4.383174896240234; Loss Difference: 0.0, Decision: 0
+Round 5 took 3.7426600456237793s, results:
+{'t': 4, 'current_accuracy': 0.09375, 'current_loss': 31.96927833557129, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 4.416952133178711; Loss Difference: 0.0, Decision: 0
+Round 6 took 4.2512733936309814s, results:
+{'t': 5, 'current_accuracy': 0.08984375, 'current_loss': 32.003055572509766, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 4.9275665283203125; Loss Difference: 0.0, Decision: 0
+Round 7 took 4.416561603546143s, results:
+{'t': 6, 'current_accuracy': 0.0859375, 'current_loss': 32.51366996765137, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 5.131534576416016; Loss Difference: 0.0, Decision: 0
+Round 8 took 4.115644454956055s, results:
+{'t': 7, 'current_accuracy': 0.08203125, 'current_loss': 32.71763801574707, 'train_loss': None, 'decision': 0, 'drift_rate': 0.016, 'target_domains': ['sketch']}
+Loss historical diff: 5.269349098205566; Loss Difference: 0.0, Decision: 1
+Traceback (most recent call last):
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 753, in <module>
+    main()
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 733, in main
+    evaluate_policy_under_drift(
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 554, in evaluate_policy_under_drift
+    update_loss = agent_train.update_steps(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/federated/client.py", line 202, in update_steps
+    return self.model.update_steps(self.data_loader, optimizer, loss_fn, num_updates, verbose)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/models/base_model.py", line 77, in update_steps
+    loss.backward()
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/_tensor.py", line 525, in backward
+    torch.autograd.backward(
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/autograd/__init__.py", line 267, in backward
+    _engine_run_backward(
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/autograd/graph.py", line 744, in _engine_run_backward
+    return Variable._execution_engine.run_backward(  # Calls into the C++ engine to run the backward pass
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+RuntimeError: cuDNN error: CUDNN_STATUS_NOT_INITIALIZED

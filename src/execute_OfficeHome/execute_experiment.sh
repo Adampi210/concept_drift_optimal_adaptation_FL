@@ -37,7 +37,7 @@ echo "  Image Size     : ${IMG_SIZE}"
 echo "=========================================="
 
 # Define the seeds to run
-seeds_to_run=(0 1 2)
+seeds_to_run=(3 4 5 6 7 8 9)
 
 for current_seed in "${seeds_to_run[@]}"; do
     echo # Blank line for readability

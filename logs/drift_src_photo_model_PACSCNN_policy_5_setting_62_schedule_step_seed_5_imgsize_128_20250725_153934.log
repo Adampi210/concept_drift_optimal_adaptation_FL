@@ -1,0 +1,84 @@
+Using the latest cached version of the dataset since flwrlabs/pacs couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'default' at /home/apiasecz/.cache/huggingface/datasets/flwrlabs___pacs/default/0.0.0/394113073258ead631f617d2e13bb377c0715c4b (last modified on Wed Jan 29 16:59:35 2025).
+Using the latest cached version of the dataset since flwrlabs/pacs couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'default' at /home/apiasecz/.cache/huggingface/datasets/flwrlabs___pacs/default/0.0.0/394113073258ead631f617d2e13bb377c0715c4b (last modified on Wed Jan 29 16:59:35 2025).
+Using the latest cached version of the dataset since flwrlabs/pacs couldn't be found on the Hugging Face Hub
+Found the latest cached dataset configuration 'default' at /home/apiasecz/.cache/huggingface/datasets/flwrlabs___pacs/default/0.0.0/394113073258ead631f617d2e13bb377c0715c4b (last modified on Wed Jan 29 16:59:35 2025).
+Device: cuda
+CUDA Version: 12.1
+cuDNN Version: 8902
+PyTorch Version: 2.3.0
+
+Model used: PACSCNN
+Initial dataset creation
+Initial dataset creation
+Initial loss: 34.80974578857422
+<__main__.Policy object at 0x14822a71dc40>
+34.80974578857422
+Loss historical diff: 2.1208839416503906; Loss Difference: 0.0, Decision: 1
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with an OutOfMemoryError: CUDA out of memory. Tried to allocate 260.00 MiB. GPU  (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:924.)
+  return F.conv2d(input, weight, bias, self.stride,
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with an OutOfMemoryError: CUDA out of memory. Tried to allocate 138.00 MiB. GPU  (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:924.)
+  return F.conv2d(input, weight, bias, self.stride,
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with an OutOfMemoryError: CUDA out of memory. Tried to allocate 140.00 MiB. GPU  (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:924.)
+  return F.conv2d(input, weight, bias, self.stride,
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with an OutOfMemoryError: CUDA out of memory. Tried to allocate 74.00 MiB. GPU  (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:924.)
+  return F.conv2d(input, weight, bias, self.stride,
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with an OutOfMemoryError: CUDA out of memory. Tried to allocate 324.00 MiB. GPU  (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:924.)
+  return F.conv2d(input, weight, bias, self.stride,
+/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/conv.py:456: UserWarning: Plan failed with an OutOfMemoryError: CUDA out of memory. Tried to allocate 2.67 GiB. GPU  (Triggered internally at /opt/conda/conda-bld/pytorch_1712608847532/work/aten/src/ATen/native/cudnn/Conv_v8.cpp:924.)
+  return F.conv2d(input, weight, bias, self.stride,
+Traceback (most recent call last):
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 753, in <module>
+    main()
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 733, in main
+    evaluate_policy_under_drift(
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 554, in evaluate_policy_under_drift
+    update_loss = agent_train.update_steps(
+                  ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/federated/client.py", line 202, in update_steps
+    return self.model.update_steps(self.data_loader, optimizer, loss_fn, num_updates, verbose)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/Federated_Learning_Base_Toolkit_torch/fl_toolkit/models/base_model.py", line 75, in update_steps
+    outputs = self.model(inputs)
+              ^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1532, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1541, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 47, in forward
+    x = self.features(x)
+        ^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1532, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1541, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/container.py", line 217, in forward
+    input = module(input)
+            ^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1532, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1541, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/programming/concept_drift_optimal_adaptation_FL/src/execute/evaluate_policy.py", line 70, in forward
+    out = self.bn1(out)
+          ^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1532, in _wrapped_call_impl
+    return self._call_impl(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/module.py", line 1541, in _call_impl
+    return forward_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/modules/batchnorm.py", line 175, in forward
+    return F.batch_norm(
+           ^^^^^^^^^^^^^
+  File "/home/apiasecz/.conda/envs/cog_fl_llm_env/lib/python3.12/site-packages/torch/nn/functional.py", line 2509, in batch_norm
+    return torch.batch_norm(
+           ^^^^^^^^^^^^^^^^^
+torch.cuda.OutOfMemoryError: CUDA out of memory. Tried to allocate 64.00 MiB. GPU 

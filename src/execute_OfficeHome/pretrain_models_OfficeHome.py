@@ -82,8 +82,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
         transforms.ToTensor(),
         transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
     ])
-    cluster = 'gautschi'
-    root_dir = f'/scratch/{cluster}/apiasecz/data/OfficeHome/OfficeHomeDataset_10072016/'
+    root_dir = f'/scratch/gautschi/apiasecz/data/OfficeHome/OfficeHomeDataset_10072016/' ### directory with the OfficeHome dataset
     full_dataset = OfficeHomeDataHandler(root_dir=root_dir, transform=train_transform).dataset
     dataset_size = len(full_dataset)
     print(f"Dataset size: {dataset_size}")
@@ -196,7 +195,7 @@ def main():
     parser.add_argument('--batch_size', type=int, default=256, help='Batch size')
     parser.add_argument('--learning_rate', type=float, default=0.05, help='Learning rate')
     parser.add_argument('--optimizer', type=str, default='sgd', choices=['adam', 'sgd'], help='Optimizer')
-    parser.add_argument('--model_save_dir', type=str, default='../../../../models/concept_drift_models/', help='Model save directory')
+    parser.add_argument('--model_save_dir', type=str, default='../../models/concept_drift_models/', help='Model save directory')
     parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Results save directory')
     parser.add_argument('--img_size', type=int, default=224, help='Image size')
     args = parser.parse_args()
@@ -217,7 +216,7 @@ def main():
 
         model_filename = f"{model_name}_{domain}_img_{args.img_size}_seed_{seed}.pth"
         model_save_path = os.path.join(args.model_save_dir, model_filename)
-
+        
         results_filename = f"{model_name}_{domain}_img_{args.img_size}_seed_{seed}_results.json"
         results_save_path = os.path.join(args.results_save_dir, results_filename)
 

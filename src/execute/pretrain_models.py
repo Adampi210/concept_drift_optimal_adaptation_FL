@@ -17,10 +17,10 @@ from fl_toolkit import *
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# Define Models
-class PACSCNN_4(BaseModelArchitecture):
+# Define Model
+class PACSCNN(BaseModelArchitecture):
     def __init__(self, num_classes=7):
-        super(PACSCNN_4, self).__init__()
+        super(PACSCNN, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(3, 64, kernel_size=3, stride=1, padding=1),
             nn.BatchNorm2d(64),
@@ -203,7 +203,7 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
 def main():
     parser = argparse.ArgumentParser(description="Pretrain Models on PACS Dataset Single Domains")
     parser.add_argument('--seed', type=int, default=0, help='Base random seed')
-    parser.add_argument('--models', type=str, nargs='+', default=['PACSCNN_4',],
+    parser.add_argument('--models', type=str, nargs='+', default=['PACSCNN',],
                         help='Models to train')
     parser.add_argument('--domains', type=str, nargs='+', default=['photo', 'sketch', 'art_painting', 'cartoon'],
                         help='Domains to train on')
@@ -211,10 +211,10 @@ def main():
     parser.add_argument('--batch_size', type=int, default=128, help='Batch size')
     parser.add_argument('--learning_rate', type=float, default=0.005, help='Learning rate')
     parser.add_argument('--optimizer', type=str, default='sgd', choices=['adam', 'sgd'], help='Optimizer')
-    parser.add_argument('--model_save_dir', type=str, default='../../../../models/concept_drift_models/', help='Model save directory')
+    parser.add_argument('--model_save_dir', type=str, default='../../models/concept_drift_models/', help='Model save directory')
     parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Results save directory')
     parser.add_argument('--img_size', type=int, default=128, help='Image size')
-    parser.add_argument('--num_seeds', type=int, default=3, help='Number of seeds')
+    parser.add_argument('--num_seeds', type=int, default=1, help='Number of seeds')
     args = parser.parse_args()
 
     os.makedirs(args.model_save_dir, exist_ok=True)

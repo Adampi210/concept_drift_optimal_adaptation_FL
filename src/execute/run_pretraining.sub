@@ -1,12 +1,12 @@
 #!/bin/bash
 #SBATCH -A cgb              # Account name (adjust as needed)
 #SBATCH -p ai               # Partition
-#SBATCH -q preemptible           # Queue
+#SBATCH -q preemptible      # Queue
 #SBATCH --nodes=1           # Number of nodes
 #SBATCH --ntasks=1          # Number of tasks
 #SBATCH --cpus-per-task=14  # CPUs per task
 #SBATCH --gpus-per-node=1   # GPUs per node
-#SBATCH --time=5:00:00     # Time limit (adjust as needed)
+#SBATCH --time=12:00:00     # Time limit (adjust as needed)
 
 # Load necessary modules (adjust based on your system)
 module load cuda
@@ -18,4 +18,5 @@ source activate cog_fl_llm_env
 # Define parameter arrays
 
 # Execute the script with the assigned parameters
-python3 pretrain_models_OfficeHome.py --model OfficeHomeNet --seed 2
+python3 pretrain_models.py --seed 9 &
+wait
