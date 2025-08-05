@@ -74,6 +74,44 @@ def read_drift_data(drift_path):
         print(f"Error reading drift file {drift_path}: {e}")
         return [], [], [], [], [] #, [], []
   
+  
+def read_drift_data_new(drift_path):
+    """
+    Reads the drift policy JSON file.
+
+    Args:
+        drift_path (str): Path to the drift policy JSON file.
+
+    Returns:
+        tuple: (t_epochs, accuracies, losses, decisions, drift_rates)
+    """
+    t_epochs = []
+    accuracies = []
+    losses = []
+    decisions = []
+    drift_rates = []
+    target_domain_list = []
+    # domain_accuracies = {'photo': [], 'sketch': [], 'art_painting': [], 'cartoon': []}
+    # domain_losses = {'photo': [], 'sketch': [], 'art_painting': [], 'cartoon': []}
+    try:
+        with open(drift_path, 'r') as f:
+            data = json.load(f)
+        results = data['results']
+        for entry in results:
+            t_epochs.append(entry['t'])
+            accuracies.append(entry['current_accuracy'] * 100)  # Convert to percentage
+            # for domain in domain_accuracies.keys():
+            #     domain_accuracies[domain].append(entry['domain_accuracies'][domain] * 100)
+            #     domain_losses[domain].append(entry['domain_losses'][domain])
+            losses.append(entry['measured_loss'])
+            decisions.append(int(entry['decision']))  # Ensure integer
+            drift_rates.append(entry['drift_rate'])
+            target_domain_list.append(entry['target_domains'])
+        return t_epochs, accuracies, losses, decisions, drift_rates # , domain_accuracies, domain_losses
+    except Exception as e:
+        print(f"Error reading drift file {drift_path}: {e}")
+        return [], [], [], [], [] #, [], []
+  
 def print_kp_kd(drift_path):
     """
     Prints the kp and kd values from the drift policy JSON file.
@@ -1094,6 +1132,7 @@ def compare_policy_setting_pairs(policy_setting_pairs, schedule_type, source_dom
         2: 'Periodic',
         3: 'Budget-Increase',
         4: 'Budget-Threshold',
+        5: 'RCCDA (Ours)',
         6: 'Ours'
     }
     print("\nAccuracy and Update Rate Summary Across Domains:")
@@ -1104,6 +1143,418 @@ def compare_policy_setting_pairs(policy_setting_pairs, schedule_type, source_dom
         print(f"  Average Accuracy: {data['avg_accuracy']:.1f}% ± {data['std_accuracy']:.1f}%")
         print(f"  Average Update Rate: {data['avg_update_rate']:.3f} ± {data['std_update_rate']:.3f}")
         print("-" * 50)
+
+    return summary
+
+def compare_policy_setting_pairs_uncertain(policy_setting_pairs, schedule_type, source_domains, 
+                                 model_name='PACSCNN', img_size=128, 
+                                 results_dir='../../data/results/', T=None, 
+                                 uncertainty=0):
+    """
+    Compares average accuracy and average update rate across source domains for given (policy, setting) pairs and schedule type.
+
+    Args:
+        policy_setting_pairs (list): List of tuples [(policy_id, setting_id), ...] to compare.
+        schedule_type (str): Type of drift schedule (e.g., 'domain_change_burst_2').
+        source_domains (list): List of source domain names to analyze.
+        model_name (str): Model architecture name (default: 'PACSCNN_4').
+        img_size (int): Image size (default: 128).
+        results_dir (str): Directory containing result JSON files (default: '../../data/results/').
+        T (int, optional): Upper limit of time steps to consider. If None, uses all time steps.
+    """
+    schedule_legend = {'burst': 'Burst', 
+                    'step_1': 'Step',
+                    'quiet_then_low_1': 'Wave', 
+                    'RV_domain_change_burst_1': 'Spikes'}
+    
+    schedule_used = schedule_legend.get(schedule_type, schedule_type)
+    print(f"Comparing policy-setting pairs for Schedule: {schedule_used}, Domains: {source_domains}")
+    
+    # Initialize data storage
+    results = defaultdict(list)
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+    for policy_id, setting_id in policy_setting_pairs:
+        for source_domain in source_domains:
+            # Define file pattern for this policy, setting, and source domain
+            pattern = re.compile(
+                rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
+                rf'_src_{re.escape(source_domain)}_model_{model_name}'
+                rf'_img_{str(img_size)}_seed_\d+\_uncertainty_gaussian_{uncertainty}.json$'
+            )
+            matching_files = sorted([f for f in all_json_files if pattern.match(os.path.basename(f))])[:3]
+            if not matching_files:
+                print(f"No files found for Policy {policy_id}, Setting {setting_id}, "
+                      f"Schedule {schedule_type}, Source {source_domain}, Img Size {img_size}, Uncertainty {uncertainty}")
+                continue
+            if policy_id == 5:
+                print_kp_kd(matching_files[0])
+            # Aggregate accuracy and decision data across seeds
+            all_accuracies = []
+            all_decisions = []
+            for file_path in matching_files:
+                epochs, accs, _, decisions, _ = read_drift_data_new(file_path)
+                if not epochs:
+                    continue
+                if T is not None:
+                    accs = accs[:T+1]
+                    decisions = decisions[:T+1]
+                all_accuracies.extend(accs)
+                all_decisions.extend(decisions)
+            
+            if all_accuracies:
+                mean_accuracy = np.mean(all_accuracies)
+                std_accuracy = np.std(all_accuracies)
+                mean_update_rate = np.mean(all_decisions)
+                results[(policy_id, setting_id)].append({
+                    'source_domain': source_domain,
+                    'mean_accuracy': mean_accuracy,
+                    'std_accuracy': std_accuracy,
+                    'mean_update_rate': mean_update_rate
+                })
+
+    # Calculate average accuracy and average update rate across domains for each (policy, setting) pair
+    summary = {}
+    for policy_id, setting_id in policy_setting_pairs:
+        pair_data = results.get((policy_id, setting_id), [])
+        if pair_data:
+            mean_accs = [d['mean_accuracy'] for d in pair_data]
+            mean_update_rates = [d['mean_update_rate'] for d in pair_data]
+            avg_accuracy = np.mean(mean_accs)
+            std_accuracy = np.std(mean_accs)
+            avg_update_rate = np.mean(mean_update_rates)
+            std_update_rate = np.std(mean_update_rates)
+            summary[(policy_id, setting_id)] = {
+                'avg_accuracy': avg_accuracy,
+                'std_accuracy': std_accuracy,
+                'avg_update_rate': avg_update_rate,
+                'std_update_rate': std_update_rate,
+                'domains': [d['source_domain'] for d in pair_data]
+            }
+
+    # Display results
+    policy_legend = {
+        1: 'Uniform',
+        2: 'Periodic',
+        3: 'Budget-Increase',
+        4: 'Budget-Threshold',
+        5: 'Ours'
+    }
+    print("\nAccuracy and Update Rate Summary Across Domains:")
+    print("-" * 50)
+    for (policy_id, setting_id), data in summary.items():
+        print(f"Policy {policy_legend[policy_id]}, Setting: {setting_id}:")
+        print(f"  Domains: {', '.join(data['domains'])}")
+        print(f"  Average Accuracy: {data['avg_accuracy']:.1f}% ± {data['std_accuracy']:.1f}%")
+        print(f"  Average Update Rate: {data['avg_update_rate']:.3f} ± {data['std_update_rate']:.3f}")
+        print("-" * 50)
+
+    return summary
+
+def compare_policy_setting_pairs_new(policy_setting_pairs, schedule_type, source_domains, 
+                                 model_name='PACSCNN', img_size=128, 
+                                 results_dir='../../data/results/', T=None):
+    """
+    Compares average accuracy and average update rate across source domains for given (policy, setting) pairs and schedule type.
+
+    Args:
+        policy_setting_pairs (list): List of tuples [(policy_id, setting_id), ...] to compare.
+        schedule_type (str): Type of drift schedule (e.g., 'domain_change_burst_2').
+        source_domains (list): List of source domain names to analyze.
+        model_name (str): Model architecture name (default: 'PACSCNN_4').
+        img_size (int): Image size (default: 128).
+        results_dir (str): Directory containing result JSON files (default: '../../data/results/').
+        T (int, optional): Upper limit of time steps to consider. If None, uses all time steps.
+    """
+    schedule_legend = {'burst': 'Burst', 
+                    'step_1': 'Step',
+                    'quiet_then_low_1': 'Wave', 
+                    'RV_domain_change_burst_1': 'Spikes'}
+    
+    schedule_used = schedule_legend.get(schedule_type, schedule_type)
+    print(f"Comparing policy-setting pairs for Schedule: {schedule_used}, Domains: {source_domains}")
+    
+    # Initialize data storage
+    results = defaultdict(list)
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+    for policy_id, setting_id in policy_setting_pairs:
+        for source_domain in source_domains:
+            # Define file pattern for this policy, setting, and source domain
+            pattern = re.compile(
+                rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
+                rf'_src_{re.escape(source_domain)}_model_{model_name}'
+                rf'_img_{str(img_size)}_seed_\d+\.json$'
+            )
+            matching_files = sorted([f for f in all_json_files if pattern.match(os.path.basename(f))])[:3]
+            if not matching_files:
+                print(f"No files found for Policy {policy_id}, Setting {setting_id}, "
+                      f"Schedule {schedule_type}, Source {source_domain}, Img Size {img_size}")
+                continue
+            if policy_id == 5:
+                print_kp_kd(matching_files[0])
+            # Aggregate accuracy and decision data across seeds
+            all_accuracies = []
+            all_decisions = []
+            for file_path in matching_files:
+                epochs, accs, _, decisions, _ = read_drift_data_new(file_path)
+                if not epochs:
+                    continue
+                if T is not None:
+                    accs = accs[:T+1]
+                    decisions = decisions[:T+1]
+                all_accuracies.extend(accs)
+                all_decisions.extend(decisions)
+            
+            if all_accuracies:
+                mean_accuracy = np.mean(all_accuracies)
+                std_accuracy = np.std(all_accuracies)
+                mean_update_rate = np.mean(all_decisions)
+                results[(policy_id, setting_id)].append({
+                    'source_domain': source_domain,
+                    'mean_accuracy': mean_accuracy,
+                    'std_accuracy': std_accuracy,
+                    'mean_update_rate': mean_update_rate
+                })
+
+    # Calculate average accuracy and average update rate across domains for each (policy, setting) pair
+    summary = {}
+    for policy_id, setting_id in policy_setting_pairs:
+        pair_data = results.get((policy_id, setting_id), [])
+        if pair_data:
+            mean_accs = [d['mean_accuracy'] for d in pair_data]
+            mean_update_rates = [d['mean_update_rate'] for d in pair_data]
+            avg_accuracy = np.mean(mean_accs)
+            std_accuracy = np.std(mean_accs)
+            avg_update_rate = np.mean(mean_update_rates)
+            std_update_rate = np.std(mean_update_rates)
+            summary[(policy_id, setting_id)] = {
+                'avg_accuracy': avg_accuracy,
+                'std_accuracy': std_accuracy,
+                'avg_update_rate': avg_update_rate,
+                'std_update_rate': std_update_rate,
+                'domains': [d['source_domain'] for d in pair_data]
+            }
+
+    # Display results
+    policy_legend = {
+        1: 'Uniform',
+        2: 'Periodic',
+        3: 'Budget-Increase',
+        4: 'Budget-Threshold',
+        5: 'Ours'
+    }
+    print("\nAccuracy and Update Rate Summary Across Domains:")
+    print("-" * 50)
+    for (policy_id, setting_id), data in summary.items():
+        print(f"Policy {policy_legend[policy_id]}, Setting: {setting_id}:")
+        print(f"  Domains: {', '.join(data['domains'])}")
+        print(f"  Average Accuracy: {data['avg_accuracy']:.1f}% ± {data['std_accuracy']:.1f}%")
+        print(f"  Average Update Rate: {data['avg_update_rate']:.3f} ± {data['std_update_rate']:.3f}")
+        print("-" * 50)
+
+    return summary
+
+def compare_policy_setting_pairs_text(policy_setting_pairs, schedule_type, source_domains, 
+                                 model_name='TinyBertForSentiment', 
+                                 results_dir='../../data/results/', T=None):
+    """
+    Compares average accuracy and average update rate across source domains for given (policy, setting) pairs and schedule type.
+
+    Args:
+        policy_setting_pairs (list): List of tuples [(policy_id, setting_id), ...] to compare.
+        schedule_type (str): Type of drift schedule (e.g., 'domain_change_burst_2').
+        source_domains (list): List of source domain names to analyze.
+        model_name (str): Model architecture name (default: 'PACSCNN_4').
+        img_size (int): Image size (default: 128).
+        results_dir (str): Directory containing result JSON files (default: '../../data/results/').
+        T (int, optional): Upper limit of time steps to consider. If None, uses all time steps.
+    """
+    schedule_legend = {'burst': 'Burst', 
+                    'step_1': 'Step',
+                    'quiet_then_low_1': 'Wave', 
+                    'RV_domain_change_burst_1': 'Spikes'}
+    
+    schedule_used = schedule_legend.get(schedule_type, schedule_type)
+    print(f"Comparing policy-setting pairs for Schedule: {schedule_used}, Domains: {source_domains}")
+    
+    # Initialize data storage
+    results = defaultdict(list)
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+    for policy_id, setting_id in policy_setting_pairs:
+        for source_domain in source_domains:
+            # Define file pattern for this policy, setting, and source domain
+            pattern = re.compile(
+                rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
+                rf'_src_{re.escape(source_domain)}_model_{model_name}'
+                rf'_seed_\d+\.json$'
+            )
+            matching_files = sorted([f for f in all_json_files if pattern.match(os.path.basename(f))])[:3]
+            if not matching_files:
+                print(f"No files found for Policy {policy_id}, Setting {setting_id}, "
+                      f"Schedule {schedule_type}, Source {source_domain}, Img Size {img_size}")
+                continue
+            if policy_id == 5:
+                print_kp_kd(matching_files[0])
+            # Aggregate accuracy and decision data across seeds
+            all_accuracies = []
+            all_decisions = []
+            for file_path in matching_files:
+                epochs, accs, _, decisions, _ = read_drift_data(file_path)
+                if not epochs:
+                    continue
+                if T is not None:
+                    accs = accs[:T+1]
+                    decisions = decisions[:T+1]
+                all_accuracies.extend(accs)
+                all_decisions.extend(decisions)
+            
+            if all_accuracies:
+                mean_accuracy = np.mean(all_accuracies)
+                std_accuracy = np.std(all_accuracies)
+                mean_update_rate = np.mean(all_decisions)
+                results[(policy_id, setting_id)].append({
+                    'source_domain': source_domain,
+                    'mean_accuracy': mean_accuracy,
+                    'std_accuracy': std_accuracy,
+                    'mean_update_rate': mean_update_rate
+                })
+
+    # Calculate average accuracy and average update rate across domains for each (policy, setting) pair
+    summary = {}
+    for policy_id, setting_id in policy_setting_pairs:
+        pair_data = results.get((policy_id, setting_id), [])
+        if pair_data:
+            mean_accs = [d['mean_accuracy'] for d in pair_data]
+            mean_update_rates = [d['mean_update_rate'] for d in pair_data]
+            avg_accuracy = np.mean(mean_accs)
+            std_accuracy = np.std(mean_accs)
+            avg_update_rate = np.mean(mean_update_rates)
+            std_update_rate = np.std(mean_update_rates)
+            summary[(policy_id, setting_id)] = {
+                'avg_accuracy': avg_accuracy,
+                'std_accuracy': std_accuracy,
+                'avg_update_rate': avg_update_rate,
+                'std_update_rate': std_update_rate,
+                'domains': [d['source_domain'] for d in pair_data]
+            }
+
+    # Display results
+    policy_legend = {
+        1: 'Uniform',
+        2: 'Periodic',
+        3: 'Budget-Increase',
+        4: 'Budget-Threshold',
+        5: 'Ours'
+    }
+    print("\nAccuracy and Update Rate Summary Across Domains:")
+    print("-" * 50)
+    for (policy_id, setting_id), data in summary.items():
+        print(f"Policy {policy_legend[policy_id]}, Setting: {setting_id}:")
+        print(f"  Domains: {', '.join(data['domains'])}")
+        print(f"  Average Accuracy: {data['avg_accuracy']:.1f}% ± {data['std_accuracy']:.1f}%")
+        print(f"  Average Update Rate: {data['avg_update_rate']:.3f} ± {data['std_update_rate']:.3f}")
+        print("-" * 50)
+
+    return summary
+
+
+def analyze_policy_performance(policy_setting_pairs, schedule_type, source_domains,
+                               model_name='PACSCNN_4', img_size=128,
+                               results_dir='../../data/results/', T=None):
+    """
+    Analyzes policy performance by calculating mean and standard deviation of
+    accuracies at multiple levels: across all seeds/domains, per-domain, 
+    and across domain averages.
+
+    Args:
+        policy_setting_pairs (list): List of tuples [(policy_id, setting_id), ...] to analyze.
+        schedule_type (str): Type of drift schedule.
+        source_domains (list): List of source domain names.
+        model_name (str): Model architecture name.
+        img_size (int): Image size.
+        results_dir (str): Directory containing result JSON files.
+        T (int, optional): Upper limit of time steps to consider.
+    """
+    policy_legend = {1: 'Uniform', 2: 'Periodic', 3: 'Budget-Increase', 4: 'Budget-Threshold', 6: 'Ours'}
+    schedule_legend = {'domain_change_burst_1': 'Burst', 'step_1': 'Step', 'quiet_then_low_1': 'Wave', 'RV_domain_change_burst_1': 'Spikes'}
+    schedule_used = schedule_legend.get(schedule_type, schedule_type)
+    print(f"Analyzing Performance for Schedule: {schedule_used}\n")
+
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+    summary = {}
+
+    for policy_id, setting_id in policy_setting_pairs:
+        all_seed_means_global = []
+        per_domain_results = {}
+        all_update_rates_global = []
+
+        for source_domain in source_domains:
+            pattern = re.compile(
+                rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
+                rf'_src_{re.escape(source_domain)}_model_{model_name}'
+                rf'_img_{str(img_size)}_seed_\d+\.json$'
+            )
+            matching_files = sorted([f for f in all_json_files if pattern.match(os.path.basename(f))])[:3]
+            
+            if not matching_files:
+                continue
+
+            seed_level_means = []
+            seed_level_update_rates = []
+            for file_path in matching_files:
+                _, accs, _, decisions, _ = read_drift_data(file_path)
+                if not accs: continue
+                if T is not None:
+                    accs, decisions = accs[:T+1], decisions[:T+1]
+                
+                # First, calculate the mean for this single run (seed)
+                seed_level_means.append(np.mean(accs))
+                seed_level_update_rates.append(np.mean(decisions))
+            
+            if not seed_level_means: continue
+
+            # Store per-domain stats (mean and std across its seeds)
+            per_domain_results[source_domain] = {
+                'mean_of_seed_means': np.mean(seed_level_means),
+                'std_of_seed_means': np.std(seed_level_means)
+            }
+            
+            all_seed_means_global.extend(seed_level_means)
+            all_update_rates_global.extend(seed_level_update_rates)
+
+        if not all_seed_means_global: continue
+            
+        # --- Calculate All Summary Statistics ---
+        
+        # 1. NEW (Global): Mean/std across all collected seed means from all domains
+        global_mean_acc = np.mean(all_seed_means_global)
+        global_std_acc = np.std(all_seed_means_global)
+        global_mean_update = np.mean(all_update_rates_global)
+
+        # 2. ORIGINAL (Inter-Domain): Mean/std of the domain averages
+        domain_avg_accs = [res['mean_of_seed_means'] for res in per_domain_results.values()]
+        inter_domain_mean_acc = np.mean(domain_avg_accs)
+        inter_domain_std_acc = np.std(domain_avg_accs)
+
+        # --- Display Results ---
+        policy_name = policy_legend.get(policy_id, f"ID {policy_id}")
+        print(f"--- Policy: {policy_name}, Setting: {setting_id} ---")
+        
+        print("\n1. Overall Performance (across all seeds & domains)")
+        print(f"   Mean Accuracy:     {global_mean_acc:.1f}% ± {global_std_acc:.1f}%")
+        print(f"   Mean Update Rate:  {global_mean_update:.3f}")
+
+        print("\n2. Per-Domain Stability (mean ± std across seeds)")
+        for domain, stats in per_domain_results.items():
+            print(f"   - {domain}: {stats['mean_of_seed_means']:.1f}% ± {stats['std_of_seed_means']:.1f}%")
+        
+        print("\n3. Inter-Domain Consistency (Original Method)")
+        print(f"   (Shows how much avg. performance varies between domains)")
+        print(f"   Mean of Domain Avgs: {inter_domain_mean_acc:.1f}% ± {inter_domain_std_acc:.1f}%")
+
+        print("-" * 55 + "\n")
+        
+        # Store for return value
+        summary[(policy_id, setting_id)] = {'global':... , 'per_domain':...} # Simplified for brevity
 
     return summary
 
@@ -2126,7 +2577,6 @@ def compare_schedules(schedule_types_and_sources, policy_setting_pairs_per_sched
     print(f"Saved plot to {output_path}")
     plt.close(fig)
     
-    
 def plot_accuracy_vs_update_rate_and_pi_bar(settings_per_policy, policies, schedule_type, source_domains, 
                                             model_name, img_size, results_dir='../../data/results/', 
                                             output_dir='../../data/plots/', dataset_name='PACS'):
@@ -2274,7 +2724,14 @@ if __name__ == "__main__":
     
     settings = list(range(40, 48))  # [40, 41, ..., 47]
     policies = [1, 2, 3, 4, 6]
+    # analyze_policy_performance([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='domain_change_burst_1', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
 
+
+    compare_policy_setting_pairs([(1, 70), (2, 70), (3, 70), (4, 70), (5, 74)], schedule_type='burst', source_domains=['real', 'clipart', 'painting', 'sketch'],
+                                 model_name='DomainNetNet', img_size=224, T=250)
+    compare_policy_setting_pairs_text([(1, 3), (2, 3), (3, 3), (4, 3), (5, 24)], schedule_type='burst', source_domains=['Books', 'Clothing', 'Hotel', 'Laptop', 'Restaurant'],
+                                      model_name='TinyBertForSentiment', T=250)
+    exit()
     # PACS dataset, schedule: domain_change_burst_1
     settings_per_policy = {
         1: [40, 41, 42, 43, 44, 45, 46, 47],
@@ -2283,6 +2740,7 @@ if __name__ == "__main__":
         4: [40, 41, 42, 43, 44, 45, 46, 47],
         6: [40, 41, 42, 43, 44, 45, 46, 47]
     }
+    
     
     compare_policy_setting_pairs([(6, 71), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='seasonal_flux', source_domains=['RealWorld', 'Art', 'Product', 'Clipart'],
                                  model_name='OfficeHomeNet', img_size=224, T=250)
@@ -2326,6 +2784,7 @@ if __name__ == "__main__":
     # Main figure plot
     
     # print('PACS Results')
+
     # compare_policy_setting_pairs([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='domain_change_burst_1', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
     # compare_policy_setting_pairs([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='step_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])
     # compare_policy_setting_pairs([(6, 75), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='quiet_then_low_1', source_domains=['art_painting', 'photo', 'sketch', 'cartoon'])

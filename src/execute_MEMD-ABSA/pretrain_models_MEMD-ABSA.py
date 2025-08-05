@@ -1,210 +1,262 @@
 import os
-import json
 import random
 import argparse
+import json
 import time
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import DataLoader, Subset
-from transformers import DistilBertTokenizer
+from torch.utils.data import DataLoader, Dataset
+from transformers import DistilBertForSequenceClassification, DistilBertTokenizer
 import numpy as np
-from fl_toolkit import *
-from transformers import DistilBertForSequenceClassification
+
+# Import your custom modules from fl_toolkit
+from fl_toolkit import BaseModelArchitecture, BaseNeuralNetwork
 
 # Set device
 device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-# MEMDABSANet model
-class MEMDABSANet(BaseModelArchitecture):
-    def __init__(self, num_classes=3):  # POS, NEG, NEU
-        super(MEMDABSANet, self).__init__()
-        self.model = DistilBertForSequenceClassification.from_pretrained(
-            'distilbert-base-uncased',
-            num_labels=num_classes
+print("Model and tokenizer cached successfully.")
+# --- Define DistilBert Model for Sentiment Analysis ---
+class DistilBertForSentiment(BaseModelArchitecture):
+    def __init__(self, num_classes=3): # POS, NEU, NEG
+        super(DistilBertForSentiment, self).__init__()
+        self.distilbert = DistilBertForSequenceClassification.from_pretrained(
+            'distilbert-base-uncased', 
+            num_labels=num_classes, 
+            local_files_only=True
         )
-        # Freeze all but the classifier and last transformer layer
-        for param in self.model.distilbert.embeddings.parameters():
-            param.requires_grad = False
-        for i in range(5):  # DistilBERT has 6 transformer layers; freeze first 5
-            for param in self.model.distilbert.transformer.layer[i].parameters():
-                param.requires_grad = False
-    
-    def forward(self, input_ids, attention_mask=None):
-        outputs = self.model(input_ids=input_ids, attention_mask=attention_mask)
-        return outputs.logits
-    
-    def get_params(self):
-        return self.state_dict()
 
-# Utility Functions
+    def forward(self, input_ids, attention_mask):
+        outputs = self.distilbert(
+            input_ids=input_ids,
+            attention_mask=attention_mask
+        )
+        return outputs.logits
+
+# --- Simplified Dataset Class for this script ---
+class MEMDABSADataset(Dataset):
+    """A simplified PyTorch Dataset for MEMD-ABSA data with single labels."""
+    def __init__(self, data_list, tokenizer, max_length=128):
+        self.data = data_list # List of (text, label, domain)
+        self.tokenizer = tokenizer
+        self.max_length = max_length
+    
+    def __len__(self):
+        return len(self.data)
+    
+    def __getitem__(self, idx):
+        text, label, domain = self.data[idx]
+        
+        encoding = self.tokenizer.encode_plus(
+            text,
+            add_special_tokens=True,
+            max_length=self.max_length,
+            return_token_type_ids=False,
+            padding='max_length',
+            return_attention_mask=True,
+            return_tensors='pt',
+            truncation=True
+        )
+        
+        # The BaseNeuralNetwork expects (inputs, targets)
+        return {
+            'input_ids': encoding['input_ids'].flatten(),
+            'attention_mask': encoding['attention_mask'].flatten()
+        }, torch.tensor(label, dtype=torch.long)
+
+
 def set_seed(seed):
     random.seed(seed)
     np.random.seed(seed)
     torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    if torch.cuda.is_available():
+        torch.cuda.manual_seed_all(seed)
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def save_model(model, save_path):
-    torch.save(model.state_dict(), save_path)
-
-def print_debug_info(agent, num_epochs, loss, accuracy_fn):
-    time_start = time.time()
-    accuracy = agent.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False) * 100
-    print(f"Time to evaluate model: {time.time() - time_start:.2f} seconds")
-    return accuracy
-
-# Training Function
-def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, learning_rate, optimizer_choice, results_save_path):
-    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased')
-    root_dir = f'/scratch/gautschi/apiasecz/data/MEMD-ABSA/MEMD_ABSA_Dataset/'  # REPLACE WITH YOUR ACTUAL PATH
-    full_dataset = MEMDABSADataHandler(root_dir=root_dir, transform=tokenizer).dataset
-    dataset_size = len(full_dataset)
-    print(f"Dataset size: {dataset_size}")
-    indices = np.arange(dataset_size)
-    np.random.shuffle(indices)  # Randomize indices
-    time_start = time.time()
-    # Split into 80% training, 20% holdout
-    train_size = int(0.8 * dataset_size)
-    train_indices = indices[:train_size]
-    holdout_indices = indices[train_size:]
+# --- Helper function to load data from a specific split (Train/Dev/Test) ---
+def load_data_from_domain(root_dir, domain, split, tokenizer, max_len):
+    """
+    Loads and parses a specific split (Train.json, Dev.json, or Test.json) 
+    for a domain, taking only the first sentiment label per sentence.
+    """
+    sentiment_to_label = {'POS': 2, 'NEU': 1, 'NEG': 0}
+    data_list = []
     
-    # Create subsets
-    train_data_handler = MEMDABSADataHandler(root_dir=root_dir, transform=tokenizer)
-    train_data_handler.set_subset(train_indices)
-    holdout_data_handler = MEMDABSADataHandler(root_dir=root_dir, transform=tokenizer)
-    holdout_data_handler.set_subset(holdout_indices)
+    file_path = os.path.join(root_dir, domain, f'{split}.json')
+    
+    if not os.path.exists(file_path):
+        print(f"Warning: {file_path} not found. Skipping.")
+        return None
 
-    train_drift = DomainDrift(
-        train_data_handler,
-        source_domains=[domain],
-        target_domains=[domain],
-        drift_rate=0,  # No drift during pretraining
-        desired_size=None  # Use all available data
-    )
-    
-    holdout_drift = DomainDrift(
-        holdout_data_handler,
-        source_domains=[domain],
-        target_domains=[domain],
-        drift_rate=0,  # No drift during pretraining
-        desired_size=None
-    )
-    
-    agent_train = DriftAgent(
-        client_id=0,
-        model_architecture=model_class,
-        domain_drift=train_drift,
-        batch_size=batch_size,
-        device=device
-    )
-    
-    agent_holdout = DriftAgent(
-        client_id=1,
-        model_architecture=model_class,
-        domain_drift=holdout_drift,
-        batch_size=batch_size,
-        device=device
-    )
+    print(f"Loading {split} data from: {file_path}")
+    with open(file_path, 'r', encoding='utf-8') as f:
+        try:
+            content_list = json.load(f)
+            for content in content_list:
+                text = content.get('raw_words')
+                quadruples = content.get('quadruples')
+                
+                if text and quadruples and len(quadruples) > 0:
+                    sentiment_str = quadruples[0]['sentiment']
+                    if sentiment_str in sentiment_to_label:
+                        label = sentiment_to_label[sentiment_str]
+                        data_list.append((text, label, domain))
+        except json.JSONDecodeError:
+            print(f"Warning: Could not decode JSON from {file_path}")
+            return None
+            
+    return MEMDABSADataset(data_list, tokenizer=tokenizer, max_length=max_len)
 
-    model = agent_train.get_model().to(device)
+
+# Training and Evaluation Function
+def train_and_evaluate_model(model_class, model_path, seed, domain, num_epochs, batch_size, learning_rate, optimizer_choice, root_dir, max_len, tokenizer):
+    set_seed(seed)
+    
+    # Load Train, Validation (Dev), and Test sets
+    train_dataset = load_data_from_domain(root_dir, domain, 'Train', tokenizer, max_len)
+    val_dataset = load_data_from_domain(root_dir, domain, 'Dev', tokenizer, max_len)
+    test_dataset = load_data_from_domain(root_dir, domain, 'Test', tokenizer, max_len)
+    
+    if train_dataset is None or val_dataset is None or len(train_dataset) == 0 or len(val_dataset) == 0:
+        print(f"Missing Train or Dev data for domain {domain}. Skipping training.")
+        return
+
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, num_workers=0)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False, num_workers=0)
+    
+    MEMD_ABSA_Model_Net = BaseNeuralNetwork(model_class, device=device)
+    
     criterion = nn.CrossEntropyLoss()
+    if optimizer_choice.lower() == 'adamw':
+        optimizer = optim.AdamW(filter(lambda p: p.requires_grad, MEMD_ABSA_Model_Net.model.parameters()), lr=learning_rate)
+    else: # Default to SGD
+        optimizer = optim.SGD(filter(lambda p: p.requires_grad, MEMD_ABSA_Model_Net.model.parameters()), lr=learning_rate, momentum=0.9)
 
-    if optimizer_choice.lower() == 'adam':
-        optimizer = optim.Adam(model.parameters(), lr=learning_rate)
-    elif optimizer_choice.lower() == 'sgd':
-        optimizer = optim.SGD(model.parameters(), lr=learning_rate, momentum=0.9)
+    # Early stopping parameters
+    patience = 2
+    patience_counter = 0
+    best_val_accuracy = 0.0
+    best_model_state = None
+    val_accuracy = MEMD_ABSA_Model_Net.evaluate(val_loader, accuracy_fn)
+    val_loss = MEMD_ABSA_Model_Net.evaluate(val_loader, loss_fn)
+    print(f"Initial Validation Accuracy: {val_accuracy:.4f}, Validation Loss: {val_loss:.4f}")
+    print(f"Starting training on domain: {domain}...")
+    for epoch in range(num_epochs):
+        avg_loss = MEMD_ABSA_Model_Net.update_steps(train_loader, optimizer, criterion, 60, verbose=True)
+        
+        # Validation
+        val_accuracy = MEMD_ABSA_Model_Net.evaluate(val_loader, accuracy_fn)
+        val_loss = MEMD_ABSA_Model_Net.evaluate(val_loader, loss_fn)
+        print(f"Epoch {epoch + 1}/{num_epochs}, Train Loss: {avg_loss:.4f}, Val Accuracy: {val_accuracy:.4f}, Val Loss: {val_loss:.4f}")
+        if val_accuracy > best_val_accuracy:
+            best_val_accuracy = val_accuracy
+            patience_counter = 0
+            best_model_state = MEMD_ABSA_Model_Net.get_params()
+            print(f"New best model found at epoch {epoch + 1} with Val Accuracy: {best_val_accuracy:.4f}")
+
+        
+    # Load the best model and evaluate on the test set
+    if best_model_state:
+        MEMD_ABSA_Model_Net.set_params(best_model_state)
+        test_accuracy = MEMD_ABSA_Model_Net.evaluate(test_loader, accuracy_fn)
+        print(f"\nBest model from epoch {epoch + 1 - patience} achieved Test Accuracy: {test_accuracy:.4f}")
+        MEMD_ABSA_Model_Net.save_model(model_path)
+
+        print(f"Best model for domain '{domain}' saved to {model_path}")
     else:
-        raise ValueError("Unsupported optimizer. Choose 'adam' or 'sgd'.")
-    
-    accuracy_array = []
-    avg_loss_array = []
-    print(f"Time to load data: {time.time() - time_start:.2f} seconds")
-    for i in range(num_epochs):
-        print(f"Epoch {i+1}/{num_epochs}")
-        time_start = time.time()
-        avg_loss = agent_train.update_steps(num_updates=20, optimizer=optimizer, loss_fn=criterion, verbose=True)
-        print(f"Time to update model: {time.time() - time_start:.2f} seconds")
-        agent_holdout.set_model_params(agent_train.get_model_params())
-        time_start = time.time()
-        avg_loss_array.append(avg_loss)
-        print("Holdout dataset:")
-        accuracy = print_debug_info(agent_holdout, i, avg_loss, accuracy_fn)
-        print(f"Holdout accuracy: {accuracy:.2f}%")
-        accuracy_array.append(accuracy)
-        if accuracy > 90:
-            print(f"Early stopping at epoch {i+1} with accuracy {accuracy:.2f}%")
-            break
-    torch.save(agent_train.model.get_params(), model_path)
-    print(f"Model saved to {model_path}")
+        print("Training did not result in a best model. No model saved.")
 
-    data = {
-        "parameters": {
-            "model_architecture": model_class.__name__,
-            "domain": domain,
-            "seed": seed,
-            "num_epochs": num_epochs,
-            "batch_size": batch_size,
-            "learning_rate": learning_rate,
-            "optimizer": optimizer_choice,
-            "model_save_path": model_path,
-        },
-        "accuracy": accuracy_array,
-        "loss": avg_loss_array
-    }
 
-    with open(results_save_path, 'w') as f:
-        json.dump(data, f, indent=4)
-    print(f"Results saved to {results_save_path}")
+def accuracy_fn(outputs, labels):
+    preds = torch.argmax(outputs, dim=1)
+    return (preds == labels).float().mean()
+
+def loss_fn(outputs, labels):
+    return nn.CrossEntropyLoss()(outputs, labels)
 
 # Main Function
 def main():
-    parser = argparse.ArgumentParser(description="Pretrain Models on MEMD-ABSA Dataset Single Domains")
-    parser.add_argument('--seed', type=int, default=0, help='Base random seed')
-    parser.add_argument('--model', type=str, default='MEMDABSANet', choices=['MEMDABSANet',],
-                        help='Models to train')
-    parser.add_argument('--domains', type=str, nargs='+', default=['Books', 'Clothing', 'Hotel', 'Restaurant', 'Laptop'],
-                        help='Domains to train on')
-    parser.add_argument('--num_epochs', type=int, default=100, help='Number of update steps')
-    parser.add_argument('--batch_size', type=int, default=16, help='Batch size')  # Smaller for text
-    parser.add_argument('--learning_rate', type=float, default=2e-5, help='Learning rate')  # Typical for transformers
-    parser.add_argument('--optimizer', type=str, default='adam', choices=['adam', 'sgd'], help='Optimizer')
-    parser.add_argument('--model_save_dir', type=str, default='../../models/concept_drift_models/', help='Model save directory')
-    parser.add_argument('--results_save_dir', type=str, default='../../data/results/', help='Results save directory')
+    parser = argparse.ArgumentParser(description="Pretrain DistilBERT on MEMD-ABSA Dataset Single Domains")
+    parser.add_argument('--root_dir', type=str, default='/scratch/gautschi/apiasecz/data/MEMD-ABSA/MEMD_ABSA_Dataset/', help='Root directory of the MEMD-ABSA dataset')
+    parser.add_argument('--seed', type=int, default=42, help='Random seed')
+    parser.add_argument('--model', type=str, default='DistilBertForSentiment', choices=['DistilBertForSentiment'], help='Model to train')
+    parser.add_argument('--domains', type=str, nargs='+', default=['Books', 'Clothing', 'Hotel', 'Laptop', 'Restaurant'], help='Domains to train on')
+    parser.add_argument('--num_epochs', type=int, default=10, help='Maximum number of training epochs')
+    parser.add_argument('--batch_size', type=int, default=32, help='Batch size')
+    parser.add_argument('--learning_rate', type=float, default=5e-6, help='Learning rate')
+    parser.add_argument('--optimizer', type=str, default='adamw', choices=['adamw', 'sgd'], help='Optimizer')
+    parser.add_argument('--model_save_dir', type=str, default='/scratch/gautschi/apiasecz/models/concept_drift_models/', help='Model save directory')
+    parser.add_argument('--max_len', type=int, default=128, help='Maximum sequence length for tokenizer')
     args = parser.parse_args()
 
     os.makedirs(args.model_save_dir, exist_ok=True)
-    os.makedirs(args.results_save_dir, exist_ok=True)
 
-    model_name = args.model
-    try:
-        model_class = globals()[model_name]
-    except KeyError:
-        print(f"Model {model_name} not defined. Skipping.")
+    # --- Caching: Load tokenizer once ---
+    print("Loading DistilBert tokenizer...")
+    tokenizer = DistilBertTokenizer.from_pretrained('distilbert-base-uncased', local_files_only=True)
+    
     for domain in args.domains:
-        print(f"\nTraining {model_name} on {domain}")
-        seed = args.seed
-        print(f"Seed: {seed}")
-        set_seed(seed)
-
-        model_filename = f"{model_name}_{domain}_seed_{seed}.pth"
-        model_save_path = os.path.join(args.model_save_dir, model_filename)
+        print(f"\n===== Processing domain: {domain} =====")
         
-        results_filename = f"{model_name}_{domain}_seed_{seed}_results.json"
-        results_save_path = os.path.join(args.results_save_dir, results_filename)
+        # --- Caching: Instantiate a new model for each domain ---
+        model_class = DistilBertForSentiment
+        
+        model_filename = f"{args.model}_{domain}_seed_{args.seed}.pth"
+        model_save_path = os.path.join(args.model_save_dir, model_filename)
 
-        train_model(
+        train_and_evaluate_model(
             model_class=model_class,
             model_path=model_save_path,
-            seed=seed,
+            seed=args.seed,
             domain=domain,
             num_epochs=args.num_epochs,
             batch_size=args.batch_size,
             learning_rate=args.learning_rate,
             optimizer_choice=args.optimizer,
-            results_save_path=results_save_path,
+            root_dir=args.root_dir,
+            max_len=args.max_len,
+            tokenizer=tokenizer # Pass the cached tokenizer
         )
+        
+        # Cross-domain evaluation
+        print("\n===== Cross-Domain Evaluation =====")
+        cross_accuracies = {source: {} for source in args.domains}
+        
+        for source_domain in args.domains:
+            model_filename = f"{args.model}_{source_domain}_seed_{args.seed}.pth"
+            model_path = os.path.join(args.model_save_dir, model_filename)
+            
+            if not os.path.exists(model_path):
+                print(f"Model for {source_domain} not found at {model_path}. Skipping.")
+                continue
+            
+            # Load the pretrained model
+            model_net = BaseNeuralNetwork(DistilBertForSentiment, device=device)
+            model_net.load_model(model_path)
+            print(f"Loaded model pretrained on {source_domain}")
+            
+            for target_domain in args.domains:
+                test_dataset = load_data_from_domain(args.root_dir, target_domain, 'Test', tokenizer, args.max_len)
+                if test_dataset is None or len(test_dataset) == 0:
+                    print(f"Missing Test data for domain {target_domain}. Skipping.")
+                    continue
+                
+                test_loader = DataLoader(test_dataset, batch_size=args.batch_size, shuffle=False, num_workers=0)
+                test_accuracy = model_net.evaluate(test_loader, accuracy_fn)
+                cross_accuracies[source_domain][target_domain] = test_accuracy
+                print(f"Model pretrained on {source_domain} evaluated on {target_domain} Test: Accuracy = {test_accuracy:.4f}")
+        
+    # Print cross-domain accuracy table
+    print("\nCross-Domain Accuracy Table (Rows: Pretrained on, Columns: Tested on):")
+    header = "Pretrained \\ Tested | " + " | ".join(args.domains)
+    print(header)
+    print("-" * len(header))
+    for source in args.domains:
+        row = f"{source:<18} | " + " | ".join(f"{cross_accuracies[source].get(target, 'N/A'):.4f}" for target in args.domains)
+        print(row)
     print("\nAll Trainings Completed")
 
 if __name__ == "__main__":

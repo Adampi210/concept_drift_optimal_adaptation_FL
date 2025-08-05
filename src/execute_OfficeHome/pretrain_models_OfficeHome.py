@@ -69,6 +69,13 @@ def print_debug_info(agent, num_epochs, loss, accuracy_fn):
     print(f"Time to evaluate model: {time.time() - time_start:.2f} seconds")
     return accuracy
 
+def count_parameters(model):
+    """Counts the number of total and trainable parameters in a model."""
+    total_params = sum(p.numel() for p in model.parameters())
+    trainable_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    return total_params, trainable_params
+
+
 # Training Function
 def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, learning_rate, optimizer_choice, results_save_path, img_size):
     train_transform = transforms.Compose([
@@ -185,6 +192,11 @@ def train_model(model_class, model_path, seed, domain, num_epochs, batch_size, l
 
 # Main Function
 def main():
+    model = OfficeHomeNet()
+    total_params, trainable_params = count_parameters(model)
+    print(f"Total parameters: {total_params}, Trainable parameters: {trainable_params}")
+    exit()
+    
     parser = argparse.ArgumentParser(description="Pretrain Models on OfficeHome Dataset Single Domains")
     parser.add_argument('--seed', type=int, default=0, help='Base random seed')
     parser.add_argument('--model', type=str, default='OfficeHomeNet', choices=['OfficeHomeNet',],

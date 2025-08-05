@@ -1,0 +1,92 @@
+Device: cpu
+CUDA Version: 12.1
+cuDNN Version: 8902
+PyTorch Version: 2.3.0
+
+Analyzing Performance for Schedule: Burst
+
+--- Policy: Ours, Setting: 76 ---
+
+1. Overall Performance (across all seeds & domains)
+   Mean Accuracy:     78.0% ± 7.3%
+   Mean Update Rate:  0.084
+
+2. Per-Domain Stability (mean ± std across seeds)
+   - art_painting: 85.8% ± 2.1%
+   - photo: 80.6% ± 7.4%
+   - cartoon: 73.8% ± 5.3%
+   - sketch: 71.7% ± 1.6%
+
+3. Inter-Domain Consistency (Original Method)
+   (Shows how much avg. performance varies between domains)
+   Mean of Domain Avgs: 78.0% ± 5.6%
+-------------------------------------------------------
+
+--- Policy: Uniform, Setting: 60 ---
+
+1. Overall Performance (across all seeds & domains)
+   Mean Accuracy:     66.8% ± 11.0%
+   Mean Update Rate:  0.095
+
+2. Per-Domain Stability (mean ± std across seeds)
+   - art_painting: 70.0% ± 1.8%
+   - photo: 78.0% ± 5.0%
+   - cartoon: 67.6% ± 6.3%
+   - sketch: 51.7% ± 6.8%
+
+3. Inter-Domain Consistency (Original Method)
+   (Shows how much avg. performance varies between domains)
+   Mean of Domain Avgs: 66.8% ± 9.6%
+-------------------------------------------------------
+
+--- Policy: Periodic, Setting: 60 ---
+
+1. Overall Performance (across all seeds & domains)
+   Mean Accuracy:     68.8% ± 8.0%
+   Mean Update Rate:  0.100
+
+2. Per-Domain Stability (mean ± std across seeds)
+   - art_painting: 70.9% ± 1.7%
+   - photo: 77.1% ± 4.3%
+   - cartoon: 69.7% ± 5.5%
+   - sketch: 57.4% ± 1.8%
+
+3. Inter-Domain Consistency (Original Method)
+   (Shows how much avg. performance varies between domains)
+   Mean of Domain Avgs: 68.8% ± 7.1%
+-------------------------------------------------------
+
+--- Policy: Budget-Increase, Setting: 60 ---
+
+1. Overall Performance (across all seeds & domains)
+   Mean Accuracy:     59.1% ± 14.4%
+   Mean Update Rate:  0.036
+
+2. Per-Domain Stability (mean ± std across seeds)
+   - art_painting: 61.3% ± 5.6%
+   - photo: 72.0% ± 5.8%
+   - cartoon: 66.5% ± 1.4%
+   - sketch: 36.7% ± 5.6%
+
+3. Inter-Domain Consistency (Original Method)
+   (Shows how much avg. performance varies between domains)
+   Mean of Domain Avgs: 59.1% ± 13.5%
+-------------------------------------------------------
+
+--- Policy: Budget-Threshold, Setting: 60 ---
+
+1. Overall Performance (across all seeds & domains)
+   Mean Accuracy:     67.4% ± 15.5%
+   Mean Update Rate:  0.041
+
+2. Per-Domain Stability (mean ± std across seeds)
+   - art_painting: 79.3% ± 2.1%
+   - photo: 79.4% ± 6.4%
+   - cartoon: 67.8% ± 3.4%
+   - sketch: 43.0% ± 5.0%
+
+3. Inter-Domain Consistency (Original Method)
+   (Shows how much avg. performance varies between domains)
+   Mean of Domain Avgs: 67.4% ± 14.9%
+-------------------------------------------------------
+

@@ -1,0 +1,57 @@
+#!/bin/bash
+#SBATCH -A cgb              # Account name (adjust as needed)
+#SBATCH -p ai               # Partition
+#SBATCH -q preemptible           # Queue
+#SBATCH --nodes=1           # Number of nodes
+#SBATCH --ntasks=1          # Number of tasks
+#SBATCH --cpus-per-task=14  # CPUs per task
+#SBATCH --gpus-per-node=1   # GPUs per node
+#SBATCH --time=6:00:00      # Time limit (adjust as needed)
+
+# To check the usage: squeue | grep cgb
+
+# Load necessary modules (adjust based on your system)
+module load cuda
+module load conda
+
+# Activate the Conda environment (adjust environment name as needed)
+conda activate cog_fl_llm_env
+
+# Source the parameter arrays
+source ./params.sh
+
+# Calculate the lengths of each array
+len_A=${#ALL_SRC_DOMAINS[@]}
+len_B=${#POLICIES[@]}
+len_C=${#SETTING_IDS[@]}
+len_D=${#SCHEDULES[@]}
+len_E=${#ALL_MODEL_NAMES[@]}
+len_F=${#seeds[@]}          # Length of seeds array
+len_G=${#IMG_SIZES[@]}      # Length of image sizes array
+
+# Calculate indices based on SLURM_ARRAY_TASK_ID, with seed as the fastest varying index
+f_idx=$((SLURM_ARRAY_TASK_ID % len_F))
+remainder=$((SLURM_ARRAY_TASK_ID / len_F))
+e_idx=$((remainder % len_E))
+remainder=$((remainder / len_E))
+d_idx=$((remainder % len_D))
+remainder=$((remainder / len_D))
+c_idx=$((remainder % len_C))
+remainder=$((remainder / len_C))
+b_idx=$((remainder % len_B))
+remainder=$((remainder / len_B))
+a_idx=$((remainder % len_A))
+remainder=$((remainder / len_A))
+g_idx=$((remainder % len_G))
+
+# Assign parameters for this task, including the seed and image size
+SEED="${seeds[$f_idx]}"
+MODEL_NAME="${ALL_MODEL_NAMES[$e_idx]}"
+SRC_SET="${ALL_SRC_DOMAINS[$a_idx]}"
+POLICY_ID="${POLICIES[$b_idx]}"
+SETTING_ID="${SETTING_IDS[$c_idx]}"
+SCHEDULE="${SCHEDULES[$d_idx]}"
+IMG_SIZE="${IMG_SIZES[$g_idx]}"
+
+# Execute the experiment script with the assigned parameters, including the seed and image size
+./execute_experiment.sh "$MODEL_NAME" "$SRC_SET" "$POLICY_ID" "$SETTING_ID" "$SCHEDULE" "$SEED" "$IMG_SIZE"

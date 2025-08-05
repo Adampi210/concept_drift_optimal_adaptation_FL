@@ -84,6 +84,52 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+def add_loss_uncertainty(loss, uncertainty_type, state):
+    """
+    Adds uncertainty to a given loss value based on the specified method.
+    The standard deviation of the noise is now proportional to the loss value.
+
+    Args:
+        loss (float): The original loss value.
+        uncertainty_type (str): The type of uncertainty to add. 
+                                Options: 'gaussian', 'biased', 'autocorrelated'.
+        state (dict): A dictionary to maintain state between calls, e.g., for autocorrelated noise.
+
+    Returns:
+        tuple: A tuple containing:
+            - float: The loss value with added uncertainty.
+            - dict: The updated state dictionary.
+    """
+    if uncertainty_type == 'gaussian_0':
+            # The standard deviation is 5% of the loss value.
+            scale = loss * 0.05
+            noise = np.random.normal(loc=0.0, scale=scale)
+            return loss + noise, state
+    elif uncertainty_type == 'gaussian_1':
+        # The standard deviation is 10% of the loss value.
+        scale = loss * 0.1
+        noise = np.random.normal(loc=0.0, scale=scale)
+        return loss + noise, state
+    elif uncertainty_type == 'gaussian_2':
+        # The standard deviation is 10% of the loss value.
+        scale = loss * 0.1
+        noise = np.random.normal(loc=0.0, scale=scale)
+        return loss + noise, state
+    elif uncertainty_type == 'gaussian_3':
+        # The standard deviation is 20% of the loss value.
+        scale = loss * 0.20
+        noise = np.random.normal(loc=0.0, scale=scale)
+        return loss + noise, state
+    elif uncertainty_type == 'gaussian_4':
+        # The standard deviation is 30% of the loss value.
+        scale = loss * 0.30
+        noise = np.random.normal(loc=0.0, scale=scale)
+        return loss + noise, state
+    else:
+        # If no valid uncertainty type is given, return the original loss.
+        return loss, state
+
+
 # Policy
 class Policy:
     def __init__(self, alpha=0.01, L_i=1.0, K_p=1.0, K_d=1.0):
@@ -312,7 +358,7 @@ class DriftScheduler:
             if self.current_spike_end_time_ds != -1 and t >= self.current_spike_end_time_ds:
                 # Spike ended. Schedule the next one.
                 self.current_interval_ds = min(self.max_burst_interval,
-                                            self.current_interval_ds + self.interval_increment_per_spike)
+                                               self.current_interval_ds + self.interval_increment_per_spike)
                 self.next_spike_start_time_ds = self.current_spike_end_time_ds + self.current_interval_ds
                 self.current_spike_end_time_ds = -1 # Reset: not in a spike anymore
 
@@ -347,9 +393,9 @@ class DriftScheduler:
                             current_total_drift_rate = 0 # effectively no drift
                         else: # if there's base drift, it applies (target might need to be defined for base drift)
                             target_domains_list = [self.domain_A] # Default or could be another logic for base drift target
-            else:
-                current_total_drift_rate = 0
-                target_domains_list = []
+                else:
+                    current_total_drift_rate = 0
+                    target_domains_list = []
             # Ensure drift rate is not negative if base_drift_rate somehow caused it (should not happen here)
             current_total_drift_rate = max(0, current_total_drift_rate)
             if current_total_drift_rate == 0:
@@ -421,6 +467,7 @@ def evaluate_policy_under_drift(
     seed,
     drift_scheduler,
     n_rounds,
+    loss_uncertainty='none',
     learning_rate=0.01,
     policy_id=0,
     setting_id=0,
@@ -509,6 +556,7 @@ def evaluate_policy_under_drift(
     policy.set_initial_loss(loss_array[0])
     results = []
     time_arr = []
+    uncertainty_state = {'last_noise': 0.0} # State for autocorrelated noise
     
     print(f"Initial loss: {loss_array[0]}")
     print(policy)
@@ -530,9 +578,13 @@ def evaluate_policy_under_drift(
             agent_holdout.set_target_domains(target_domains)
         agent_holdout.apply_drift()
         
-        # Calculate current loss
-        loss_curr = agent_holdout.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
+        # Calculate current loss and accuracy
+        original_loss_curr = agent_holdout.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
         acc_curr = agent_holdout.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        
+        # Add uncertainty to the loss measurement if specified
+        loss_curr, uncertainty_state = add_loss_uncertainty(original_loss_curr, loss_uncertainty, uncertainty_state)
+
         loss_array.append(loss_curr)
         loss_prev = loss_array[-1]
         if loss_curr < loss_best:
@@ -550,6 +602,7 @@ def evaluate_policy_under_drift(
         )
         # Update the model if decision is made
         print(f'Loss historical diff: {loss_curr - loss_best}; Loss Difference: {loss_curr - loss_prev}, Decision: {decision}')
+        update_loss = None
         if decision:
             update_loss = agent_train.update_steps(
                 num_updates=n_steps, 
@@ -567,7 +620,8 @@ def evaluate_policy_under_drift(
         result_dict = {
             't': t,
             'current_accuracy': acc_curr,
-            'current_loss': loss_curr,
+            'original_loss': original_loss_curr,
+            'measured_loss': loss_curr,
             'train_loss': update_loss if decision else None,
             'decision': decision,
             'drift_rate': drift_rate, 
@@ -583,8 +637,12 @@ def evaluate_policy_under_drift(
     src_domains_str = "_".join(source_domains)
     results_filename = (
         f"../../data/results/policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}"
-        f"_src_{src_domains_str}_model_{model_architecture.__name__}_img_{img_size}_seed_{seed}.json"
+        f"_src_{src_domains_str}_model_{model_architecture.__name__}_img_{img_size}_seed_{seed}"
     )
+    if loss_uncertainty != 'none':
+        results_filename += f"_uncertainty_{loss_uncertainty}"
+    results_filename += ".json"
+
     # Data to save
     data = {
         'parameters': {
@@ -597,6 +655,7 @@ def evaluate_policy_under_drift(
             'batch_size': batch_size,
             'policy_id': policy_id,
             'setting_id': setting_id,
+            'loss_uncertainty': loss_uncertainty,
             'pi_bar': pi_bar,
             'V': V,
             'K_p': K_p,
@@ -606,8 +665,10 @@ def evaluate_policy_under_drift(
         'results': results
     }
     # Save the results to a json file
+    os.makedirs(os.path.dirname(results_filename), exist_ok=True)
     with open(results_filename, 'w') as f:
         json.dump(data, f, indent=4)
+    print(f"Results saved to {results_filename}")
     print(f"Average time per round: {np.mean(time_arr)}")
     print(f"Total time: {np.sum(time_arr)}")
     
@@ -673,25 +734,25 @@ settings = {
         56: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 0.5},
         57: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 0.5},
         60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.75, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.2, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
         64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
         65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
         66: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.35, 'lr': 0.01, 'n_steps':5},
         67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
         68: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
         69: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
-        70: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        71: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        72: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        73: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        74: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        75: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        76: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.2, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        70: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        71: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.7, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
+        72: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.6, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
+        73: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.4, 'lr': 0.01, 'n_steps':5},
+        74: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
+        75: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
+        76: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.2, 'K_d': 0.2, 'lr': 0.01, 'n_steps':5},
+        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.2, 'lr': 0.01, 'n_steps':5},
+        79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
     }
 DSET_SIZE = 1024
 
@@ -709,6 +770,9 @@ def main():
     parser.add_argument('--setting_id', type=int, default=0)
     parser.add_argument('--model_name', type=str, default='PACSCNN', choices=['PACSCNN',], help='Model architecture to use')
     parser.add_argument('--img_size', type=int, default=128, help='Size to resize images to (img_size x img_size)')
+    parser.add_argument('--loss_uncertainty', type=str, default='none', 
+                        choices=['none', 'gaussian_0', 'gaussian_1', 'gaussian_2', 'gaussian_3', 'gaussian_4'],
+                        help='Type of uncertainty to add to the loss measurement.')
     args = parser.parse_args()
     
     # Model selection
@@ -738,6 +802,7 @@ def main():
         seed=args.seed,
         drift_scheduler=drift_scheduler,
         n_rounds=args.n_rounds,
+        loss_uncertainty=args.loss_uncertainty,
         learning_rate=lr,
         policy_id=args.policy_id,
         setting_id=args.setting_id,

@@ -10,14 +10,14 @@ ALL_MODEL_NAMES=("PACSCNN")
 POLICIES=(5)
 
 # Setting IDs to iterate over
-SETTING_IDS=(60 61 62 63 64) 
+SETTING_IDS=(61 62 63 74 75 76 77 78 79)
 
 # Image sizes to test different models
 IMG_SIZES=(128)
 
 # Schedules to iterate over
 SCHEDULES=(
-    "burst" "spikes" "step" "constant" "wave" "decaying_spikes" "seasonal_flux"
+    "burst"
 )
  
 # Array of seeds for reproducibility
