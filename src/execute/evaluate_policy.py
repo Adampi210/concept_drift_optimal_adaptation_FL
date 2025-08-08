@@ -13,6 +13,7 @@ from torchvision.models import resnet18
 from torchvision import transforms
 from fl_toolkit import *
 
+
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 print(f"CUDA Version: {torch.version.cuda}")
@@ -213,6 +214,26 @@ class DriftScheduler:
             'target_domains': ['photo', 'cartoon', 'sketch'],
             'initial_delay': 45,
             'strategy': 'replace'
+        },
+        "burst_1": lambda: {
+            'burst_interval': 100,
+            'burst_duration': 1,
+            'base_rate': 0.0,
+            'burst_rate': 1.0,
+            'target_domains': ['photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch'],
+            'initial_delay': 50,
+            'strategy': 'replace'
+        },
+        # MODIFICATION: Add the new burst_2 schedule
+        "burst_2": lambda: {
+            'burst_interval': 100,
+            'burst_duration': 1,
+            'base_rate': 0.0,
+            # The burst_rate triggers the drift; the actual logic is in BufferedDomainDrift
+            'burst_rate': 0.8, 
+            'target_domains': ['photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch'],
+            'initial_delay': 50,
+            'strategy': 'buffer_replace' # Use a new strategy name
         },
         "spikes": lambda: {
             'burst_interval_limits': (90, 130),
@@ -509,18 +530,70 @@ def evaluate_policy_under_drift(
     holdout_data_handler.set_subset(holdout_indices)
     
     set_seed(seed)
-    # Define drift objects
-    train_drift = DomainDrift(
+
+    # MODIFICATION: Conditionally create drift handlers based on strategy
+    strategy = drift_scheduler.strategy
+    
+    if strategy == 'buffer_replace':
+        print("Using BufferedDomainDrift strategy.")
+        train_drift = BufferedDomainDrift(
+            train_data_handler,
+            source_domains=source_domains,
+            target_domains=source_domains,
+            drift_rate=0,
+            desired_size=DSET_SIZE,
+            buffer_fraction=0.2 # Keep 20% as buffer
+        )
+        holdout_drift = BufferedDomainDrift(
+            holdout_data_handler, # FIX: Use holdout_data_handler
+            source_domains=source_domains,
+            target_domains=source_domains,
+            drift_rate=0,
+            desired_size=int(DSET_SIZE * 0.25),
+            buffer_fraction=0.2 # Keep 20% as buffer
+        )
+    else: # Original logic for 'replace' strategy
+        print("Using standard DomainDrift strategy.")
+        train_drift = DomainDrift(
+            train_data_handler,
+            source_domains=source_domains,
+            target_domains=source_domains,
+            drift_rate=0,
+            desired_size=DSET_SIZE
+        )
+        holdout_drift = DomainDrift(
+            holdout_data_handler, # FIX: Use holdout_data_handler
+            source_domains=source_domains,
+            target_domains=source_domains,
+            drift_rate=0,
+            desired_size=int(DSET_SIZE * 0.25)
+        )
+    
+    holdout_drift_0 = DomainDrift(
         train_data_handler,
-        source_domains=source_domains,
-        target_domains=source_domains,
+        source_domains=['photo',],
+        target_domains=['photo',],
         drift_rate=0,  # Initially no drift
-        desired_size=DSET_SIZE
+        desired_size=int(DSET_SIZE * 0.25)
     )
-    holdout_drift = DomainDrift(
+    holdout_drift_1 = DomainDrift(
         train_data_handler,
-        source_domains=source_domains,
-        target_domains=source_domains,
+        source_domains=['art_painting',],
+        target_domains=['art_painting',],
+        drift_rate=0,  # Initially no drift
+        desired_size=int(DSET_SIZE * 0.25)
+    )
+    holdout_drift_2 = DomainDrift(
+        train_data_handler,
+        source_domains=['cartoon',],
+        target_domains=['cartoon',],
+        drift_rate=0,  # Initially no drift
+        desired_size=int(DSET_SIZE * 0.25)
+    )
+    holdout_drift_3 = DomainDrift(
+        train_data_handler,
+        source_domains=['sketch',],
+        target_domains=['sketch',],
         drift_rate=0,  # Initially no drift
         desired_size=int(DSET_SIZE * 0.25)
     )
@@ -542,11 +615,52 @@ def evaluate_policy_under_drift(
         device=device
     )
     
+    agent_holdout_0 = DriftAgent(
+        client_id=2,
+        model_architecture=PACSCNN,
+        domain_drift=holdout_drift_0,
+        batch_size=128,
+        device=device
+    )
+    agent_holdout_0.apply_drift()
+    
+    
+    agent_holdout_1 = DriftAgent(
+        client_id=3,
+        model_architecture=PACSCNN,
+        domain_drift=holdout_drift_1,
+        batch_size=128,
+        device=device
+    )
+    agent_holdout_1.apply_drift()
+    
+    agent_holdout_2 = DriftAgent(
+        client_id=4,
+        model_architecture=PACSCNN,
+        domain_drift=holdout_drift_2,
+        batch_size=128,
+        device=device
+    )
+    agent_holdout_2.apply_drift()
+
+    agent_holdout_3 = DriftAgent(
+        client_id=5,
+        model_architecture=PACSCNN,
+        domain_drift=holdout_drift_3,
+        batch_size=128,
+        device=device
+    )
+    agent_holdout_3.apply_drift()
+    
         
     # Model, Optimizer
     model = agent_train.get_model()
-    model.load_state_dict(torch.load(model_path))
+    model.load_state_dict(torch.load(model_path, weights_only=False))
     agent_holdout.set_model_params(agent_train.get_model_params())
+    agent_holdout_0.set_model_params(agent_train.get_model_params())
+    agent_holdout_1.set_model_params(agent_train.get_model_params())
+    agent_holdout_2.set_model_params(agent_train.get_model_params())
+    agent_holdout_3.set_model_params(agent_train.get_model_params())
     optimizer = optim.SGD(model.parameters(), lr=learning_rate)
     criterion = nn.CrossEntropyLoss()
     
@@ -578,13 +692,32 @@ def evaluate_policy_under_drift(
             agent_holdout.set_target_domains(target_domains)
         agent_holdout.apply_drift()
         
+        # MODIFICATION: Add sanity check for dataset composition
+        def print_composition(agent, name):
+            if agent.domain_drift.current_indices is not None:
+                current_domains = agent.domain_drift.domain_array[agent.domain_drift.current_indices]
+                unique_domains, counts = np.unique(current_domains, return_counts=True)
+                total_samples = len(current_domains)
+                composition_str = ", ".join([f"{d}: {c/total_samples*100:.2f}% ({c})" for d, c in zip(unique_domains, counts)])
+                print(f"[{name} Composition @ t={t}]: {composition_str}")
+
+        print_composition(agent_train, "Train")
+        print_composition(agent_holdout, "Holdout")
+        
         # Calculate current loss and accuracy
         original_loss_curr = agent_holdout.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
         acc_curr = agent_holdout.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
         
+        acc_photo = agent_holdout_0.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        acc_art = agent_holdout_1.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        acc_cartoon = agent_holdout_2.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        acc_sketch = agent_holdout_3.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        
+        
         # Add uncertainty to the loss measurement if specified
-        loss_curr, uncertainty_state = add_loss_uncertainty(original_loss_curr, loss_uncertainty, uncertainty_state)
-
+        # loss_curr, uncertainty_state = add_loss_uncertainty(original_loss_curr, loss_uncertainty, uncertainty_state)
+        loss_curr = original_loss_curr
+        
         loss_array.append(loss_curr)
         loss_prev = loss_array[-1]
         if loss_curr < loss_best:
@@ -611,7 +744,11 @@ def evaluate_policy_under_drift(
                 verbose=True
             )
             agent_holdout.set_model_params(agent_train.get_model_params())
-        
+            agent_holdout_0.set_model_params(agent_train.get_model_params())
+            agent_holdout_1.set_model_params(agent_train.get_model_params())
+            agent_holdout_2.set_model_params(agent_train.get_model_params())
+            agent_holdout_3.set_model_params(agent_train.get_model_params())
+
         # Time it takes for a round
         time_round = time.time() - time_round
         time_arr.append(time_round)
@@ -620,6 +757,12 @@ def evaluate_policy_under_drift(
         result_dict = {
             't': t,
             'current_accuracy': acc_curr,
+            'accuracy_per_domain': {
+                'photo': acc_photo,
+                'art_painting': acc_art,
+                'cartoon': acc_cartoon,
+                'sketch': acc_sketch
+            },
             'original_loss': original_loss_curr,
             'measured_loss': loss_curr,
             'train_loss': update_loss if decision else None,
@@ -743,16 +886,16 @@ settings = {
         67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
         68: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
         69: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
-        70: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        71: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.7, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
-        72: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.6, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
+        70: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
+        71: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
+        72: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
         73: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.4, 'lr': 0.01, 'n_steps':5},
-        74: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
-        75: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
-        76: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.2, 'K_d': 0.2, 'lr': 0.01, 'n_steps':5},
-        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.2, 'lr': 0.01, 'n_steps':5},
-        79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
+        74: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
+        75: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.25, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
+        76: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.25, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
+        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
+        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.2, 'lr': 0.01, 'n_steps':5},
+        79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
     }
 DSET_SIZE = 1024
 
@@ -760,12 +903,13 @@ DSET_SIZE = 1024
 def main():
     # Get the command line arguments
     parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
+    # MODIFICATION: 'burst_2' is now available through the keys() method
     parser.add_argument('--schedule_type', type=str, default='burst',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--src_domains', type=str, nargs='+', default=['photo',])
-    parser.add_argument('--n_rounds', type=int, default=250)
+    parser.add_argument('--n_rounds', type=int, default=1000)
     parser.add_argument('--policy_id', type=int, default=2)
     parser.add_argument('--setting_id', type=int, default=0)
     parser.add_argument('--model_name', type=str, default='PACSCNN', choices=['PACSCNN',], help='Model architecture to use')

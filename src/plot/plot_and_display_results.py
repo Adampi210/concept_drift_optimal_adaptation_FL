@@ -73,8 +73,7 @@ def read_drift_data(drift_path):
     except Exception as e:
         print(f"Error reading drift file {drift_path}: {e}")
         return [], [], [], [], [] #, [], []
-  
-  
+ 
 def read_drift_data_new(drift_path):
     """
     Reads the drift policy JSON file.
@@ -112,6 +111,45 @@ def read_drift_data_new(drift_path):
         print(f"Error reading drift file {drift_path}: {e}")
         return [], [], [], [], [] #, [], []
   
+def read_drift_data_with_domain_accuracies(drift_path):
+    """
+    Reads the drift policy JSON file and extracts domain-specific accuracies and decisions.
+
+    Args:
+        drift_path (str): Path to the drift policy JSON file.
+
+    Returns:
+        A tuple containing:
+        - list: A list of time steps (epochs).
+        - dict: A dictionary where keys are domain names and values are lists of accuracies over time.
+        - list: A list of decisions over time.
+    """
+    try:
+        with open(drift_path, 'r') as f:
+            data = json.load(f)
+        results = data.get('results', [])
+        
+        if not results:
+            return [], {}, []
+
+        # Initialize from the first entry to get all domain keys
+        first_entry = results[0].get('accuracy_per_domain', {})
+        all_domains = list(first_entry.keys())
+        domain_accuracies = {domain: [] for domain in all_domains}
+        
+        t_epochs = [entry['t'] for entry in results]
+        decisions = [int(entry['decision']) for entry in results]
+        
+        for entry in results:
+            for domain in all_domains:
+                acc = entry.get('accuracy_per_domain', {}).get(domain, 0.0) * 100
+                domain_accuracies[domain].append(acc)
+
+        return t_epochs, domain_accuracies, decisions
+    except (json.JSONDecodeError, KeyError, Exception) as e:
+        print(f"Error reading or parsing drift file {drift_path}: {e}")
+        return [], {}, []
+    
 def print_kp_kd(drift_path):
     """
     Prints the kp and kd values from the drift policy JSON file.
@@ -1456,7 +1494,6 @@ def compare_policy_setting_pairs_text(policy_setting_pairs, schedule_type, sourc
 
     return summary
 
-
 def analyze_policy_performance(policy_setting_pairs, schedule_type, source_domains,
                                model_name='PACSCNN_4', img_size=128,
                                results_dir='../../data/results/', T=None):
@@ -2709,6 +2746,160 @@ def plot_accuracy_vs_update_rate_and_pi_bar(settings_per_policy, policies, sched
     plt.close()
     print(f"Saved plot to {output_path}")
 
+def calculate_average_accuracy_per_domain(policy_id, setting_id, schedule_type, source_domain,
+                                          model_name='PACSCNN', img_size=128,
+                                          results_dir='../../data/results/'):
+    """
+    Calculates and displays the average accuracy for each domain and the average update rate
+    across all time steps and seeds.
+
+    Args:
+        policy_id (int): The policy ID to analyze.
+        setting_id (int): The setting ID to analyze.
+        schedule_type (str): The drift schedule type.
+        source_domain (str): The source domain for the experiment.
+        model_name (str): The name of the model architecture.
+        img_size (int): The image size used.
+        results_dir (str): The directory containing the result files.
+    """
+    print(f"\n--- Calculating Average Accuracy Per Domain ---")
+    print(f"Policy: {policy_id}, Setting: {setting_id}, Schedule: {schedule_type}, Source: {source_domain}\n")
+    
+    # Define file pattern to find all relevant seeds
+    pattern = re.compile(
+        rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
+        rf'_src_{re.escape(source_domain)}_model_{model_name}'
+        rf'_img_{img_size}_seed_\d+\.json$'
+    )
+    
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+    matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
+
+    if not matching_files:
+        print("No matching result files found for the specified configuration.")
+        return
+
+    print(f"Found {len(matching_files)} seed file(s) for analysis.")
+    
+    # {domain: [acc1, acc2, ...]} containing all values from all time steps across all seeds
+    all_seeds_domain_accuracies = defaultdict(list)
+    all_seeds_decisions = []
+    
+    for file_path in matching_files:
+        _, domain_accuracies_per_t, decisions = read_drift_data_with_domain_accuracies(file_path)
+        
+        if not domain_accuracies_per_t:
+            print(f"Warning: No domain accuracy data found in {os.path.basename(file_path)}.")
+            continue
+
+        for domain, acc_list in domain_accuracies_per_t.items():
+            all_seeds_domain_accuracies[domain].extend(acc_list)
+        
+        all_seeds_decisions.extend(decisions)
+
+    if not all_seeds_domain_accuracies:
+        print("Could not aggregate any domain accuracy data.")
+        return
+        
+    print("\nOverall Domain Performance (Averaged across all time steps and seeds):")
+    print("-" * 55)
+    print(f"{'Domain':<20} | {'Mean Accuracy (%)':<20} | {'Std Dev (%)':<15}")
+    print("-" * 55)
+
+    for domain, accs in all_seeds_domain_accuracies.items():
+        mean_acc = np.mean(accs)
+        std_acc = np.std(accs)
+        print(f"{domain:<20} | {mean_acc:<20.2f} | {std_acc:<15.2f}")
+    print("-" * 55)
+
+    if all_seeds_decisions:
+        avg_update_rate = np.mean(all_seeds_decisions)
+        print(f"\nAverage Update Rate (across all seeds and time): {avg_update_rate:.4f}\n")
+
+def display_accuracy_at_specific_times(policy_id, setting_id, schedule_type, source_domain,
+                                       model_name='PACSCNN', img_size=128,
+                                       results_dir='../../data/results/',
+                                       times=None):
+    """
+    Displays the average accuracy for each domain at specific time steps, averaged over all seeds.
+
+    Args:
+        policy_id (int): The policy ID to analyze.
+        setting_id (int): The setting ID to analyze.
+        schedule_type (str): The drift schedule type.
+        source_domain (str): The source domain for the experiment.
+        model_name (str): The name of the model architecture.
+        img_size (int): The image size used.
+        results_dir (str): The directory containing the result files.
+        times (list, optional): A list of integer time steps to analyze. 
+                                Defaults to times just before bursts for 'burst_1'/'burst_2'.
+    """
+    print(f"\n--- Displaying Accuracy at Specific Time Steps ---")
+    print(f"Policy: {policy_id}, Setting: {setting_id}, Schedule: {schedule_type}, Source: {source_domain}")
+
+    # If no times are specified, use defaults for burst schedules
+    if times is None and schedule_type in ["burst_1", "burst_2"]:
+        initial_delay = 50
+        burst_interval = 100
+        n_rounds = 1000 # Assuming a total of 1000 rounds as in the example file
+        # Times are set to one step before each burst
+        times = [t for t in range(initial_delay - 1, n_rounds, burst_interval)]
+        print(f"No times provided. Using default pre-burst times for '{schedule_type}': {times}\n")
+    elif times is None:
+        print("No times provided and schedule is not a default burst type. Please specify a list of times.")
+        return
+
+    # File matching logic
+    pattern = re.compile(
+        rf'^policy_{policy_id}_setting_{setting_id}_schedule_{re.escape(schedule_type)}'
+        rf'_src_{re.escape(source_domain)}_model_{model_name}'
+        rf'_img_{img_size}_seed_\d+\.json$'
+    )
+    all_json_files = glob.glob(os.path.join(results_dir, "*.json"))
+    matching_files = [f for f in all_json_files if pattern.match(os.path.basename(f))]
+
+    if not matching_files:
+        print("No matching result files found for the specified configuration.")
+        return
+        
+    print(f"Found {len(matching_files)} seed file(s) for analysis.\n")
+    
+    # Structure to hold data: {time: {domain: [acc_seed1, acc_seed2, ...]}}
+    accuracies_at_times = defaultdict(lambda: defaultdict(list))
+    
+    for file_path in matching_files:
+        t_epochs, domain_accuracies_per_t, _ = read_drift_data_with_domain_accuracies(file_path)
+        
+        if not t_epochs:
+            print(f"Warning: No data found in {os.path.basename(file_path)}.")
+            continue
+            
+        for t_index, t_val in enumerate(t_epochs):
+            if t_val in times:
+                for domain, acc_list in domain_accuracies_per_t.items():
+                    # acc_list[t_index] is the accuracy for this domain at this time for this seed
+                    accuracies_at_times[t_val][domain].append(acc_list[t_index])
+    
+    if not accuracies_at_times:
+        print("Could not find any data at the specified time steps.")
+        return
+
+    # Calculate and display results for each time step
+    for time_step in sorted(accuracies_at_times.keys()):
+        print(f"--- Results at Time Step {time_step} ---")
+        print("-" * 55)
+        print(f"{'Domain':<20} | {'Mean Accuracy (%)':<20} | {'Std Dev (%)':<15}")
+        print("-" * 55)
+        
+        domain_data = accuracies_at_times[time_step]
+        for domain in domain_data.keys():
+            accs = domain_data[domain]
+            if accs:
+                mean_acc = np.mean(accs)
+                std_acc = np.std(accs)
+                print(f"{domain:<20} | {mean_acc:<20.2f} | {std_acc:<15.2f}")
+        print("-" * 55 + "\n")
+
 if __name__ == "__main__":
     source_domains = ['cartoon', 'photo', 'sketch', 'art_painting']
     policy_ids = [0, 1, 2, 6]
@@ -2721,17 +2912,39 @@ if __name__ == "__main__":
     plot_name = f'{model_names[0]}_{src_domain}_img_size_{img_size}.png'
     plot_name = os.path.join('../../data/plots/', plot_name)
 
-    
-    settings = list(range(40, 48))  # [40, 41, ..., 47]
-    policies = [1, 2, 3, 4, 6]
+    # 1. Run the first new function to get overall average domain performance
+    calculate_average_accuracy_per_domain(
+        policy_id=5,
+        setting_id=70,
+        schedule_type='burst_2',
+        source_domain='photo',
+        model_name='PACSCNN',
+        img_size=128,
+        results_dir='../../data/results/'
+    )
+
+    # 2. Run the second function
+    # Example A: Using default times (just before each burst)
+    display_accuracy_at_specific_times(
+        policy_id=5,
+        setting_id=70,
+        schedule_type='burst_2',
+        source_domain='photo',
+        model_name='PACSCNN',
+        img_size=128,
+        results_dir='../../data/results/'
+    )
+    exit()
+    # settings = list(range(40, 48))  # [40, 41, ..., 47]
+    # policies = [1, 2, 3, 4, 6]
     # analyze_policy_performance([(6, 76), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='domain_change_burst_1', source_domains=['art_painting', 'photo', 'cartoon', 'sketch'])
 
 
-    compare_policy_setting_pairs([(1, 70), (2, 70), (3, 70), (4, 70), (5, 74)], schedule_type='burst', source_domains=['real', 'clipart', 'painting', 'sketch'],
-                                 model_name='DomainNetNet', img_size=224, T=250)
-    compare_policy_setting_pairs_text([(1, 3), (2, 3), (3, 3), (4, 3), (5, 24)], schedule_type='burst', source_domains=['Books', 'Clothing', 'Hotel', 'Laptop', 'Restaurant'],
-                                      model_name='TinyBertForSentiment', T=250)
-    exit()
+    # compare_policy_setting_pairs([(1, 70), (2, 70), (3, 70), (4, 70), (5, 74)], schedule_type='burst', source_domains=['real', 'clipart', 'painting', 'sketch'],
+    #                              model_name='DomainNetNet', img_size=224, T=250)
+    # compare_policy_setting_pairs_text([(1, 3), (2, 3), (3, 3), (4, 3), (5, 24)], schedule_type='burst', source_domains=['Books', 'Clothing', 'Hotel', 'Laptop', 'Restaurant'],
+    #                                   model_name='TinyBertForSentiment', T=250)
+    
     # PACS dataset, schedule: domain_change_burst_1
     settings_per_policy = {
         1: [40, 41, 42, 43, 44, 45, 46, 47],
@@ -2742,14 +2955,13 @@ if __name__ == "__main__":
     }
     
     
-    compare_policy_setting_pairs([(6, 71), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='seasonal_flux', source_domains=['RealWorld', 'Art', 'Product', 'Clipart'],
-                                 model_name='OfficeHomeNet', img_size=224, T=250)
-    compare_policy_setting_pairs([(6, 71), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='decaying_spikes', source_domains=['RealWorld', 'Art', 'Product', 'Clipart'],
-                                 model_name='OfficeHomeNet', img_size=224, T=250)
-    compare_policy_setting_pairs([(6, 70), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='constant_drift_domain_change_0', source_domains=['RealWorld', 'Art', 'Product', 'Clipart'],
-                                 model_name='OfficeHomeNet', img_size=224, T=250)
+    # compare_policy_setting_pairs([(6, 71), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='seasonal_flux', source_domains=['RealWorld', 'Art', 'Product', 'Clipart'],
+    #                              model_name='OfficeHomeNet', img_size=224, T=250)
+    # compare_policy_setting_pairs([(6, 71), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='decaying_spikes', source_domains=['RealWorld', 'Art', 'Product', 'Clipart'],
+    #                              model_name='OfficeHomeNet', img_size=224, T=250)
+    # compare_policy_setting_pairs([(6, 70), (1, 60), (2, 60), (3, 60), (4, 60)], schedule_type='constant_drift_domain_change_0', source_domains=['RealWorld', 'Art', 'Product', 'Clipart'],
+    #                              model_name='OfficeHomeNet', img_size=224, T=250)
     # For the last plot, add an average plot across all datasets
-    exit()
 
     pacs_source_domains = ['photo', 'art_painting', 'cartoon', 'sketch']
     plot_accuracy_vs_update_rate_and_pi_bar(

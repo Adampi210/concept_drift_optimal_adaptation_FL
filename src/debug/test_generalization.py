@@ -13,7 +13,6 @@ from torchvision.models import resnet18
 from torchvision import transforms
 from fl_toolkit import *
 
-
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 print(f"Device: {device}")
 print(f"CUDA Version: {torch.version.cuda}")
@@ -85,50 +84,50 @@ def set_seed(seed):
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
-def add_loss_uncertainty(loss, uncertainty_type, state):
-    """
-    Adds uncertainty to a given loss value based on the specified method.
-    The standard deviation of the noise is now proportional to the loss value.
+# def add_loss_uncertainty(loss, uncertainty_type, state):
+#     """
+#     Adds uncertainty to a given loss value based on the specified method.
+#     The standard deviation of the noise is now proportional to the loss value.
 
-    Args:
-        loss (float): The original loss value.
-        uncertainty_type (str): The type of uncertainty to add. 
-                                Options: 'gaussian', 'biased', 'autocorrelated'.
-        state (dict): A dictionary to maintain state between calls, e.g., for autocorrelated noise.
+#     Args:
+#         loss (float): The original loss value.
+#         uncertainty_type (str): The type of uncertainty to add. 
+#                                 Options: 'gaussian', 'biased', 'autocorrelated'.
+#         state (dict): A dictionary to maintain state between calls, e.g., for autocorrelated noise.
 
-    Returns:
-        tuple: A tuple containing:
-            - float: The loss value with added uncertainty.
-            - dict: The updated state dictionary.
-    """
-    if uncertainty_type == 'gaussian_0':
-            # The standard deviation is 5% of the loss value.
-            scale = loss * 0.05
-            noise = np.random.normal(loc=0.0, scale=scale)
-            return loss + noise, state
-    elif uncertainty_type == 'gaussian_1':
-        # The standard deviation is 10% of the loss value.
-        scale = loss * 0.1
-        noise = np.random.normal(loc=0.0, scale=scale)
-        return loss + noise, state
-    elif uncertainty_type == 'gaussian_2':
-        # The standard deviation is 10% of the loss value.
-        scale = loss * 0.1
-        noise = np.random.normal(loc=0.0, scale=scale)
-        return loss + noise, state
-    elif uncertainty_type == 'gaussian_3':
-        # The standard deviation is 20% of the loss value.
-        scale = loss * 0.20
-        noise = np.random.normal(loc=0.0, scale=scale)
-        return loss + noise, state
-    elif uncertainty_type == 'gaussian_4':
-        # The standard deviation is 30% of the loss value.
-        scale = loss * 0.30
-        noise = np.random.normal(loc=0.0, scale=scale)
-        return loss + noise, state
-    else:
-        # If no valid uncertainty type is given, return the original loss.
-        return loss, state
+#     Returns:
+#         tuple: A tuple containing:
+#             - float: The loss value with added uncertainty.
+#             - dict: The updated state dictionary.
+#     """
+#     if uncertainty_type == 'gaussian_0':
+#             # The standard deviation is 5% of the loss value.
+#             scale = loss * 0.05
+#             noise = np.random.normal(loc=0.0, scale=scale)
+#             return loss + noise, state
+#     elif uncertainty_type == 'gaussian_1':
+#         # The standard deviation is 10% of the loss value.
+#         scale = loss * 0.1
+#         noise = np.random.normal(loc=0.0, scale=scale)
+#         return loss + noise, state
+#     elif uncertainty_type == 'gaussian_2':
+#         # The standard deviation is 10% of the loss value.
+#         scale = loss * 0.1
+#         noise = np.random.normal(loc=0.0, scale=scale)
+#         return loss + noise, state
+#     elif uncertainty_type == 'gaussian_3':
+#         # The standard deviation is 20% of the loss value.
+#         scale = loss * 0.20
+#         noise = np.random.normal(loc=0.0, scale=scale)
+#         return loss + noise, state
+#     elif uncertainty_type == 'gaussian_4':
+#         # The standard deviation is 30% of the loss value.
+#         scale = loss * 0.30
+#         noise = np.random.normal(loc=0.0, scale=scale)
+#         return loss + noise, state
+#     else:
+#         # If no valid uncertainty type is given, return the original loss.
+#         return loss, state
 
 
 # Policy
@@ -215,26 +214,17 @@ class DriftScheduler:
             'initial_delay': 45,
             'strategy': 'replace'
         },
+
         "burst_1": lambda: {
-            'burst_interval': 100,
+            'burst_interval': 10,
             'burst_duration': 1,
             'base_rate': 0.0,
             'burst_rate': 1.0,
-            'target_domains': ['photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch'],
-            'initial_delay': 50,
+            'target_domains': ['photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch'],
+            'initial_delay': 0,
             'strategy': 'replace'
         },
-        # MODIFICATION: Add the new burst_2 schedule
-        "burst_2": lambda: {
-            'burst_interval': 100,
-            'burst_duration': 1,
-            'base_rate': 0.0,
-            # The burst_rate triggers the drift; the actual logic is in BufferedDomainDrift
-            'burst_rate': 0.8, 
-            'target_domains': ['photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch', 'photo', 'art_painting', 'cartoon', 'sketch'],
-            'initial_delay': 50,
-            'strategy': 'buffer_replace' # Use a new strategy name
-        },
+        
         "spikes": lambda: {
             'burst_interval_limits': (90, 130),
             'burst_duration_limits': (3, 6),
@@ -530,45 +520,14 @@ def evaluate_policy_under_drift(
     holdout_data_handler.set_subset(holdout_indices)
     
     set_seed(seed)
-
-    # MODIFICATION: Conditionally create drift handlers based on strategy
-    strategy = drift_scheduler.strategy
-    
-    if strategy == 'buffer_replace':
-        print("Using BufferedDomainDrift strategy.")
-        train_drift = BufferedDomainDrift(
-            train_data_handler,
-            source_domains=source_domains,
-            target_domains=source_domains,
-            drift_rate=0,
-            desired_size=DSET_SIZE,
-            buffer_fraction=0.2 # Keep 20% as buffer
-        )
-        holdout_drift = BufferedDomainDrift(
-            holdout_data_handler, # FIX: Use holdout_data_handler
-            source_domains=source_domains,
-            target_domains=source_domains,
-            drift_rate=0,
-            desired_size=int(DSET_SIZE * 0.25),
-            buffer_fraction=0.2 # Keep 20% as buffer
-        )
-    else: # Original logic for 'replace' strategy
-        print("Using standard DomainDrift strategy.")
-        train_drift = DomainDrift(
-            train_data_handler,
-            source_domains=source_domains,
-            target_domains=source_domains,
-            drift_rate=0,
-            desired_size=DSET_SIZE
-        )
-        holdout_drift = DomainDrift(
-            holdout_data_handler, # FIX: Use holdout_data_handler
-            source_domains=source_domains,
-            target_domains=source_domains,
-            drift_rate=0,
-            desired_size=int(DSET_SIZE * 0.25)
-        )
-    
+    # Define drift objects
+    train_drift = DomainDrift(
+        train_data_handler,
+        source_domains=source_domains,
+        target_domains=source_domains,
+        drift_rate=0,  # Initially no drift
+        desired_size=DSET_SIZE
+    )
     holdout_drift_0 = DomainDrift(
         train_data_handler,
         source_domains=['photo',],
@@ -607,56 +566,44 @@ def evaluate_policy_under_drift(
         device=device
     )
     
-    agent_holdout = DriftAgent(
+    agent_holdout_0 = DriftAgent(
         client_id=1,
         model_architecture=model_architecture,
-        domain_drift=holdout_drift,
+        domain_drift=holdout_drift_0,
         batch_size=batch_size,
         device=device
     )
     
-    agent_holdout_0 = DriftAgent(
-        client_id=2,
-        model_architecture=PACSCNN,
-        domain_drift=holdout_drift_0,
-        batch_size=128,
-        device=device
-    )
-    agent_holdout_0.apply_drift()
-    
     
     agent_holdout_1 = DriftAgent(
-        client_id=3,
-        model_architecture=PACSCNN,
+        client_id=2,
+        model_architecture=model_architecture,
         domain_drift=holdout_drift_1,
-        batch_size=128,
+        batch_size=batch_size,
         device=device
     )
-    agent_holdout_1.apply_drift()
     
     agent_holdout_2 = DriftAgent(
-        client_id=4,
-        model_architecture=PACSCNN,
+        client_id=3,
+        model_architecture=model_architecture,
         domain_drift=holdout_drift_2,
-        batch_size=128,
+        batch_size=batch_size,
         device=device
     )
-    agent_holdout_2.apply_drift()
-
+    
     agent_holdout_3 = DriftAgent(
-        client_id=5,
-        model_architecture=PACSCNN,
+        client_id=4,
+        model_architecture=model_architecture,
         domain_drift=holdout_drift_3,
-        batch_size=128,
+        batch_size=batch_size,
         device=device
     )
-    agent_holdout_3.apply_drift()
+    
     
         
     # Model, Optimizer
     model = agent_train.get_model()
-    model.load_state_dict(torch.load(model_path, weights_only=False))
-    agent_holdout.set_model_params(agent_train.get_model_params())
+    model.load_state_dict(torch.load(model_path, weight_only=False))
     agent_holdout_0.set_model_params(agent_train.get_model_params())
     agent_holdout_1.set_model_params(agent_train.get_model_params())
     agent_holdout_2.set_model_params(agent_train.get_model_params())
@@ -686,65 +633,48 @@ def evaluate_policy_under_drift(
         if drift_rate > 0:
             agent_train.set_target_domains(target_domains)
         agent_train.apply_drift()
-        
-        agent_holdout.set_drift_rate(drift_rate)
-        if drift_rate > 0:
-            agent_holdout.set_target_domains(target_domains)
-        agent_holdout.apply_drift()
-        
-        # MODIFICATION: Add sanity check for dataset composition
-        def print_composition(agent, name):
-            if agent.domain_drift.current_indices is not None:
-                current_domains = agent.domain_drift.domain_array[agent.domain_drift.current_indices]
-                unique_domains, counts = np.unique(current_domains, return_counts=True)
-                total_samples = len(current_domains)
-                composition_str = ", ".join([f"{d}: {c/total_samples*100:.2f}% ({c})" for d, c in zip(unique_domains, counts)])
-                print(f"[{name} Composition @ t={t}]: {composition_str}")
 
-        print_composition(agent_train, "Train")
-        print_composition(agent_holdout, "Holdout")
-        
+        agent_holdout_0.set_drift_rate(drift_rate)
+        agent_holdout_0.apply_drift()
+
+        agent_holdout_1.set_drift_rate(drift_rate)
+        agent_holdout_1.apply_drift()
+
+        agent_holdout_2.set_drift_rate(drift_rate)
+        agent_holdout_2.apply_drift()
+
+        agent_holdout_3.set_drift_rate(drift_rate)
+        agent_holdout_3.apply_drift()
+
         # Calculate current loss and accuracy
-        original_loss_curr = agent_holdout.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
-        acc_curr = agent_holdout.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
-        
-        acc_photo = agent_holdout_0.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
-        acc_art = agent_holdout_1.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
-        acc_cartoon = agent_holdout_2.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
-        acc_sketch = agent_holdout_3.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
-        
+        loss_0 = agent_holdout_0.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
+        acc_0 = agent_holdout_0.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        loss_1 = agent_holdout_1.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
+        acc_1 = agent_holdout_1.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        loss_2 = agent_holdout_2.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
+        acc_2 = agent_holdout_2.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
+        loss_3 = agent_holdout_3.evaluate(metric_fn=criterion, test_size=1.0, verbose=False)
+        acc_3 = agent_holdout_3.evaluate(metric_fn=accuracy_fn, test_size=1.0, verbose=False)
         
         # Add uncertainty to the loss measurement if specified
         # loss_curr, uncertainty_state = add_loss_uncertainty(original_loss_curr, loss_uncertainty, uncertainty_state)
-        loss_curr = original_loss_curr
-        
-        loss_array.append(loss_curr)
-        loss_prev = loss_array[-1]
-        if loss_curr < loss_best:
-            loss_best = loss_curr
         
         # Get the policy decision
-        decision = policy.policy_decision(
-            decision_id=policy_id,
-            loss_curr=loss_curr,
-            loss_prev=loss_prev,
-            current_time=t,
-            V=V,
-            pi_bar=pi_bar,
-            loss_best=loss_best
-        )
         # Update the model if decision is made
         print(f'Loss historical diff: {loss_curr - loss_best}; Loss Difference: {loss_curr - loss_prev}, Decision: {decision}')
         update_loss = None
-        if decision:
-            update_loss = agent_train.update_steps(
-                num_updates=n_steps, 
-                optimizer=optimizer, 
-                loss_fn=criterion, 
-                verbose=True
-            )
-            agent_holdout.set_model_params(agent_train.get_model_params())
-        
+        update_loss = agent_train.update_steps(
+            num_updates=n_steps, 
+            optimizer=optimizer, 
+            loss_fn=criterion, 
+            verbose=True
+        )
+
+        agent_holdout_0.set_model_params(agent_train.get_model_params())
+        agent_holdout_1.set_model_params(agent_train.get_model_params())
+        agent_holdout_2.set_model_params(agent_train.get_model_params())
+        agent_holdout_3.set_model_params(agent_train.get_model_params())
+
         # Time it takes for a round
         time_round = time.time() - time_round
         time_arr.append(time_round)
@@ -752,17 +682,10 @@ def evaluate_policy_under_drift(
         # Save results
         result_dict = {
             't': t,
-            'current_accuracy': acc_curr,
-            'accuracy_per_domain': {
-                'photo': acc_photo,
-                'art_painting': acc_art,
-                'cartoon': acc_cartoon,
-                'sketch': acc_sketch
-            },
-            'original_loss': original_loss_curr,
-            'measured_loss': loss_curr,
-            'train_loss': update_loss if decision else None,
-            'decision': decision,
+            'current_accuracy': [acc_0, acc_1, acc_2, acc_3],
+            'current_loss': [loss_0, loss_1, loss_2, loss_3],
+            'train_loss': None,
+            'decision': None,
             'drift_rate': drift_rate, 
             'target_domains': agent_train.domain_drift.target_domains,
         }
@@ -775,7 +698,7 @@ def evaluate_policy_under_drift(
     schedule_type = schedule_params['schedule_type']
     src_domains_str = "_".join(source_domains)
     results_filename = (
-        f"../../data/results/policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}"
+        f"../../data/results/test_generalization_policy_{policy_id}_setting_{setting_id}_schedule_{schedule_type}"
         f"_src_{src_domains_str}_model_{model_architecture.__name__}_img_{img_size}_seed_{seed}"
     )
     if loss_uncertainty != 'none':
@@ -817,81 +740,6 @@ def evaluate_policy_under_drift(
 # Hyperparameters and Constants
 settings = {
         0: {'pi_bar': 0.1, 'V': 65, 'L_i': 1.0},
-        1: {'pi_bar': 0.05, 'V': 65, 'L_i': 1.0},
-        2: {'pi_bar': 0.1, 'V': 65, 'L_i': 1.0},
-        3: {'pi_bar': 0.15, 'V': 65, 'L_i': 1.0},
-        4: {'pi_bar': 0.2, 'V': 65, 'L_i': 1.0},
-        5: {'pi_bar': 0.25, 'V': 65, 'L_i': 1.0},
-        6: {'pi_bar': 0.3, 'V': 65, 'L_i': 1.0},
-        7: {'pi_bar': 0.5, 'V': 1, 'L_i': 1.0},
-        8: {'pi_bar': 0.7, 'V': 10, 'L_i': 1.0},
-        9: {'pi_bar': 0.9, 'V': 100, 'L_i': 1.0},
-        10: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        11: {'pi_bar': 0.15, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.2, 'lr': 0.01, 'n_steps':5},
-        12: {'pi_bar': 0.2, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
-        13: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        14: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        15: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        16: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        17: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        18: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        19: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        20: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        21: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        22: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        23: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        24: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        25: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        26: {'pi_bar': 0.1, 'V': 10000, 'L_i': 0.01},
-        27: {'pi_bar': 0.1, 'V': 1000, 'L_i': 0.01},
-        28: {'pi_bar': 0.1, 'V': 100, 'L_i': 0.01},
-        29: {'pi_bar': 0.1, 'V': 10, 'L_i': 0.01},
-        30: {'pi_bar': 0.1, 'V': 100, 'L_i': 0.0001},
-        31: {'pi_bar': 0.1, 'V': 50, 'L_i': 0.0001},
-        32: {'pi_bar': 0.1, 'V': 10, 'L_i': 0.0001},
-        33: {'pi_bar': 0.1, 'V': 1, 'L_i': 0.0001},
-        34: {'pi_bar': 0.1, 'V': 0.5, 'L_i': 0.0001},
-        35: {'pi_bar': 0.1, 'V': 100, 'L_i': 0},
-        36: {'pi_bar': 0.1, 'V': 50, 'L_i': 0},
-        37: {'pi_bar': 0.1, 'V': 10, 'L_i': 0},
-        38: {'pi_bar': 0.1, 'V': 1, 'L_i': 0},
-        39: {'pi_bar': 0.1, 'V': 0.5, 'L_i': 0},
-        40: {'pi_bar': 0.02, 'V': 10, 'L_i': 0, 'K_p': 0.06, 'K_d': 0.05, 'lr': 0.01, 'n_steps':5},
-        41: {'pi_bar': 0.03, 'V': 10, 'L_i': 0, 'K_p': 0.13, 'K_d': 0.05, 'lr': 0.01, 'n_steps':5},
-        42: {'pi_bar': 0.05, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        43: {'pi_bar': 0.07, 'V': 10, 'L_i': 0, 'K_p': 0.7, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        44: {'pi_bar': 0.15, 'V': 10, 'L_i': 0, 'K_p': 2.5, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
-        45: {'pi_bar': 0.20, 'V': 10, 'L_i': 0, 'K_p': 2.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        46: {'pi_bar': 0.25, 'V': 10, 'L_i': 0, 'K_p': 2.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        47: {'pi_bar': 0.30, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 0.7, 'lr': 0.01, 'n_steps':5},
-        50: {'pi_bar': 0.40, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 2.0},
-        51: {'pi_bar': 0.45, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 2.0},
-        52: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 1.0},
-        53: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 1.0},
-        54: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 1.0},
-        55: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.5, 'K_d': 0.5},
-        56: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.25, 'K_d': 0.5},
-        57: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.10, 'K_d': 0.5},
-        60: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        61: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        62: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        63: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
-        64: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
-        65: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.3, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
-        66: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 0.4, 'K_d': 0.35, 'lr': 0.01, 'n_steps':5},
-        67: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 3.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
-        68: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 5.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
-        69: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 10.0, 'K_d': 1.0, 'lr': 0.01, 'n_steps':5},
-        70: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
-        71: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
-        72: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        73: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.4, 'lr': 0.01, 'n_steps':5},
-        74: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.0, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
-        75: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.25, 'K_d': 0.3, 'lr': 0.01, 'n_steps':5},
-        76: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.25, 'K_d': 0.5, 'lr': 0.01, 'n_steps':5},
-        77: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.1, 'lr': 0.01, 'n_steps':5},
-        78: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.2, 'lr': 0.01, 'n_steps':5},
-        79: {'pi_bar': 0.1, 'V': 10, 'L_i': 0, 'K_p': 1.5, 'K_d': 0.25, 'lr': 0.01, 'n_steps':5},
     }
 DSET_SIZE = 1024
 
@@ -899,14 +747,13 @@ DSET_SIZE = 1024
 def main():
     # Get the command line arguments
     parser = argparse.ArgumentParser(description="PACS CNN Evaluation with Dynamic Drift")
-    # MODIFICATION: 'burst_2' is now available through the keys() method
     parser.add_argument('--schedule_type', type=str, default='burst',
                         choices=list(DriftScheduler.SCHEDULE_CONFIGS.keys()),
                         help='Type of drift rate schedule')
     parser.add_argument('--seed', type=int, default=0)
     parser.add_argument('--src_domains', type=str, nargs='+', default=['photo',])
-    parser.add_argument('--n_rounds', type=int, default=1000)
-    parser.add_argument('--policy_id', type=int, default=2)
+    parser.add_argument('--n_rounds', type=int, default=100)
+    parser.add_argument('--policy_id', type=int, default=0)
     parser.add_argument('--setting_id', type=int, default=0)
     parser.add_argument('--model_name', type=str, default='PACSCNN', choices=['PACSCNN',], help='Model architecture to use')
     parser.add_argument('--img_size', type=int, default=128, help='Size to resize images to (img_size x img_size)')
