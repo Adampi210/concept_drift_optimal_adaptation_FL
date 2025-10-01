@@ -2915,21 +2915,38 @@ if __name__ == "__main__":
     # 1. Run the first new function to get overall average domain performance
     calculate_average_accuracy_per_domain(
         policy_id=5,
-        setting_id=70,
-        schedule_type='burst_2',
-        source_domain='photo',
+        setting_id=76,
+        schedule_type='burst_1',
+        source_domain='cartoon',
         model_name='PACSCNN',
         img_size=128,
         results_dir='../../data/results/'
     )
-
+    calculate_average_accuracy_per_domain(
+        policy_id=5,
+        setting_id=76,
+        schedule_type='burst_2',
+        source_domain='cartoon',
+        model_name='PACSCNN',
+        img_size=128,
+        results_dir='../../data/results/'
+    )
     # 2. Run the second function
     # Example A: Using default times (just before each burst)
     display_accuracy_at_specific_times(
         policy_id=5,
-        setting_id=70,
+        setting_id=76,
+        schedule_type='burst_1',
+        source_domain='cartoon',
+        model_name='PACSCNN',
+        img_size=128,
+        results_dir='../../data/results/'
+    )
+    display_accuracy_at_specific_times(
+        policy_id=5,
+        setting_id=76,
         schedule_type='burst_2',
-        source_domain='photo',
+        source_domain='cartoon',
         model_name='PACSCNN',
         img_size=128,
         results_dir='../../data/results/'
